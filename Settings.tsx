@@ -1,0 +1,327 @@
+import React, { useRef, useState } from 'react';
+import { Download, Upload, RefreshCw, Save, Globe, Edit3, Trash2, Plus, CreditCard, Moon, Sun, Monitor, Calendar, ExternalLink } from 'lucide-react';
+import { AppState, Language, Debt, Theme } from '../types';
+import { DEFAULT_STATE, TRANSLATIONS } from '../constants';
+
+interface SettingsProps {
+  state: AppState;
+  setState: React.Dispatch<React.SetStateAction<AppState>>;
+}
+
+const Settings: React.FC<SettingsProps> = ({ state, setState }) => {
+  const { language, monthlyIncome, currency, debts, theme } = state;
+  const t = TRANSLATIONS;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isRTL = language === 'ar';
+
+  const [isEditingSalary, setIsEditingSalary] = useState(false);
+  const [tempSalary, setTempSalary] = useState(monthlyIncome.toString());
+  
+  const [showDebtEditor, setShowDebtEditor] = useState(false);
+  const [newDebtName, setNewDebtName] = useState('');
+  const [newDebtAmount, setNewDebtAmount] = useState('');
+  const [newDebtEndDate, setNewDebtEndDate] = useState('');
+  const [newDebtType, setNewDebtType] = useState<'source' | 'bank'>('bank');
+
+  const handleLanguageChange = (lang: Language) => {
+    setState(prev => ({ ...prev, language: lang }));
+  };
+  
+  const handleThemeChange = (newTheme: Theme) => {
+    setState(prev => ({ ...prev, theme: newTheme }));
+  };
+
+  const handleExport = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `esalaire_backup_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          try {
+              const json = JSON.parse(e.target?.result as string);
+              if (json.categories && json.liquidAssets !== undefined) {
+                  setState(json);
+                  alert("Data imported successfully!");
+              } else {
+                  alert("Invalid file format.");
+              }
+          } catch (err) {
+              alert("Error reading file.");
+          }
+      };
+      reader.readAsText(file);
+  };
+
+  const handleResetMonth = () => {
+      if (confirm("Clear monthly spending?")) {
+          setState(prev => ({
+              ...prev,
+              categories: prev.categories.map(c => ({ ...c, spent: 0 })),
+              transactions: [], 
+              lastResetDate: new Date().toISOString(),
+          }));
+      }
+  };
+
+  const handleLoadPlan = () => {
+       if (confirm("Reset to default plan?")) {
+           setState({ ...DEFAULT_STATE, language: state.language, hasCompletedOnboarding: true }); 
+       }
+  };
+
+  const saveSalary = () => {
+      const val = parseFloat(tempSalary);
+      if (!isNaN(val) && val > 0) {
+          setState(prev => ({ ...prev, monthlyIncome: val }));
+          setIsEditingSalary(false);
+      }
+  };
+
+  const addNewDebt = () => {
+      if (newDebtName && newDebtAmount) {
+          const amount = parseFloat(newDebtAmount);
+          if (!isNaN(amount)) {
+              setState(prev => ({
+                  ...prev,
+                  debts: [...prev.debts, { 
+                      id: Date.now().toString(), 
+                      name: newDebtName, 
+                      amount, 
+                      endDate: newDebtEndDate,
+                      deductionType: newDebtType
+                  }]
+              }));
+              setNewDebtName(''); setNewDebtAmount(''); setNewDebtEndDate('');
+          }
+      }
+  };
+
+  const removeDebt = (id: string) => {
+      setState(prev => ({ ...prev, debts: prev.debts.filter(d => d.id !== id) }));
+  };
+  
+  const getMonthsLeft = (endDateStr: string) => {
+      if (!endDateStr) return 0;
+      const end = new Date(endDateStr);
+      const now = new Date();
+      let months = (end.getFullYear() - now.getFullYear()) * 12;
+      months -= now.getMonth();
+      months += end.getMonth();
+      return Math.max(0, months);
+  };
+
+  const ActionButton = ({ onClick, label, icon: Icon, variant = 'default' }: any) => (
+      <button 
+        onClick={onClick}
+        className={`w-full flex items-center justify-between p-4 rounded-lg transition-all border ${
+            variant === 'default' 
+            ? 'bg-card border-border hover:bg-secondary/50 text-card-foreground' 
+            : 'bg-primary text-primary-foreground border-primary hover:bg-primary/90'
+        }`}
+      >
+          <span className="font-medium">{label}</span>
+          <Icon size={18} className={variant === 'default' ? "text-muted-foreground" : "text-primary-foreground"} />
+      </button>
+  );
+
+  return (
+    <div className={`p-4 space-y-6 pb-24 ${isRTL ? 'text-right' : 'text-left'}`}>
+      <h1 className="text-2xl font-bold mb-6 tracking-tight">{t.settings[language]}</h1>
+
+      {/* Language & Theme */}
+      <section className="bg-card p-5 rounded-xl border border-border shadow-sm space-y-4">
+          <div>
+            <div className="flex items-center space-x-2 mb-3 rtl:space-x-reverse text-primary">
+                <Globe size={18} />
+                <h3 className="font-semibold text-sm">{t.language[language]}</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+                {(['en', 'fr', 'ar'] as Language[]).map(lang => (
+                    <button 
+                        key={lang}
+                        onClick={() => handleLanguageChange(lang)}
+                        className={`py-2 rounded-lg border text-xs font-bold transition-all ${language === lang ? 'bg-primary border-primary text-primary-foreground' : 'bg-background border-input text-muted-foreground hover:bg-secondary'}`}
+                    >
+                        {lang.toUpperCase()}
+                    </button>
+                ))}
+            </div>
+          </div>
+          <div className="h-px bg-border/50" />
+          <div>
+            <div className="flex items-center space-x-2 mb-3 rtl:space-x-reverse text-primary">
+                <Sun size={18} />
+                <h3 className="font-semibold text-sm">{t.theme[language]}</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+                {['light', 'dark', 'system'].map((th) => (
+                   <button 
+                      key={th}
+                      onClick={() => handleThemeChange(th as Theme)}
+                      className={`capitalize flex items-center justify-center gap-2 py-2 rounded-lg border text-xs font-bold transition-all ${theme === th ? 'bg-primary border-primary text-primary-foreground' : 'bg-background border-input text-muted-foreground'}`}
+                   >
+                       {th}
+                   </button>
+                ))}
+            </div>
+          </div>
+      </section>
+
+      {/* Profile */}
+      <section className="bg-card p-5 rounded-xl border border-border shadow-sm">
+           <div className="flex justify-between items-center mb-3">
+                <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">{t.monthlyIncome[language]}</h3>
+                {!isEditingSalary && (
+                    <button onClick={() => setIsEditingSalary(true)} className="text-primary hover:text-primary/80">
+                        <Edit3 size={18} />
+                    </button>
+                )}
+           </div>
+           {isEditingSalary ? (
+               <div className="flex gap-2">
+                   <input 
+                      type="number" 
+                      value={tempSalary} 
+                      onChange={(e) => setTempSalary(e.target.value)}
+                      className="flex-1 bg-background border border-input rounded-lg px-3 py-2 font-mono text-lg"
+                   />
+                   <button onClick={saveSalary} className="bg-primary text-primary-foreground px-4 rounded-lg font-bold">OK</button>
+               </div>
+           ) : (
+               <div className="text-2xl font-bold font-mono text-foreground">
+                   {monthlyIncome.toLocaleString()} {currency}
+               </div>
+           )}
+      </section>
+
+      {/* Debts */}
+      <section className="bg-card p-5 rounded-xl border border-border shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                 <CreditCard size={18} className="text-primary" />
+                 <h3 className="font-semibold">{t.manageDebts[language]}</h3>
+              </div>
+          </div>
+          
+          <div className="space-y-3">
+              {debts.map(debt => {
+                  const monthsLeft = getMonthsLeft(debt.endDate);
+                  return (
+                    <div key={debt.id} className="flex justify-between items-center p-2 bg-muted/20 rounded-lg border border-border/50">
+                        <div>
+                            <div className="font-medium text-sm flex items-center gap-2">
+                                {debt.name} 
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded ${debt.deductionType === 'bank' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
+                                    {debt.deductionType === 'bank' ? t.sourceBank[language] : t.sourceSalary[language]}
+                                </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground font-mono">
+                                -{debt.amount} {currency} • {monthsLeft} {t.monthsLeft[language]}
+                            </div>
+                        </div>
+                        <button onClick={() => removeDebt(debt.id)} className="text-destructive p-2 hover:bg-destructive/10 rounded">
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                  );
+              })}
+              {debts.length === 0 && <div className="text-sm text-muted-foreground italic text-center py-2">No debts listed.</div>}
+              
+              {!showDebtEditor ? (
+                 <button 
+                    onClick={() => setShowDebtEditor(true)} 
+                    className="w-full mt-4 flex items-center justify-center gap-2 py-3 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg font-bold text-sm transition-colors"
+                 >
+                     <Plus size={16} />
+                     {t.addNewDebt[language]}
+                 </button>
+              ) : (
+                  <div className="flex flex-col gap-2 mt-4 p-3 bg-secondary/20 rounded-lg border border-border/50 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="text-xs font-bold text-muted-foreground uppercase">{t.addNewDebt[language]}</div>
+                        <button onClick={() => setShowDebtEditor(false)} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <input 
+                            placeholder="Name" 
+                            value={newDebtName} 
+                            onChange={e => setNewDebtName(e.target.value)}
+                            className="flex-1 text-sm p-2 bg-background border border-input rounded outline-none focus:border-primary"
+                        />
+                        <input 
+                            type="number"
+                            placeholder="Amount" 
+                            value={newDebtAmount} 
+                            onChange={e => setNewDebtAmount(e.target.value)}
+                            className="w-20 text-sm p-2 bg-background border border-input rounded outline-none focus:border-primary font-mono"
+                        />
+                      </div>
+                      
+                      {/* Type Selector */}
+                      <div className="flex rounded-lg overflow-hidden border border-border text-xs mt-1">
+                          <button onClick={() => setNewDebtType('source')} className={`flex-1 py-2 font-semibold transition-colors ${newDebtType === 'source' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'}`}>{t.sourceSalary[language]}</button>
+                          <div className="w-px bg-border"></div>
+                          <button onClick={() => setNewDebtType('bank')} className={`flex-1 py-2 font-semibold transition-colors ${newDebtType === 'bank' ? 'bg-destructive text-destructive-foreground' : 'bg-background hover:bg-muted'}`}>{t.sourceBank[language]}</button>
+                      </div>
+
+                      <div className="flex gap-2 items-center mt-1">
+                         <div className="relative flex-1">
+                             <input 
+                                type="month"
+                                value={newDebtEndDate}
+                                onChange={e => setNewDebtEndDate(e.target.value)}
+                                className="w-full text-sm p-2 bg-background border border-input rounded outline-none focus:border-primary"
+                             />
+                             {!newDebtEndDate && <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none">{t.endDate[language]}</span>}
+                         </div>
+                         <button onClick={addNewDebt} className="p-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+                            <Plus size={16} />
+                         </button>
+                      </div>
+                  </div>
+              )}
+          </div>
+      </section>
+
+      {/* Actions */}
+      <section className="space-y-3">
+           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">Actions</h3>
+           <ActionButton onClick={handleResetMonth} label={t.resetMonth[language]} icon={RefreshCw} />
+           <ActionButton onClick={handleLoadPlan} label={t.loadPlan[language]} icon={Save} />
+      </section>
+
+      <section className="space-y-3">
+           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">Data</h3>
+           <ActionButton onClick={handleExport} label={t.exportData[language]} icon={Download} />
+           <input type="file" ref={fileInputRef} onChange={handleImportFile} className="hidden" accept=".json" />
+           <ActionButton onClick={handleImportClick} label={t.importData[language]} icon={Upload} />
+      </section>
+      
+      <div className="flex flex-col items-center justify-center text-xs text-muted-foreground mt-8 pb-4 space-y-1">
+          <p>esalaire v1.0</p>
+          <a 
+            href="https://www.mohamedhousni.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 hover:text-primary transition-colors font-medium"
+          >
+              Designed & Engineered by Mohamed HOUSNI Ph.D. <ExternalLink size={10} />
+          </a>
+      </div>
+    </div>
+  );
+};
+
+export default Settings;
