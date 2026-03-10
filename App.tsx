@@ -11,6 +11,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const STORAGE_KEY = 'eSalaire_v1_data';
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background text-center">
+          <h1 className="text-2xl font-bold text-destructive mb-4">Something went wrong.</h1>
+          <p className="text-muted-foreground mb-6">The application encountered an error. Don't worry, your data is safe.</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold">
+            Reload Application
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const App: React.FC = () => {
   // Load initial state from LocalStorage or use Default with Auto-Language Detection
   const [state, setState] = useState<AppState>(() => {
@@ -144,7 +166,9 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {renderView()}
+        <ErrorBoundary>
+          {renderView()}
+        </ErrorBoundary>
 
         {/* Install FAB */}
         <AnimatePresence>

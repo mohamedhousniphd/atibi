@@ -99,12 +99,12 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     };
 
     // --- Core Calculations ---
-    const categories = state.categories || [];
-    const transactions = state.transactions || [];
-    const savingsGoals = state.savingsGoals || [];
-    const backpays = state.backpays || [];
-    const debts = state.debts || [];
-    const liquidAssets = state.liquidAssets || 0;
+    const categories = (state.categories || []).filter(Boolean);
+    const transactions = (state.transactions || []).filter(Boolean);
+    const savingsGoals = (state.savingsGoals || []).filter(Boolean);
+    const backpays = (state.backpays || []).filter(Boolean);
+    const debts = (state.debts || []).filter(Boolean);
+    const liquidAssets = typeof state.liquidAssets === 'number' ? (isNaN(state.liquidAssets) ? 0 : state.liquidAssets) : 0;
 
     const totalMonthlyDebt = round(debts.reduce((acc, d) => acc + (d.amount || 0), 0));
     const totalOutstandingDebt = round(debts.reduce((acc, d) => acc + calculateDebtBalance(d), 0));
@@ -137,9 +137,9 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const netWealth = round((liquidAssets + totalSavingsInGoals) - totalOutstandingDebt);
 
     // STRICT HEALTH LOGIC: Assets vs Debt
-    const totalAssets = liquidAssets + totalSavingsInGoals;
+    const totalAssets = round(liquidAssets + totalSavingsInGoals);
     const isSecure = totalAssets >= totalOutstandingDebt;
-    const healthLabel = isSecure ? t.secure[language] : t.atRisk[language];
+    const healthLabel = isSecure ? (t.secure?.[language] || 'Secure') : (t.atRisk?.[language] || 'At Risk');
     const healthColor = isSecure ? 'text-emerald-500' : 'text-destructive';
 
     // Backpay Logic
@@ -520,7 +520,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                     ...prev,
                     liquidAssets: round(prevAssets - val),
                     savingsGoals: updatedGoals,
-                    transactions: [newTransaction, ...prevTx]
+                    transactions: [newTransaction, ...prevTx].filter(Boolean)
                 };
             });
 
@@ -583,7 +583,8 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
         if (savingsAllocation <= 0) return t.noCashFlow[language];
 
         const months = Math.ceil(remaining / savingsAllocation);
-        if (isNaN(months) || !isFinite(months)) return t.noCashFlow[language];
+        if (!isFinite(months) || isNaN(months)) return t.noCashFlow[language];
+        if (months > 1200) return "> 100 " + t.years[language];
 
         return `${months} ${t.monthsLeft[language]}`;
     };
@@ -906,6 +907,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 </div>
                 <div className="space-y-3">
                     {savingsGoals.map(goal => {
+                        if (!goal) return null;
                         const rawProgress = (goal.currentAmount || 0) / (goal.targetAmount || 1) * 100;
                         const progress = isNaN(rawProgress) ? 0 : Math.min(100, Math.max(0, rawProgress));
                         const isCompleted = progress >= 100;
@@ -940,13 +942,16 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                 </div>
                                 <div className="h-2 bg-secondary rounded-full overflow-hidden mb-3">
                                     {(() => {
-                                        const rawP = (goal.currentAmount / (goal.targetAmount || 1)) * 100;
+                                        const cur = typeof goal.currentAmount === 'number' ? goal.currentAmount : 0;
+                                        const tar = typeof goal.targetAmount === 'number' ? goal.targetAmount : 1;
+                                        const rawP = (cur / (tar || 1)) * 100;
                                         const p = isNaN(rawP) ? 0 : Math.min(100, Math.max(0, rawP));
                                         return (
                                             <motion.div
                                                 className="h-full bg-primary"
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${p}%` }}
+                                                transition={{ duration: 0.5 }}
                                             />
                                         );
                                     })()}
