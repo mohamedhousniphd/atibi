@@ -248,6 +248,8 @@ export const TRANSLATIONS: Translation = {
   greatJob: { en: 'Great Job!', fr: 'Bravo !', ar: 'عمل رائع!' },
   overBudget: { en: 'Over Budget', fr: 'Hors Budget', ar: 'تجاوز الميزانية' },
   projection: { en: 'Wealth Projection (12 Months)', fr: 'Projection Patrimoine (12 Mois)', ar: 'توقعات الثروة (12 شهر)' },
+  savingsGoals: { en: 'Savings Goals', fr: 'Objectifs d\'Épargne', ar: 'أهداف الادخار' },
+  years: { en: 'years', fr: 'ans', ar: 'سنوات' },
 
   // Tools
   rappelCalc: { en: 'Backpay (Rappel) Tracker', fr: 'Calculateur de Rappel', ar: 'متتبع مستحقات الرابيل' },
