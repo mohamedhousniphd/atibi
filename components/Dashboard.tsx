@@ -35,6 +35,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
+    const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
 
     // Goal State
     const [newGoalName, setNewGoalName] = useState('');
@@ -307,7 +308,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 description: description || selectedCategory.name,
                 categoryId: selectedCategory.id,
                 type: 'expense',
-                date: new Date().toISOString()
+                date: new Date(transactionDate).toISOString()
             };
             const updatedCategories = categories.map(cat =>
                 cat.id === selectedCategory.id ? { ...cat, spent: round(cat.spent + val) } : cat
@@ -319,7 +320,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 amount: val,
                 description: description || 'Extra Income',
                 type: 'income',
-                date: new Date().toISOString()
+                date: new Date(transactionDate).toISOString()
             };
 
             if (window.confetti) window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
@@ -914,6 +915,9 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                             )}
                                             <span>{currency}</span>
                                         </div>
+                                        <div className="text-sm mt-2 p-2 bg-muted/30 rounded-lg inline-block">
+                                            {t.remaining?.[language] || 'Remaining'}: <span className={`font-mono font-bold ${selectedCategory.limit - selectedCategory.spent < 0 ? 'text-destructive' : 'text-emerald-500'}`}>{formatMoney(selectedCategory.limit - selectedCategory.spent)}</span> {currency}
+                                        </div>
                                         {limitError && (
                                             <div className="text-[10px] text-destructive font-bold bg-destructive/10 p-2 rounded mt-2 animate-pulse">
                                                 {limitError}
@@ -971,10 +975,16 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
                                             <div className="flex gap-2">
                                                 <input
+                                                    type="date"
+                                                    value={transactionDate}
+                                                    onChange={(e) => setTransactionDate(e.target.value)}
+                                                    className="w-1/3 bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
+                                                />
+                                                <input
                                                     type="text"
                                                     value={description}
                                                     onChange={(e) => setDescription(e.target.value)}
-                                                    placeholder="Description"
+                                                    placeholder={t.description[language]}
                                                     className="flex-1 bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
                                                 />
                                                 <button type="submit" className="bg-primary text-primary-foreground rounded-lg px-4 font-bold shadow-lg shadow-primary/20">
@@ -1112,13 +1122,19 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                         </div>
                                     )}
 
-                                    <div className="mb-6">
+                                    <div className="mb-6 flex gap-2">
+                                        <input
+                                            type="date"
+                                            value={transactionDate}
+                                            onChange={(e) => setTransactionDate(e.target.value)}
+                                            className="w-1/3 bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
+                                        />
                                         <input
                                             type="text"
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
                                             placeholder={t.description[language]}
-                                            className="w-full bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
+                                            className="flex-1 w-2/3 bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">

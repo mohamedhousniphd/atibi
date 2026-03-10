@@ -327,6 +327,7 @@ export const TRANSLATIONS: Translation = {
   autoIncrement: { en: 'Auto-increment monthly', fr: 'Incrémentation mensuelle', ar: 'زيادة تلقائية شهرياً' },
   trackingInfo: { en: 'Currently tracking', fr: 'Suivi actuel', ar: 'قيد التتبع حالياً' },
   perMonth: { en: '/ month since', fr: '/ mois depuis', ar: '/ شهر منذ' },
+  date: { en: 'Date', fr: 'Date', ar: 'التاريخ' }
 };
 
 export const CATEGORY_NAMES: Record<string, Record<string, string>> = {
