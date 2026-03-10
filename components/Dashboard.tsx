@@ -1070,7 +1070,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                         </div>
                                         <input
                                             type="text"
-                                            placeholder={t.descriptionOptional[language]}
+                                            placeholder={`${t.description[language]} ${t.optional[language]}`}
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
                                             className="w-full bg-background border border-input rounded-lg p-3 text-sm outline-none focus:border-primary text-foreground"

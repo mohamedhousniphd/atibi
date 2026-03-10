@@ -333,6 +333,10 @@ export const TRANSLATIONS: Translation = {
   limit: { en: 'Budget Limit', fr: 'Plafond du Budget', ar: 'سقف الميزانية' },
   targetAmount: { en: 'Target Amount', fr: 'Montant de l\'Objectif', ar: 'المبلغ المستهدف' },
   quickAdd: { en: 'Quick Add', fr: 'Ajout Rapide', ar: 'إضافة سريعة' },
+  optional: { en: '(Optional)', fr: '(Optionnel)', ar: '(اختياري)' },
+  accrued: { en: 'accrued', fr: 'cumulé', ar: 'متراكم' },
+  totalPending: { en: 'Total Pending', fr: 'Total en Attente', ar: 'إجمالي الانتظار' },
+  activeTracking: { en: 'Active Tracking', fr: 'Suivi Actif', ar: 'تتبع نشط' },
   date: { en: 'Date', fr: 'Date', ar: 'التاريخ' }
 };
 

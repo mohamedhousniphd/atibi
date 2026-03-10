@@ -227,7 +227,7 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
                     </div>
                 </div>
                 <InputField
-                    label="Description (Optional)"
+                    label={`${t.description[language]} ${t.optional[language]}`}
                     value={description}
                     onChange={setDescription}
                     placeholder="e.g. Promotion 2023"
@@ -246,9 +246,9 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
                 {activeBackpays.length > 0 && (
                     <div className="mt-8 pt-6 border-t border-border">
                         <div className="flex justify-between items-end mb-4">
-                            <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Active Tracking</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{t.activeTracking[language]}</h3>
                             <div className="text-right">
-                                <div className="text-[10px] text-muted-foreground font-bold uppercase">Total Pending</div>
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase">{t.totalPending[language]}</div>
                                 <div className="font-mono font-bold text-accent-foreground text-sm">{formatMoney(displayTotalPending)} {currency}</div>
                             </div>
                         </div>
@@ -277,7 +277,7 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
                                                 months -= startD.getMonth();
                                                 months += endD.getMonth();
                                                 months = Math.max(0, months + 1);
-                                                return `${months} months accrued`;
+                                                return `${months} ${t.months[language]} ${t.accrued[language]}`;
                                             })()}
                                         </div>
                                     </div>
