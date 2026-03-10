@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Download, Upload, RefreshCw, Save, Globe, Edit3, Trash2, Plus, CreditCard, Moon, Sun, Monitor, Calendar, ExternalLink, Calculator, AlertTriangle } from 'lucide-react';
 import { AppState, Language, Debt, Theme } from '../types';
-import { DEFAULT_STATE, TRANSLATIONS, validateState } from '../constants';
+import { DEFAULT_STATE, TRANSLATIONS, validateState, CATEGORY_NAMES } from '../constants';
 
 interface SettingsProps {
     state: AppState;
@@ -24,8 +24,16 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
     const [newDebtEndDate, setNewDebtEndDate] = useState('');
     const [newDebtType, setNewDebtType] = useState<'source' | 'bank'>('bank');
 
-    const formatMoney = (val: number) => {
-        return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const round = (num: any) => {
+        const n = typeof num === 'number' ? num : parseFloat(num);
+        if (isNaN(n) || !isFinite(n)) return 0;
+        return Math.round((n + Number.EPSILON) * 100) / 100;
+    };
+
+    const formatMoney = (val: any) => {
+        const n = typeof val === 'number' ? val : parseFloat(val);
+        if (isNaN(n) || !isFinite(n)) return "0,00";
+        return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const handleLanguageChange = (lang: Language) => {
@@ -70,13 +78,21 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
     };
 
     const handleResetMonth = () => {
-        if (confirm("Clear monthly spending?")) {
+        if (confirm("Clear monthly spending and credit salary?")) {
             setState(prev => ({
                 ...prev,
-                categories: prev.categories.map(c => ({ ...c, spent: 0 })),
-                transactions: [],
+                categories: (prev.categories || []).map(c => ({ ...c, spent: 0 })),
+                liquidAssets: round((prev.liquidAssets || 0) + (prev.monthlyIncome || 0)),
                 lastResetDate: new Date().toISOString(),
+                transactions: [{
+                    id: Date.now().toString(),
+                    amount: prev.monthlyIncome || 0,
+                    description: t.salaryCredited[language],
+                    type: 'income',
+                    date: new Date().toISOString()
+                }, ...(prev.transactions || [])]
             }));
+            if (window.confetti) window.confetti({ colors: ['#6366f1', '#a855f7'] });
         }
     };
 
