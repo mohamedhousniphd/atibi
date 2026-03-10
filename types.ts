@@ -41,9 +41,11 @@ export interface Debt {
 }
 
 export interface BackpayConfig {
-    isActive: boolean;
-    monthlyAmount: number;
-    startDate: string;
+  id: string;
+  monthlyAmount: number;
+  startDate: string;
+  endDate?: string;
+  description?: string;
 }
 
 export interface AppState {
@@ -53,7 +55,7 @@ export interface AppState {
   currency: Currency;
   monthlyIncome: number;
   liquidAssets: number; // Freelance/Savings outside of monthly flow
-  backpay: BackpayConfig; // Replaces simple pendingAssets number
+  backpays: BackpayConfig[]; // Replaces single backpay config
   categories: Category[];
   debts: Debt[];
   transactions: Transaction[];

@@ -18,7 +18,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
-    const { language, currency, categories, liquidAssets, backpay, monthlyIncome, savingsGoals, debts, transactions, lastResetDate } = state;
+    const { language, currency, categories, liquidAssets, backpays, monthlyIncome, savingsGoals, debts, transactions, lastResetDate } = state;
     const t = TRANSLATIONS;
     const isRTL = language === 'ar';
 
@@ -41,11 +41,13 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const [newGoalName, setNewGoalName] = useState('');
     const [newGoalTarget, setNewGoalTarget] = useState('');
 
+    // Edit Goal State
+    const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
+    const [editGoalName, setEditGoalName] = useState('');
+    const [editGoalTarget, setEditGoalTarget] = useState('');
+
     // Quick Contribution State
     const [contributionAmounts, setContributionAmounts] = useState<{ [key: string]: string }>({});
-
-    // Edit Goal State
-    const [editGoalTarget, setEditGoalTarget] = useState('');
 
     // --- Check New Month ---
     useEffect(() => {
@@ -91,8 +93,8 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const totalOutstandingDebt = round(debts.reduce((acc, d) => acc + calculateDebtBalance(d), 0));
     const bankDeductions = round(debts.filter(d => d.deductionType === 'bank').reduce((acc, d) => acc + d.amount, 0));
 
-    // Income & Buffer Logic
-    const spendableIncome = round(monthlyIncome - bankDeductions);
+    // User requested full salary distribution (no debt subtraction)
+    const spendableIncome = round(monthlyIncome);
 
     const totalAllocated = round(categories.reduce((acc, cat) => acc + cat.limit, 0));
     const totalSpent = round(categories.reduce((acc, cat) => acc + cat.spent, 0));
@@ -124,24 +126,36 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
     // Backpay Logic
     let pendingBackpay = 0;
-    if (backpay && backpay.isActive && backpay.startDate) {
+    let totalMonthlyBackpay = 0;
+
+    if (backpays && backpays.length > 0) {
         const now = new Date();
-        const startD = new Date(backpay.startDate);
-        if (!isNaN(startD.getTime())) {
-            let months = (now.getFullYear() - startD.getFullYear()) * 12;
-            months -= startD.getMonth();
-            months += now.getMonth();
-            months = Math.max(0, months + 1);
-            pendingBackpay = round(months * backpay.monthlyAmount);
-        }
+        backpays.forEach(bp => {
+            const startD = new Date(bp.startDate);
+            const endD = bp.endDate ? new Date(bp.endDate) : now;
+
+            // Cap end date to 'now' for pending calculations
+            const effectiveEndD = endD < now ? endD : now;
+
+            if (!isNaN(startD.getTime())) {
+                let months = (effectiveEndD.getFullYear() - startD.getFullYear()) * 12;
+                months -= startD.getMonth();
+                months += effectiveEndD.getMonth();
+                months = Math.max(0, months + 1);
+
+                pendingBackpay += round(months * bp.monthlyAmount);
+                if (endD >= now) {
+                    totalMonthlyBackpay += bp.monthlyAmount;
+                }
+            }
+        });
     }
 
     // --- Projection Graph Data ---
     const generateProjectionData = () => {
         const data = [];
         let currentInvestable = liquidAssets - emergencyFundTarget;
-        const backpayMonthly = backpay.isActive ? backpay.monthlyAmount : 0;
-        const monthlyGrowth = round(actualBuffer + backpayMonthly);
+        const monthlyGrowth = round(actualBuffer + totalMonthlyBackpay);
 
         for (let i = 0; i <= 12; i++) {
             data.push({
@@ -186,7 +200,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
     const claimBackpay = () => {
         if (pendingBackpay > 0) {
-            const newSalary = round(monthlyIncome + backpay.monthlyAmount);
+            const newSalary = round(monthlyIncome + totalMonthlyBackpay);
             if (confirm(`${t.claim[language]} ${formatMoney(pendingBackpay)} ${currency}?\n\nIMPORTANT: This will:\n1. Update Net Salary to ${formatMoney(newSalary)} ${currency}\n2. Recalculate budget limits (30/40/10/10/10)\n3. Stop the backpay tracker`)) {
                 const updatedCategories = categories.map(cat => {
                     let ratio = 0.10;
@@ -203,7 +217,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                     liquidAssets: round(prev.liquidAssets + pendingBackpay),
                     monthlyIncome: newSalary,
                     categories: updatedCategories,
-                    backpay: { ...prev.backpay, isActive: false },
+                    backpays: [], // Reset all rappels once claimed
                     transactions: [{
                         id: Date.now().toString(),
                         amount: pendingBackpay,
@@ -422,9 +436,32 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
         }
     };
 
+    const handleSaveEditGoal = (e: React.FormEvent) => {
+        e.preventDefault();
+        const target = parseAmount(editGoalTarget);
+        if (editingGoal && editGoalName && target > 0) {
+            setState(prev => ({
+                ...prev,
+                savingsGoals: prev.savingsGoals.map(g =>
+                    g.id === editingGoal.id ? { ...g, name: editGoalName, targetAmount: target } : g
+                )
+            }));
+            setShowModal(null);
+            setEditingGoal(null);
+        }
+    };
+
+    const startEditGoal = (goal: SavingsGoal) => {
+        setEditingGoal(goal);
+        setEditGoalName(goal.name);
+        setEditGoalTarget(goal.targetAmount.toString());
+        setShowModal('edit_goal');
+    };
+
     const monthsToGoal = (target: number, current: number) => {
-        // Use savings allocation (10% of spendable income) for estimation
-        const savingsAllocation = categories.find(c => c.id === 'c4')?.limit || (spendableIncome * 0.10);
+        // Use savings allocation (10% of spendable income) or fallback to 10% of monthlyIncome
+        const savingsCat = categories.find(c => c.id === 'c4');
+        const savingsAllocation = savingsCat ? savingsCat.limit : (monthlyIncome * 0.10);
         if (savingsAllocation <= 0) return t.noCashFlow[language];
         const needed = round(target - current);
         if (needed <= 0) return t.done[language];
@@ -737,12 +774,20 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-mono text-primary">{formatMoney(goal.currentAmount)} / {formatMoney(goal.targetAmount)}</span>
-                                        <button onClick={() => { setSelectedGoal(goal); setEditGoalTarget(goal.targetAmount.toString()); setShowModal('edit_goal'); }} className="text-muted-foreground hover:text-primary p-1">
-                                            <Edit2 size={12} />
+                                        {isCompleted ? (
+                                            <span className="font-mono text-sm font-bold text-emerald-500">
+                                                {t.done[language]}
+                                            </span>
+                                        ) : (
+                                            <span className="font-mono text-sm font-bold text-foreground">
+                                                {formatMoney(goal.currentAmount)} <span className="text-muted-foreground text-[10px] uppercase font-sans">/ {formatMoney(goal.targetAmount)} {currency}</span>
+                                            </span>
+                                        )}
+                                        <button onClick={() => startEditGoal(goal)} className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg transition-colors">
+                                            <Edit2 size={16} />
                                         </button>
-                                        <button onClick={() => deleteGoal(goal)} className="text-muted-foreground hover:text-destructive p-1">
-                                            <Trash2 size={12} />
+                                        <button onClick={() => deleteGoal(goal)} className="p-1.5 text-destructive/70 hover:bg-destructive/10 rounded-lg transition-colors">
+                                            <Trash2 size={16} />
                                         </button>
                                     </div>
                                 </div>
@@ -1021,10 +1066,9 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                         </div>
                                     </form>
                                 </>
-                            ) : showModal === 'edit_goal' && selectedGoal ? (
+                            ) : showModal === 'edit_goal' && editingGoal ? (
                                 <div className="space-y-4">
                                     <h3 className="text-xl font-bold text-foreground">{t.editGoal[language]}</h3>
-                                    <p className="text-sm text-muted-foreground">{selectedGoal.name}</p>
                                     <div className="relative">
                                         <input
                                             type="text"
@@ -1145,9 +1189,10 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                             )}
                         </motion.div>
                     </div>
-                )}
-            </AnimatePresence>
-        </div>
+                )
+                }
+            </AnimatePresence >
+        </div >
     );
 };
 

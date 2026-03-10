@@ -6,9 +6,10 @@ import { DEFAULT_STATE, TRANSLATIONS } from '../constants';
 interface SettingsProps {
     state: AppState;
     setState: React.Dispatch<React.SetStateAction<AppState>>;
+    goToDashboard?: () => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ state, setState }) => {
+const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) => {
     const { language, monthlyIncome, currency, debts, theme } = state;
     const t = TRANSLATIONS;
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,8 +81,7 @@ const Settings: React.FC<SettingsProps> = ({ state, setState }) => {
 
     const handleRecalculateBudgets = () => {
         if (confirm("This will reset your category limits based on the 30/40/10/10/10 rule using your spendable income (after bank deductions). Continue?")) {
-            const bankDeductions = state.debts.filter(d => d.deductionType === 'bank').reduce((acc, d) => acc + d.amount, 0);
-            const spendable = state.monthlyIncome - bankDeductions;
+            const spendable = state.monthlyIncome;
             const updatedCategories = state.categories.map(cat => {
                 let ratio = 0.10;
                 if (cat.id === 'c1') ratio = 0.30; // Fixed
@@ -101,12 +101,14 @@ const Settings: React.FC<SettingsProps> = ({ state, setState }) => {
     const handleLoadPlan = () => {
         if (confirm("Reset to default plan?")) {
             setState({ ...DEFAULT_STATE, language: state.language, hasCompletedOnboarding: true });
+            if (goToDashboard) goToDashboard();
         }
     };
 
     const handleFullReset = () => {
         if (confirm(t.resetEverythingConfirm[language])) {
             setState({ ...DEFAULT_STATE, language: state.language, theme: state.theme });
+            if (goToDashboard) goToDashboard();
         }
     };
 

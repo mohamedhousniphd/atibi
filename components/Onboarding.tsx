@@ -84,9 +84,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ state, setState }) => {
         const incomeVal = parseFloat(income) || 0;
         const assetsVal = parseFloat(assets) || 0;
 
-        // Calculate spendable income (after bank deductions)
-        const bankDeductions = tempDebts.filter(d => d.deductionType === 'bank').reduce((acc, d) => acc + d.amount, 0);
-        const spendable = incomeVal - bankDeductions;
+        // Based on user feedback: do not subtract bank debts, distribute over full salary
+        const spendable = incomeVal;
 
         // 30% Fixed, 40% Needs, 10% Wants, 10% Savings, 10% Emergency of SPENDABLE income
         const updatedCategories = state.categories.map(cat => {

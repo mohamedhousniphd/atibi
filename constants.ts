@@ -10,7 +10,7 @@ export const DEFAULT_STATE: AppState = {
   currency: 'MAD',
   monthlyIncome: 10000,
   liquidAssets: 0,
-  backpay: { isActive: false, monthlyAmount: 0, startDate: '' },
+  backpays: [],
   lastResetDate: new Date().toISOString(),
   debts: [],
   categories: [
