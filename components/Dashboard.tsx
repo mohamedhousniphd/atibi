@@ -996,7 +996,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                             </button>
 
                             {showModal === 'category_detail' && selectedCategory ? (
-                                <div className="space-y-6 pt-2">
+                                <div className="space-y-6">
                                     <div className="flex justify-between items-start">
                                         <div className="flex items-center gap-4">
                                             <div className="p-3 bg-primary/10 rounded-2xl text-primary">

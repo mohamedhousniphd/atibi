@@ -330,6 +330,9 @@ export const TRANSLATIONS: Translation = {
   autoIncrement: { en: 'Auto-increment monthly', fr: 'Incrémentation mensuelle', ar: 'زيادة تلقائية شهرياً' },
   trackingInfo: { en: 'Currently tracking', fr: 'Suivi actuel', ar: 'قيد التتبع حالياً' },
   perMonth: { en: '/ month since', fr: '/ mois depuis', ar: '/ شهر منذ' },
+  limit: { en: 'Budget Limit', fr: 'Plafond du Budget', ar: 'سقف الميزانية' },
+  targetAmount: { en: 'Target Amount', fr: 'Montant de l\'Objectif', ar: 'المبلغ المستهدف' },
+  quickAdd: { en: 'Quick Add', fr: 'Ajout Rapide', ar: 'إضافة سريعة' },
   date: { en: 'Date', fr: 'Date', ar: 'التاريخ' }
 };
 
