@@ -90,11 +90,12 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     };
 
     // --- Core Calculations ---
+    const totalWeeklyDebt = debts.reduce((acc, d) => acc + d.amount, 0); // This is monthly debt based on previous context, user called it monthly debt
+    const totalMonthlyDebt = round(debts.reduce((acc, d) => acc + d.amount, 0));
     const totalOutstandingDebt = round(debts.reduce((acc, d) => acc + calculateDebtBalance(d), 0));
-    const bankDeductions = round(debts.filter(d => d.deductionType === 'bank').reduce((acc, d) => acc + d.amount, 0));
 
-    // User requested full salary distribution (no debt subtraction)
-    const spendableIncome = round(monthlyIncome);
+    // User requested full salary - debt distribution
+    const spendableIncome = round(Math.max(0, monthlyIncome - totalMonthlyDebt));
 
     const totalAllocated = round(categories.reduce((acc, cat) => acc + cat.limit, 0));
     const totalSpent = round(categories.reduce((acc, cat) => acc + cat.spent, 0));
@@ -198,42 +199,42 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
         if (window.confetti) window.confetti({ colors: ['#6366f1', '#a855f7'] });
     };
 
-    const claimBackpay = () => {
-        if (pendingBackpay > 0) {
-            // Find active backpays (no end date) to add to the new permanent salary
-            const activeBackpaysSum = backpays
-                .filter(bp => !bp.endDate)
-                .reduce((acc, bp) => acc + bp.monthlyAmount, 0);
+    const claimBackpay = (bpId: string) => {
+        const bp = (backpays || []).find(b => b.id === bpId);
+        if (!bp) return;
 
-            const newSalary = round(monthlyIncome + activeBackpaysSum);
+        const startD = new Date(bp.startDate);
+        const endD = bp.endDate ? new Date(bp.endDate) : new Date();
 
-            if (confirm(`${t.claim[language]} ${formatMoney(pendingBackpay)} ${currency}?\n\nIMPORTANT: This will:\n1. Update Net Salary to ${formatMoney(newSalary)} ${currency}\n2. Recalculate budget limits (30/40/10/10/10)\n3. Stop the backpay tracker`)) {
-                const updatedCategories = categories.map(cat => {
-                    let ratio = 0.10;
-                    if (cat.id === 'c1') ratio = 0.30;
-                    else if (cat.id === 'c2') ratio = 0.40;
-                    else if (cat.id === 'c3') ratio = 0.10;
-                    else if (cat.id === 'c4') ratio = 0.10;
-                    else if (cat.id === 'c5') ratio = 0.10;
-                    return { ...cat, limit: round(newSalary * ratio) };
-                });
+        if (isNaN(startD.getTime())) return;
 
-                setState(prev => ({
+        let months = (endD.getFullYear() - startD.getFullYear()) * 12;
+        months -= startD.getMonth();
+        months += endD.getMonth();
+        months = Math.max(0, months + 1);
+
+        const totalToClaim = round(months * bp.monthlyAmount);
+
+        if (confirm(`Claim ${formatMoney(totalToClaim)} ${currency} for "${bp.description || 'Rappel'}"?`)) {
+            setState(prev => {
+                const isPermanent = !bp.endDate;
+                const newSalary = isPermanent ? round(prev.monthlyIncome + bp.monthlyAmount) : prev.monthlyIncome;
+
+                return {
                     ...prev,
-                    liquidAssets: round(prev.liquidAssets + pendingBackpay),
                     monthlyIncome: newSalary,
-                    categories: updatedCategories,
-                    backpays: [], // Reset all rappels once claimed
+                    liquidAssets: round(prev.liquidAssets + totalToClaim),
+                    backpays: (prev.backpays || []).filter(b => b.id !== bpId),
                     transactions: [{
                         id: Date.now().toString(),
-                        amount: pendingBackpay,
-                        description: t.claimed[language] + ' (Rappel)',
+                        amount: totalToClaim,
+                        description: `${t.claimed[language]}: ${bp.description || 'Rappel'}`,
                         type: 'income',
                         date: new Date().toISOString()
-                    }, ...prev.transactions]
-                }));
-                if (window.confetti) window.confetti();
-            }
+                    }, ...Array.from(prev.transactions || [])]
+                };
+            });
+            if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
     };
 
@@ -411,66 +412,77 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     };
 
     const handleContributeSavings = (goalId: string) => {
-        const goalEntry = contributionAmounts[goalId] || '0';
-        const val = parseAmount(goalEntry);
+        try {
+            const goalEntry = contributionAmounts[goalId] || '0';
+            const val = parseAmount(goalEntry);
 
-        if (val <= 0) return;
+            if (val <= 0) return;
 
-        // Safety: ensure liquidAssets is a number
-        const currentAssets = typeof liquidAssets === 'number' ? liquidAssets : 0;
+            // Safety: ensure liquidAssets is a number
+            const currentAssets = typeof liquidAssets === 'number' ? liquidAssets : 0;
 
-        if (val > currentAssets) {
-            alert(t.insufficientFunds[language]);
-            return;
-        }
-
-        if (window.confetti) {
-            try {
-                window.confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                    colors: ['#10b981', '#eab308', '#3b82f6']
-                });
-            } catch (e) {
-                console.error("Confetti error", e);
+            if (val > currentAssets) {
+                alert(t.insufficientFunds[language]);
+                return;
             }
-        }
 
-        setState(prev => {
-            if (!prev) return prev;
+            if (window.confetti) {
+                try {
+                    window.confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#10b981', '#eab308', '#3b82f6']
+                    });
+                } catch (e) {
+                    console.error("Confetti error", e);
+                }
+            }
 
-            // Deep copy and safety initialization
-            const goals = Array.isArray(prev.savingsGoals) ? prev.savingsGoals : [];
-            const goal = goals.find(g => g.id === goalId);
-            const goalName = goal ? goal.name : 'Goal';
+            setState(prev => {
+                if (!prev) return prev;
 
-            const prevTx = Array.isArray(prev.transactions) ? prev.transactions : [];
-            const prevAssets = typeof prev.liquidAssets === 'number' ? prev.liquidAssets : 0;
+                // Deep copy and safety initialization
+                const goals = Array.isArray(prev.savingsGoals) ? prev.savingsGoals : [];
+                const goalIndex = goals.findIndex(g => g.id === goalId);
+                const goal = goalIndex > -1 ? goals[goalIndex] : null;
+                const goalName = goal ? goal.name : 'Goal';
 
-            return {
-                ...prev,
-                liquidAssets: round(prevAssets - val),
-                savingsGoals: goals.map(g =>
+                const prevTx = Array.isArray(prev.transactions) ? prev.transactions : [];
+                const prevAssets = typeof prev.liquidAssets === 'number' ? prev.liquidAssets : 0;
+
+                // Create updated goals array
+                const updatedGoals = goals.map(g =>
                     g.id === goalId ? { ...g, currentAmount: round((g.currentAmount || 0) + val) } : g
-                ),
-                transactions: [{
+                );
+
+                const newTransaction = {
                     id: Date.now().toString(),
                     amount: val,
                     description: `Deposit to ${goalName}`,
-                    type: 'expense',
+                    type: 'expense' as const,
                     excludeFromBudget: true,
                     date: new Date().toISOString(),
                     categoryId: 'c4'
-                }, ...prevTx]
-            };
-        });
+                };
 
-        setContributionAmounts(prev => {
-            const next = { ...prev };
-            delete next[goalId];
-            return next;
-        });
+                return {
+                    ...prev,
+                    liquidAssets: round(prevAssets - val),
+                    savingsGoals: updatedGoals,
+                    transactions: [newTransaction, ...prevTx]
+                };
+            });
+
+            setContributionAmounts(prev => {
+                const next = { ...prev };
+                delete next[goalId];
+                return next;
+            });
+        } catch (err) {
+            console.error("Critical error in handleContributeSavings:", err);
+            alert("An error occurred while processing the deposit. Please try again.");
+        }
     };
 
     const deleteGoal = (goal: SavingsGoal) => {
@@ -661,26 +673,62 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
             </section>
 
             {/* 4. PENDING ASSETS (BACKPAY) */}
-            {pendingBackpay > 0 && (
+            {(backpays || []).length > 0 && (
                 <motion.div
-                    initial={{ scale: 0.98 }}
-                    animate={{ scale: 1 }}
-                    className="bg-accent/10 border border-accent/30 p-5 rounded-2xl flex items-center justify-between shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-card p-6 rounded-3xl shadow-sm border border-border"
                 >
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-accent/20 rounded-xl text-accent-foreground">
-                            <Briefcase size={22} />
-                        </div>
+                    <div className="flex justify-between items-start mb-6">
                         <div>
-                            <div className="text-xs font-bold text-accent-foreground uppercase">{t.pendingAssets[language]}</div>
-                            <div className="text-xs text-muted-foreground">{t.accruing[language]}</div>
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <Coins className="text-amber-500" />
+                                {t.pendingAssets[language]}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">{t.accruing[language]}</p>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <div className="text-xl font-mono font-bold text-foreground">
-                            {formatMoney(pendingBackpay)} <span className="text-xs text-muted-foreground">{currency}</span>
-                        </div>
-                        <button onClick={claimBackpay} className="text-[10px] font-bold text-primary hover:underline mt-1">{t.claim[language]}</button>
+
+                    <div className="space-y-4">
+                        {(backpays || []).map(bp => {
+                            const startD = new Date(bp.startDate);
+                            const endD = bp.endDate ? new Date(bp.endDate) : new Date();
+                            let months = 0;
+                            if (!isNaN(startD.getTime())) {
+                                months = (endD.getFullYear() - startD.getFullYear()) * 12;
+                                months -= startD.getMonth();
+                                months += endD.getMonth();
+                                months = Math.max(0, months + 1);
+                            }
+                            const currentTotal = round(months * bp.monthlyAmount);
+
+                            return (
+                                <div key={bp.id} className="p-4 bg-muted/20 rounded-2xl border border-border/50 group">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <div className="font-bold text-sm group-hover:text-primary transition-colors">{bp.description || 'Rappel'}</div>
+                                            <div className="text-[10px] text-muted-foreground mt-0.5">{bp.startDate} {bp.endDate ? `→ ${bp.endDate}` : '→ Now'}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs text-muted-foreground uppercase font-bold tracking-wider">{months} Months</div>
+                                            <div className="font-mono font-bold text-primary">+{formatMoney(bp.monthlyAmount)}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 pt-3 border-t border-border/40">
+                                        <div className="flex-1">
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Accumulated</div>
+                                            <div className="font-mono font-bold text-accent-foreground">{formatMoney(currentTotal)} {currency}</div>
+                                        </div>
+                                        <button
+                                            onClick={() => claimBackpay(bp.id)}
+                                            className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95"
+                                        >
+                                            {t.claim[language]}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </motion.div>
             )}
@@ -721,11 +769,15 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                     <div className="flex-1 space-y-3">
                         <div className="flex justify-between items-center p-2 bg-emerald-500/5 rounded-lg border border-emerald-500/10">
                             <span className="text-xs font-bold text-emerald-600 flex items-center gap-1"><TrendingUp size={12} /> {t.income[language]}</span>
-                            <span className="font-mono font-bold text-sm">{formatMoney(spendableIncome)}</span>
+                            <span className="font-mono font-bold text-sm">{formatMoney(monthlyIncome)}</span>
                         </div>
                         <div className="flex justify-between items-center p-2 bg-red-500/5 rounded-lg border border-red-500/10">
                             <span className="text-xs font-bold text-red-600 flex items-center gap-1"><TrendingDown size={12} /> {t.outflow[language]}</span>
                             <span className="font-mono font-bold text-sm">{formatMoney(totalSpent)}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-destructive/5 rounded-lg border border-destructive/10">
+                            <span className="text-xs font-bold text-destructive flex items-center gap-1"><Trash2 size={12} /> {t.totalDebt[language]}</span>
+                            <span className="font-mono font-bold text-sm">{formatMoney(totalMonthlyDebt)}</span>
                         </div>
                     </div>
                 </div>
@@ -736,12 +788,6 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 {categories.map((cat) => {
                     const percentSpent = cat.limit > 0 ? Math.min((cat.spent / cat.limit) * 100, 100) : (cat.spent > 0 ? 100 : 0);
                     const allocationPercent = spendableIncome > 0 ? (cat.limit / spendableIncome) * 100 : 0;
-
-                    // Visualize Bank Deductions in Fixed Category
-                    const isFixed = cat.type === 'fixed';
-                    const committed = isFixed ? bankDeductions : 0;
-                    const visualSpent = cat.spent + committed;
-                    const visualPercent = cat.limit > 0 ? Math.min((visualSpent / cat.limit) * 100, 100) : 0;
 
                     return (
                         <div key={cat.id} className="group bg-card p-5 rounded-xl border border-border shadow-sm hover:border-primary/50 transition-all cursor-pointer relative overflow-hidden"
@@ -756,37 +802,19 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                         <div className="font-bold text-base">{CATEGORY_NAMES[cat.id]?.[language] || cat.name}</div>
                                         <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                                             <Coins size={10} />
-                                            {t.allocation[language]}: <span className="text-foreground font-mono font-bold">{allocationPercent.toFixed(1)}%</span>
+                                            Target: <span className="text-foreground font-mono font-bold">{cat.id === 'c1' ? '30.0' : cat.id === 'c2' ? '40.0' : '10.0'}%</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <div className="font-bold font-mono text-lg text-foreground">
-                                        {isFixed && committed > 0 ? (
-                                            <div className="flex flex-col items-end">
-                                                <span>{formatMoney(cat.spent)}</span>
-                                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                                    + {formatMoney(committed)} ({t.debt[language]})
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            formatMoney(cat.spent)
-                                        )}
+                                        {formatMoney(cat.spent)}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground font-mono">/ {formatMoney(cat.limit)} {currency}</div>
                                 </div>
                             </div>
 
-                            <div className="relative h-2 bg-secondary rounded-full overflow-hidden flex">
-                                {/* Debt Portion (Gray) */}
-                                {isFixed && committed > 0 && (
-                                    <motion.div
-                                        className="h-full bg-muted-foreground/30"
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.min((committed / cat.limit) * 100, 100)}%` }}
-                                    />
-                                )}
-                                {/* Spending Portion (Color) */}
+                            <div className="relative h-2 bg-secondary rounded-full overflow-hidden">
                                 <motion.div
                                     className={`h-full ${percentSpent > 90 ? 'bg-destructive' : (percentSpent > 75 ? 'bg-amber-500' : 'bg-primary')}`}
                                     initial={{ width: 0 }}
@@ -875,7 +903,6 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                         </button>
                                     )}
 
-                                    {/* SPEND BUTTON */}
                                     {goal.currentAmount > 0 && (
                                         <button
                                             onClick={() => { setSelectedGoal(goal); setShowModal('spend_goal'); }}
@@ -899,7 +926,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                     <h2 className="text-lg font-bold">{t.history[language]}</h2>
                 </div>
                 <div className="space-y-2">
-                    {transactions.slice(0, 5).map(tx => (
+                    {(transactions || []).slice(0, 5).map(tx => (
                         <div key={tx.id} className="bg-card p-3 rounded-xl border border-border shadow-sm flex justify-between items-center group relative overflow-hidden">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-full ${tx.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : (tx.excludeFromBudget ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-500')}`}>
@@ -934,317 +961,265 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                             </div>
                         </div>
                     ))}
-                    {transactions.length === 0 && (
-                        <div className="text-center py-8 text-sm text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border">
-                            {t.noTransactions[language]}
-                        </div>
-                    )}
                 </div>
             </section>
-
             {/* MODALS */}
             <AnimatePresence>
                 {showModal && (
-                    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                         <motion.div
-                            initial={{ y: "100%", opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: "100%", opacity: 0 }}
-                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="bg-card w-full max-w-md rounded-2xl border border-border p-6 shadow-2xl relative max-h-[85vh] overflow-y-auto"
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-card w-full max-w-md p-6 rounded-3xl shadow-2xl border border-border relative overflow-y-auto max-h-[90vh]"
                         >
-                            <button onClick={() => setShowModal(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground z-10">
+                            <button onClick={() => { setShowModal(null); setAmount(''); }} className="absolute right-4 top-4 p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors z-10">
                                 <X size={20} />
                             </button>
 
-                            {showModal === 'insufficient_funds' ? (
-                                <div className="text-center space-y-4 py-4">
-                                    <div className="mx-auto w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center">
-                                        <AlertTriangle size={32} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-destructive">{t.insufficientFunds[language]}</h3>
-                                        <p className="text-sm text-muted-foreground mt-2 px-4">{t.insufficientDesc[language]}</p>
+                            {showModal === 'category_detail' && selectedCategory ? (
+                                <div className="space-y-6 pt-2">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                                                {getIcon(selectedCategory.icon)}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-foreground">{CATEGORY_NAMES[selectedCategory.id]?.[language] || selectedCategory.name}</h3>
+                                                <div className="text-xs text-muted-foreground font-mono">
+                                                    {formatMoney(selectedCategory.spent)} / {formatMoney(selectedCategory.limit)} {currency}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="pt-4 space-y-3">
-                                        <p className="text-xs font-bold uppercase text-muted-foreground">{t.sourceQuestion[language]}</p>
-                                        <button
-                                            onClick={() => { setShowModal('income'); }}
-                                            className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold"
-                                        >
-                                            {t.isIncome[language]}
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                alert("Please add this as a new Debt in Settings > Debts.");
-                                                setShowModal(null);
-                                            }}
-                                            className="w-full py-3 bg-destructive hover:bg-destructive/90 text-white rounded-xl font-bold"
-                                        >
-                                            {t.isDebt[language]}
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : showModal === 'category_detail' && selectedCategory ? (
-                                <div className="space-y-6">
-                                    <div className="text-center space-y-1">
-                                        <h3 className="text-2xl font-bold">{CATEGORY_NAMES[selectedCategory.id]?.[language] || selectedCategory.name}</h3>
-                                        <div className="text-muted-foreground text-sm flex items-center justify-center gap-2">
-                                            <span>{t.spentLabel[language]}: <span className="font-mono font-bold text-foreground">{formatMoney(selectedCategory.spent)}</span> / </span>
-                                            {isEditingLimit ? (
-                                                <div className="flex items-center gap-2">
+                                    <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-sm font-bold text-muted-foreground uppercase">{t.limit[language]}</span>
+                                            <button onClick={() => { setIsEditingLimit(!isEditingLimit); setTempLimit(selectedCategory.limit.toString()); }} className="text-xs font-bold text-primary hover:underline">
+                                                {isEditingLimit ? t.cancel[language] : t.edit[language]}
+                                            </button>
+                                        </div>
+                                        {isEditingLimit ? (
+                                            <div className="space-y-3">
+                                                <div className="relative">
                                                     <input
-                                                        autoFocus
-                                                        type="number"
+                                                        type="text"
                                                         inputMode="decimal"
                                                         value={tempLimit}
-                                                        onChange={(e) => setTempLimit(e.target.value)}
-                                                        className="w-20 bg-background border border-primary rounded px-2 py-0.5 text-center font-mono font-bold text-foreground outline-none"
+                                                        onChange={(e) => handleAmountChange(e.target.value, setTempLimit)}
+                                                        className="w-full bg-background border border-input rounded-xl p-3 outline-none focus:border-primary font-mono"
+                                                        autoFocus
                                                     />
-                                                    <button onClick={updateCategoryLimit} className="p-1 bg-primary text-primary-foreground rounded-full"><Save size={14} /></button>
+                                                    <span className="absolute right-3 top-3 text-sm text-muted-foreground font-bold">{currency}</span>
                                                 </div>
-                                            ) : (
-                                                <button onClick={() => { setTempLimit(selectedCategory.limit.toString()); setIsEditingLimit(true); }} className="flex items-center gap-1 hover:bg-muted/50 px-2 py-0.5 rounded transition-colors group">
-                                                    <span className="font-mono font-bold text-foreground">{formatMoney(selectedCategory.limit)}</span>
-                                                    <Edit2 size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                {limitError && <p className="text-xs text-destructive font-bold">{limitError}</p>}
+                                                <button onClick={updateCategoryLimit} className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20">
+                                                    {t.save[language]}
                                                 </button>
-                                            )}
-                                            <span>{currency}</span>
-                                        </div>
-                                        <div className="text-sm mt-2 p-2 bg-muted/30 rounded-lg inline-block">
-                                            {t.remaining?.[language] || 'Remaining'}: <span className={`font-mono font-bold ${selectedCategory.limit - selectedCategory.spent < 0 ? 'text-destructive' : 'text-emerald-500'}`}>{formatMoney(selectedCategory.limit - selectedCategory.spent)}</span> {currency}
-                                        </div>
-                                        {limitError && (
-                                            <div className="text-[10px] text-destructive font-bold bg-destructive/10 p-2 rounded mt-2 animate-pulse">
-                                                {limitError}
+                                            </div>
+                                        ) : (
+                                            <div className="text-2xl font-mono font-bold text-foreground">
+                                                {formatMoney(selectedCategory.limit)} <span className="text-sm text-muted-foreground">{currency}</span>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Transactions List */}
-                                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide sticky top-0 bg-card py-1">{t.recentEntries[language]}</h4>
-                                        {categoryTransactions.length > 0 ? categoryTransactions.map(tx => (
-                                            <div key={tx.id} className="flex justify-between items-center p-2 bg-muted/20 rounded-lg border border-border/50 text-sm group">
-                                                <div className="flex-1">
-                                                    <div className="font-medium">{tx.description}</div>
-                                                    <div className="text-[10px] text-muted-foreground">{new Date(tx.date).toLocaleDateString()}</div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-mono font-bold text-destructive">-{formatMoney(tx.amount)}</span>
-                                                    <button onClick={() => deleteTransaction(tx.id)} className="text-muted-foreground hover:text-destructive p-1"><Trash2 size={14} /></button>
-                                                </div>
-                                            </div>
-                                        )) : <div className="text-xs text-muted-foreground italic text-center py-2">{t.noExpensesYet[language]}</div>}
+                                    <div className="space-y-3">
+                                        <h4 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
+                                            <Zap size={14} className="text-amber-500" /> {t.quickAdd[language]}
+                                        </h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {[10, 20, 50, 100].map(val => (
+                                                <button key={val} onClick={() => { setAmount(val.toString()); }} className="px-4 py-2 bg-secondary/50 hover:bg-primary hover:text-primary-foreground rounded-xl text-sm font-bold border border-border transition-all">
+                                                    +{val}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
 
-                                    {/* Add Expense Form Inline */}
-                                    <form onSubmit={handleTransaction} className="pt-4 border-t border-border">
-                                        <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Plus size={16} /> {t.addNewExpense[language]}</h4>
-                                        <div className="space-y-3">
-                                            <div className="relative">
-                                                <input
-                                                    type="number"
-                                                    inputMode="decimal"
-                                                    value={amount}
-                                                    onChange={(e) => handleAmountChange(e.target.value, setAmount)}
-                                                    placeholder="0"
-                                                    className="w-full bg-background border border-input rounded-lg p-3 pl-4 text-lg font-bold outline-none focus:border-primary font-mono text-foreground"
-                                                />
-                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">{currency}</span>
-                                            </div>
-
-                                            {selectedCategory.tags && (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {selectedCategory.tags.map(tag => (
-                                                        <button
-                                                            key={tag}
-                                                            type="button"
-                                                            onClick={() => setDescription(tag)}
-                                                            className={`text-[10px] px-2.5 py-1 rounded-full border transition-all ${description === tag ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-input text-muted-foreground hover:border-primary'}`}
-                                                        >
-                                                            {tag}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="date"
-                                                    value={transactionDate}
-                                                    onChange={(e) => setTransactionDate(e.target.value)}
-                                                    className="w-1/3 bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={description}
-                                                    onChange={(e) => setDescription(e.target.value)}
-                                                    placeholder={t.description[language]}
-                                                    className="flex-1 bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
-                                                />
-                                                <button type="submit" className="bg-primary text-primary-foreground rounded-lg px-4 font-bold shadow-lg shadow-primary/20">
-                                                    <Check size={20} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            ) : showModal === 'goal' ? (
-                                <>
-                                    <h3 className="text-xl font-bold mb-4 text-foreground">{t.addGoal[language]}</h3>
-                                    <form onSubmit={handleAddGoal} className="space-y-4">
-                                        <input
-                                            placeholder={t.name[language]}
-                                            value={newGoalName}
-                                            onChange={e => setNewGoalName(e.target.value)}
-                                            className="w-full bg-background border border-input rounded-lg p-3 outline-none text-foreground"
-                                        />
+                                    <form onSubmit={handleTransaction} className="space-y-4 pt-4 border-t border-border/50">
                                         <div className="relative">
                                             <input
                                                 type="text"
                                                 inputMode="decimal"
-                                                placeholder={t.target[language]}
-                                                value={newGoalTarget}
-                                                onChange={e => handleAmountChange(e.target.value, setNewGoalTarget)}
-                                                className="w-full bg-background border border-input rounded-lg p-3 outline-none text-foreground"
+                                                placeholder="0.00"
+                                                value={amount}
+                                                onChange={(e) => handleAmountChange(e.target.value, setAmount)}
+                                                className="w-full bg-transparent border-b-2 border-border focus:border-primary p-2 text-3xl font-bold text-center focus:outline-none text-foreground placeholder-muted font-mono"
                                             />
-                                            <span className="absolute right-3 top-3 text-muted-foreground text-sm font-bold">{currency}</span>
+                                            <span className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currency}</span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4 mt-4">
-                                            <button type="button" onClick={() => setShowModal(null)} className="py-3 rounded-xl bg-muted font-bold text-muted-foreground">{t.cancel[language]}</button>
-                                            <button type="submit" className="py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20">{t.save[language]}</button>
-                                        </div>
-                                    </form>
-                                </>
-                            ) : showModal === 'edit_goal' && editingGoal ? (
-                                <div className="space-y-4">
-                                    <h3 className="text-xl font-bold text-foreground">{t.editGoal[language]}</h3>
-                                    <div className="relative">
                                         <input
                                             type="text"
-                                            inputMode="decimal"
-                                            placeholder={t.newTarget[language]}
-                                            value={editGoalTarget}
-                                            onChange={e => handleAmountChange(e.target.value, setEditGoalTarget)}
-                                            autoFocus
-                                            className="w-full bg-background border border-input rounded-lg p-3 outline-none text-foreground font-mono text-lg"
+                                            placeholder={t.descriptionOptional[language]}
+                                            value={description}
+                                            onChange={(e) => setDescription(e.target.value)}
+                                            className="w-full bg-background border border-input rounded-lg p-3 text-sm outline-none focus:border-primary text-foreground"
                                         />
-                                        <span className="absolute right-3 top-3 text-muted-foreground text-sm font-bold">{currency}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <button onClick={() => setShowModal(null)} className="py-3 rounded-xl bg-muted font-bold text-muted-foreground">{t.cancel[language]}</button>
-                                        <button onClick={() => {
-                                            const newTarget = parseAmount(editGoalTarget);
-                                            if (newTarget > 0 && selectedGoal) {
-                                                setState(prev => ({
-                                                    ...prev,
-                                                    savingsGoals: prev.savingsGoals.map(g => g.id === selectedGoal.id ? { ...g, targetAmount: newTarget } : g)
-                                                }));
-                                                setShowModal(null); setSelectedGoal(null);
-                                            }
-                                        }} className="py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20">{t.save[language]}</button>
-                                    </div>
+                                        <button type="submit" className="w-full py-4 bg-destructive text-white rounded-xl font-bold shadow-xl shadow-destructive/20 active:scale-[0.98] transition-all">
+                                            {t.addExpense[language]}
+                                        </button>
+                                    </form>
+                                </div>
+                            ) : showModal === 'goal' ? (
+                                <div className="space-y-6">
+                                    <h3 className="text-xl font-bold text-foreground">{t.addGoal[language]}</h3>
+                                    <form onSubmit={handleAddGoal} className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-muted-foreground uppercase">{t.name[language]}</label>
+                                            <input
+                                                placeholder="e.g. New Car, Vacation..."
+                                                value={newGoalName}
+                                                onChange={e => setNewGoalName(e.target.value)}
+                                                className="w-full bg-background border border-input rounded-xl p-3 outline-none focus:border-primary text-foreground font-medium"
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-muted-foreground uppercase">{t.targetAmount[language]}</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    placeholder="0.00"
+                                                    value={newGoalTarget}
+                                                    onChange={e => handleAmountChange(e.target.value, setNewGoalTarget)}
+                                                    className="w-full bg-background border border-input rounded-xl p-3 outline-none focus:border-primary text-foreground font-mono"
+                                                />
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currency}</span>
+                                            </div>
+                                        </div>
+                                        <button type="submit" className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold shadow-xl shadow-primary/20 mt-4 active:scale-[0.98] transition-all">
+                                            {t.save[language]}
+                                        </button>
+                                    </form>
+                                </div>
+                            ) : showModal === 'edit_goal' && editingGoal ? (
+                                <div className="space-y-6">
+                                    <h3 className="text-xl font-bold text-foreground">{t.editGoal[language]}</h3>
+                                    <form onSubmit={handleSaveEditGoal} className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-muted-foreground uppercase">{t.name[language]}</label>
+                                            <input
+                                                value={editGoalName}
+                                                onChange={e => setEditGoalName(e.target.value)}
+                                                className="w-full bg-background border border-input rounded-xl p-3 outline-none focus:border-primary text-foreground font-medium"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-muted-foreground uppercase">{t.targetAmount[language]}</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={editGoalTarget}
+                                                    onChange={e => handleAmountChange(e.target.value, setEditGoalTarget)}
+                                                    className="w-full bg-background border border-input rounded-xl p-3 outline-none focus:border-primary text-foreground font-mono"
+                                                />
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currency}</span>
+                                            </div>
+                                        </div>
+                                        <button type="submit" className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold shadow-xl shadow-primary/20 mt-4">
+                                            {t.save[language]}
+                                        </button>
+                                    </form>
                                 </div>
                             ) : showModal === 'spend_goal' && selectedGoal ? (
-                                <form onSubmit={handleTransaction}>
-                                    <div className="flex items-center gap-2 mb-4 text-muted-foreground">
-                                        <Wallet size={18} />
-                                        <span className="text-sm font-bold uppercase">{t.spendFromGoal[language]}</span>
+                                <form onSubmit={handleTransaction} className="space-y-6">
+                                    <div className="flex items-center gap-3 text-primary">
+                                        <ShoppingBag size={24} />
+                                        <h3 className="text-xl font-bold text-foreground">{t.spendFromGoal[language]}</h3>
                                     </div>
-                                    <h3 className="text-xl font-bold mb-2 text-foreground">
-                                        {t.spend[language]}: "{selectedGoal.name}"
-                                    </h3>
-                                    <p className="text-xs text-muted-foreground mb-6">
-                                        {t.spendFromGoalDesc[language]}
+                                    <p className="text-sm text-muted-foreground">
+                                        {t.spendFromGoalDesc[language]} <strong>"{selectedGoal.name}"</strong>.
                                     </p>
 
-                                    <div className="mb-6 relative">
-                                        <input
-                                            type="text"
-                                            inputMode="decimal"
-                                            value={amount}
-                                            onChange={(e) => handleAmountChange(e.target.value, setAmount)}
-                                            placeholder="0"
-                                            autoFocus
-                                            className="w-full bg-transparent border-b-2 border-border focus:border-primary p-2 text-4xl font-bold text-center focus:outline-none text-foreground placeholder-muted font-mono"
-                                        />
-                                        <span className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currency}</span>
-                                    </div>
-                                    <div className="mb-6">
+                                    <div className="space-y-4">
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                inputMode="decimal"
+                                                value={amount}
+                                                onChange={(e) => handleAmountChange(e.target.value, setAmount)}
+                                                placeholder="0.00"
+                                                autoFocus
+                                                className="w-full bg-transparent border-b-2 border-border focus:border-primary p-2 text-4xl font-bold text-center focus:outline-none text-foreground placeholder-muted font-mono"
+                                            />
+                                            <span className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currency}</span>
+                                        </div>
                                         <input
                                             type="text"
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
                                             placeholder={t.descriptionOptional[language]}
-                                            className="w-full bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
+                                            className="w-full bg-background border border-input rounded-xl p-3 text-sm focus:border-primary outline-none text-foreground"
                                         />
                                     </div>
-                                    <button type="submit" className="w-full py-3.5 rounded-xl font-bold shadow-lg transition-colors text-white bg-primary hover:bg-primary/90 shadow-primary/20">
+                                    <button type="submit" className="w-full py-4 rounded-xl font-bold shadow-lg transition-all text-white bg-primary hover:bg-primary/90 shadow-primary/20 active:scale-[0.98]">
                                         {t.confirmSpend[language]}
                                     </button>
                                 </form>
                             ) : (
-                                <form onSubmit={handleTransaction}>
-                                    <h3 className="text-xl font-bold mb-6 text-foreground">
-                                        {showModal === 'edit_transaction' ? t.edit[language] : (showModal === 'expense' ? t.addExpense[language] : t.manualAdd[language])}
+                                <form onSubmit={handleTransaction} className="space-y-6">
+                                    <h3 className="text-xl font-bold text-foreground">
+                                        {showModal === 'edit_transaction' ? t.edit[language] : (showModal === 'income' ? t.manualAdd[language] : t.addExpense[language])}
                                     </h3>
-                                    <div className="mb-6 relative">
-                                        <input
-                                            type="text"
-                                            inputMode="decimal"
-                                            value={amount}
-                                            onChange={(e) => handleAmountChange(e.target.value, setAmount)}
-                                            placeholder="0"
-                                            autoFocus
-                                            className="w-full bg-transparent border-b-2 border-border focus:border-primary p-2 text-4xl font-bold text-center focus:outline-none text-foreground placeholder-muted font-mono"
-                                        />
-                                        <span className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currency}</span>
-                                    </div>
-
-                                    {showModal === 'expense' && selectedCategory?.tags && (
-                                        <div className="mb-4 flex flex-wrap gap-2">
-                                            {selectedCategory.tags.map(tag => (
-                                                <button
-                                                    key={tag}
-                                                    type="button"
-                                                    onClick={() => setDescription(tag)}
-                                                    className={`text-xs px-3 py-1.5 rounded-full border transition-all ${description === tag ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-input text-muted-foreground hover:border-primary'}`}
-                                                >
-                                                    {tag}
-                                                </button>
-                                            ))}
+                                    <div className="space-y-4">
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                inputMode="decimal"
+                                                value={amount}
+                                                onChange={(e) => handleAmountChange(e.target.value, setAmount)}
+                                                placeholder="0.00"
+                                                autoFocus
+                                                className="w-full bg-transparent border-b-2 border-border focus:border-primary p-2 text-4xl font-bold text-center focus:outline-none text-foreground placeholder-muted font-mono"
+                                            />
+                                            <span className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currency}</span>
                                         </div>
-                                    )}
 
-                                    <div className="mb-6 flex gap-2">
-                                        <input
-                                            type="date"
-                                            value={transactionDate}
-                                            onChange={(e) => setTransactionDate(e.target.value)}
-                                            className="w-1/3 bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={description}
-                                            onChange={(e) => setDescription(e.target.value)}
-                                            placeholder={t.description[language]}
-                                            className="flex-1 w-2/3 bg-background border border-input rounded-lg p-3 text-sm focus:border-primary outline-none text-foreground"
-                                        />
+                                        {showModal === 'expense' && selectedCategory?.tags && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedCategory.tags.map(tag => (
+                                                    <button
+                                                        key={tag}
+                                                        type="button"
+                                                        onClick={() => setDescription(tag)}
+                                                        className={`text-xs px-3 py-1.5 rounded-full border transition-all ${description === tag ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-input text-muted-foreground hover:border-primary'}`}
+                                                    >
+                                                        {tag}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="date"
+                                                value={transactionDate}
+                                                onChange={(e) => setTransactionDate(e.target.value)}
+                                                className="w-1/3 bg-background border border-input rounded-xl p-3 text-xs outline-none focus:border-primary text-foreground"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={description}
+                                                onChange={(e) => setDescription(e.target.value)}
+                                                placeholder={t.descriptionOptional[language]}
+                                                className="flex-1 w-2/3 bg-background border border-input rounded-xl p-3 text-sm outline-none focus:border-primary text-foreground"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <button type="button" onClick={() => { setShowModal(null); setAmount(''); }} className="py-3.5 rounded-xl bg-muted text-muted-foreground font-semibold hover:bg-muted/80 transition-colors">{t.cancel[language]}</button>
-                                        <button type="submit" className={`py-3.5 rounded-xl font-bold shadow-lg transition-colors text-white ${showModal === 'income' || showModal === 'edit_transaction' ? 'bg-primary hover:bg-primary/90 shadow-primary/20' : 'bg-destructive hover:bg-destructive/90 shadow-destructive/20'}`}>{t.confirm[language]}</button>
-                                    </div>
+                                    <button type="submit" className={`w-full py-4 rounded-xl font-bold shadow-lg transition-all text-white active:scale-[0.98] ${showModal === 'income' || showModal === 'edit_transaction' ? 'bg-primary hover:bg-primary/90 shadow-primary/20' : 'bg-destructive hover:bg-destructive/90 shadow-destructive/20'}`}>
+                                        {t.confirm[language]}
+                                    </button>
                                 </form>
                             )}
                         </motion.div>
                     </div>
-                )
-                }
-            </AnimatePresence >
-        </div >
+                )}
+            </AnimatePresence>
+        </div>
     );
 };
 
