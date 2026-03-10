@@ -236,8 +236,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ state, setState }) => {
                             key={debt.id}
                             className="bg-card border border-border p-3 rounded-xl flex flex-col gap-3 shadow-sm relative overflow-hidden"
                         >
-                            {/* Visual Indicator for Deduction Type */}
-                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${debt.deductionType === 'source' ? 'bg-primary' : 'bg-destructive'}`}></div>
+
 
                             <div className="flex justify-between items-start pl-2">
                                 <input value={debt.name} onChange={(e) => updateDebt(debt.id, 'name', e.target.value)} className="bg-transparent font-bold text-sm w-full outline-none text-foreground" placeholder={t.debtName[language]} />
@@ -247,12 +246,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ state, setState }) => {
                                 <input type="number" placeholder={t.amount[language]} value={debt.amount || ''} onChange={(e) => updateDebt(debt.id, 'amount', parseFloat(e.target.value))} className="bg-background border border-input rounded px-3 py-2 text-lg font-bold w-full outline-none font-mono focus:border-primary transition-colors text-foreground" />
                                 <span className="text-sm font-bold text-muted-foreground">{currency}</span>
                             </div>
-                            <div className="pl-2">
-                                <div className="flex rounded-lg overflow-hidden border border-border text-xs">
-                                    <button onClick={() => updateDebt(debt.id, 'deductionType', 'source')} className={`flex-1 py-1.5 transition-colors font-semibold ${debt.deductionType === 'source' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}>{t.sourceSalary[language]}</button>
-                                    <button onClick={() => updateDebt(debt.id, 'deductionType', 'bank')} className={`flex-1 py-1.5 transition-colors font-semibold ${debt.deductionType === 'bank' ? 'bg-destructive text-destructive-foreground' : 'bg-muted hover:bg-muted/80'}`}>{t.sourceBank[language]}</button>
-                                </div>
-                            </div>
+
                             <div className="relative pl-2">
                                 <input type="month" value={debt.endDate} onChange={(e) => updateDebt(debt.id, 'endDate', e.target.value)} className="w-full bg-background border border-input rounded text-xs px-2 py-2 outline-none font-mono text-foreground focus:border-primary" />
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-bold pointer-events-none uppercase">{t.endDate[language]}</span>

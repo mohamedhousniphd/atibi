@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calculator as CalculatorIcon, ArrowRight, Calendar, Edit2, CheckCircle2, Save } from 'lucide-react';
+import { Calculator as CalculatorIcon, ArrowRight, Calendar, Edit2, CheckCircle2, Save, Wrench } from 'lucide-react';
 import { AppState } from '../types';
 import { TRANSLATIONS } from '../constants';
 
@@ -117,19 +117,48 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
         }));
     };
 
+    // Calculate active backpay totals for display
+    const activeBackpays = backpays || [];
+    let displayTotalPending = 0;
+
+    if (activeBackpays.length > 0) {
+        const now = new Date();
+        activeBackpays.forEach(bp => {
+            const startD = new Date(bp.startDate);
+            const endD = bp.endDate ? new Date(bp.endDate) : now;
+            const effectiveEndD = endD < now ? endD : now;
+            if (!isNaN(startD.getTime())) {
+                let months = (effectiveEndD.getFullYear() - startD.getFullYear()) * 12;
+                months -= startD.getMonth();
+                months += effectiveEndD.getMonth();
+                months = Math.max(0, months + 1);
+                displayTotalPending += (months * bp.monthlyAmount);
+            }
+        });
+    }
+
     return (
         <div className={`p-4 space-y-6 pb-24 ${isRTL ? 'text-right' : 'text-left'}`}>
-            <div className="flex items-center space-x-3 rtl:space-x-reverse mb-6">
-                <div className="p-3 bg-primary/10 rounded-xl text-primary">
-                    <CalculatorIcon size={24} />
-                </div>
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{t.rappelCalc[language]}</h1>
-                    <p className="text-xs text-muted-foreground">Auto-increment monthly</p>
+            <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
+                <Wrench className="text-primary" />
+                {t.financialTools[language]}
+            </h2>
+
+            <div className="bg-card p-5 rounded-2xl border border-border shadow-sm">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+                            <CalculatorIcon size={20} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold">{t.backpayTracker[language]}</h3>
+                            <p className="text-xs text-muted-foreground">{t.backpayDesc[language]}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-5">
+            <div className="space-y-5 mt-6">
                 <InputField
                     label={t.oldSalary[language]}
                     value={oldSalary}
@@ -212,11 +241,17 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
                 </button>
 
                 {/* Active Backpays List */}
-                {backpays && backpays.length > 0 && (
+                {activeBackpays.length > 0 && (
                     <div className="mt-8 pt-6 border-t border-border">
-                        <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground mb-4">Active Tracking</h3>
+                        <div className="flex justify-between items-end mb-4">
+                            <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Active Tracking</h3>
+                            <div className="text-right">
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase">Total Pending</div>
+                                <div className="font-mono font-bold text-accent-foreground text-sm">{formatMoney(displayTotalPending)} {currency}</div>
+                            </div>
+                        </div>
                         <div className="space-y-3">
-                            {backpays.map(bp => (
+                            {activeBackpays.map(bp => (
                                 <div key={bp.id} className="flex justify-between items-center p-3 bg-muted/20 rounded-lg border border-border/50">
                                     <div>
                                         <div className="font-bold text-sm">{bp.description || 'Rappel'}</div>

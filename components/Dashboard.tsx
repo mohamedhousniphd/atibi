@@ -144,7 +144,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 months = Math.max(0, months + 1);
 
                 pendingBackpay += round(months * bp.monthlyAmount);
-                if (endD >= now) {
+                if (!bp.endDate || new Date(bp.endDate) >= now) {
                     totalMonthlyBackpay += bp.monthlyAmount;
                 }
             }
@@ -200,7 +200,13 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
     const claimBackpay = () => {
         if (pendingBackpay > 0) {
-            const newSalary = round(monthlyIncome + totalMonthlyBackpay);
+            // Find active backpays (no end date) to add to the new permanent salary
+            const activeBackpaysSum = backpays
+                .filter(bp => !bp.endDate)
+                .reduce((acc, bp) => acc + bp.monthlyAmount, 0);
+
+            const newSalary = round(monthlyIncome + activeBackpaysSum);
+
             if (confirm(`${t.claim[language]} ${formatMoney(pendingBackpay)} ${currency}?\n\nIMPORTANT: This will:\n1. Update Net Salary to ${formatMoney(newSalary)} ${currency}\n2. Recalculate budget limits (30/40/10/10/10)\n3. Stop the backpay tracker`)) {
                 const updatedCategories = categories.map(cat => {
                     let ratio = 0.10;
@@ -413,11 +419,26 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
         }
 
         if (window.confetti) window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#eab308', '#3b82f6'] });
-        setState(prev => ({
-            ...prev,
-            liquidAssets: round(prev.liquidAssets - val),
-            savingsGoals: prev.savingsGoals.map(g => g.id === goalId ? { ...g, currentAmount: round(g.currentAmount + val) } : g),
-        }));
+
+        setState(prev => {
+            const goal = prev.savingsGoals.find(g => g.id === goalId);
+            const goalName = goal ? goal.name : 'Goal';
+
+            return {
+                ...prev,
+                liquidAssets: round(prev.liquidAssets - val),
+                savingsGoals: prev.savingsGoals.map(g => g.id === goalId ? { ...g, currentAmount: round(g.currentAmount + val) } : g),
+                transactions: [{
+                    id: Date.now().toString(),
+                    amount: val,
+                    description: `Deposit to ${goalName}`,
+                    type: 'expense',
+                    excludeFromBudget: true,
+                    date: new Date().toISOString(),
+                    categoryId: 'c4' // Link to savings for analytics if desired
+                }, ...prev.transactions]
+            };
+        });
         setContributionAmounts(prev => ({ ...prev, [goalId]: '' }));
     };
 

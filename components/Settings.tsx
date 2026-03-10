@@ -260,9 +260,6 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
                                 <div>
                                     <div className="font-medium text-sm flex items-center gap-2">
                                         {debt.name}
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${debt.deductionType === 'bank' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
-                                            {debt.deductionType === 'bank' ? t.sourceBank[language] : t.sourceSalary[language]}
-                                        </span>
                                     </div>
                                     <div className="text-xs text-muted-foreground font-mono">
                                         -{formatMoney(debt.amount)} {currency} • {monthsLeft} {t.monthsLeft[language]}
@@ -308,12 +305,6 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
                                 />
                             </div>
 
-                            {/* Type Selector */}
-                            <div className="flex rounded-lg overflow-hidden border border-border text-xs mt-1">
-                                <button onClick={() => setNewDebtType('source')} className={`flex-1 py-2 font-semibold transition-colors ${newDebtType === 'source' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'}`}>{t.sourceSalary[language]}</button>
-                                <div className="w-px bg-border"></div>
-                                <button onClick={() => setNewDebtType('bank')} className={`flex-1 py-2 font-semibold transition-colors ${newDebtType === 'bank' ? 'bg-destructive text-destructive-foreground' : 'bg-background hover:bg-muted'}`}>{t.sourceBank[language]}</button>
-                            </div>
 
                             <div className="flex gap-2 items-center mt-1">
                                 <div className="relative flex-1">
