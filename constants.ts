@@ -8,111 +8,111 @@ export const DEFAULT_STATE: AppState = {
   language: 'en',
   theme: 'system',
   currency: 'MAD',
-  monthlyIncome: 10000, 
-  liquidAssets: 0, 
+  monthlyIncome: 10000,
+  liquidAssets: 0,
   backpay: { isActive: false, monthlyAmount: 0, startDate: '' },
   lastResetDate: new Date().toISOString(),
   debts: [],
   categories: [
-    { 
-      id: 'c1', 
-      name: 'Fixed Bills & Housing', 
+    {
+      id: 'c1',
+      name: 'Fixed Bills & Housing',
       limit: 3000, // 30%
-      spent: 0, 
-      type: 'fixed', 
+      spent: 0,
+      type: 'fixed',
       icon: 'FileText',
       tags: [
-        'Loyer/Traites', 
-        'Syndic (Copropriété)', 
-        'Eau & Électricité', 
-        'Internet & Wifi', 
-        'Forfait Mobile', 
-        'Frais de Scolarité', 
-        'Assurance Auto', 
-        'Assurance Habitation', 
-        'Abonnements Streaming', 
-        'Salle de Sport', 
+        'Loyer/Traites',
+        'Syndic (Copropriété)',
+        'Eau & Électricité',
+        'Internet & Wifi',
+        'Forfait Mobile',
+        'Frais de Scolarité',
+        'Assurance Auto',
+        'Assurance Habitation',
+        'Abonnements Streaming',
+        'Salle de Sport',
         'Frais Bancaires'
-      ] 
+      ]
     },
-    { 
-      id: 'c2', 
-      name: 'Living Essentials', 
+    {
+      id: 'c2',
+      name: 'Living Essentials',
       limit: 4000, // 40%
-      spent: 0, 
-      type: 'need', 
+      spent: 0,
+      type: 'need',
       icon: 'ShoppingCart',
       tags: [
-        'Supermarché (Courses)', 
-        'Épicerie/Hanout', 
-        'Souk & Légumes', 
-        'Boucherie/Poissons', 
+        'Supermarché (Courses)',
+        'Épicerie/Hanout',
+        'Souk & Légumes',
+        'Boucherie/Poissons',
         'Boulangerie/Pâtisserie',
         'Bouteille de Gaz',
-        'Carburant (Gasoil/Essence)', 
-        'Transport (Bus/Tram/Train)', 
-        'Taxi/VTC', 
+        'Carburant (Gasoil/Essence)',
+        'Transport (Bus/Tram/Train)',
+        'Taxi/VTC',
         'Parking/Gardien',
         'Recharge Téléphone',
-        'Médecin/Pharmacie', 
-        'Produits Ménagers', 
+        'Médecin/Pharmacie',
+        'Produits Ménagers',
         'Entretien Véhicule (Lavage/Vidange)',
         'Coiffeur/Barbier/Hammam'
       ]
     },
-    { 
-      id: 'c3', 
-      name: 'Personal & Lifestyle', 
+    {
+      id: 'c3',
+      name: 'Personal & Lifestyle',
       limit: 1000, // 10%
-      spent: 0, 
-      type: 'want', 
+      spent: 0,
+      type: 'want',
       icon: 'Heart',
       tags: [
-        'Café/Sorties', 
-        'Restaurant/Snack', 
-        'Shopping & Mode', 
-        'Beauté & Soins', 
-        'Cadeaux & Invités', 
-        'Loisirs & Hobbies', 
-        'Voyage & Week-end', 
-        'Électronique/Gadgets', 
-        'Maison & Déco', 
+        'Café/Sorties',
+        'Restaurant/Snack',
+        'Shopping & Mode',
+        'Beauté & Soins',
+        'Cadeaux & Invités',
+        'Loisirs & Hobbies',
+        'Voyage & Week-end',
+        'Électronique/Gadgets',
+        'Maison & Déco',
         'Livres & Culture',
         'Sadaqa/Charité',
         'Sorties Enfants'
       ]
     },
-    { 
-      id: 'c4', 
-      name: 'Savings & Goals', 
+    {
+      id: 'c4',
+      name: 'Savings & Goals',
       limit: 1000, // 10%
-      spent: 0, 
-      type: 'saving', 
+      spent: 0,
+      type: 'saving',
       icon: 'PiggyBank',
       tags: [
-        'Virement Épargne', 
-        'Achat Or (Dahab)', 
-        'Investissement Bourse', 
-        'Épargne Logement', 
-        'Cagnotte Voyage', 
+        'Virement Épargne',
+        'Achat Or (Dahab)',
+        'Investissement Bourse',
+        'Épargne Logement',
+        'Cagnotte Voyage',
         'Mouton Aïd (Adha)',
         'Fonds Ramadan',
         'Projet Omra/Hajj',
         'Avance Voiture'
       ]
     },
-    { 
-      id: 'c5', 
-      name: 'Emergency Fund', 
+    {
+      id: 'c5',
+      name: 'Emergency Fund',
       limit: 1000, // 10%
-      spent: 0, 
-      type: 'saving', 
+      spent: 0,
+      type: 'saving',
       icon: 'Shield',
       tags: [
-        'Urgence Médicale', 
-        'Réparation Auto', 
-        'Réparation Maison', 
-        'Aide Familiale Urgente', 
+        'Urgence Médicale',
+        'Réparation Auto',
+        'Réparation Maison',
+        'Aide Familiale Urgente',
         'Perte de Revenu'
       ]
     },
@@ -134,32 +134,32 @@ export const TRANSLATIONS: Translation = {
   dashboard: { en: 'Dashboard', fr: 'Tableau de bord', ar: 'لوحة القيادة' },
   tools: { en: 'Tools', fr: 'Outils', ar: 'الأدوات' },
   settings: { en: 'Settings', fr: 'Paramètres', ar: 'الإعدادات' },
-  
+
   // Onboarding
   welcome: { en: 'Welcome to eSalaire', fr: 'Bienvenue sur eSalaire', ar: 'مرحبًا بك في eSalaire' },
-  appDescription: { 
-    en: 'Master your finances in the Moroccan context. Track salaries, manage backpay (Rappel), and achieve financial freedom.', 
-    fr: 'Maîtrisez vos finances dans le contexte marocain. Suivez votre salaire, gérez les rappels et atteignez la liberté financière.', 
-    ar: 'تحكم في أموالك بذكاء. تتبع راتبك، احسب الرابيل، وحقق استقلالك المالي.' 
+  appDescription: {
+    en: 'Master your finances in the Moroccan context. Track salaries, manage backpay (Rappel), and achieve financial freedom.',
+    fr: 'Maîtrisez vos finances dans le contexte marocain. Suivez votre salaire, gérez les rappels et atteignez la liberté financière.',
+    ar: 'تحكم في أموالك بذكاء. تتبع راتبك، احسب الرابيل، وحقق استقلالك المالي.'
   },
   chooseLang: { en: 'Choose Language', fr: 'Choisir la langue', ar: 'اختر اللغة' },
-  
+
   trustTitle: { en: '100% Private & Local', fr: '100% Privé & Local', ar: 'خاص ومحلي 100٪' },
-  trustDesc: { 
-    en: 'Your financial data never leaves this device. No servers, no tracking, no accounts required.', 
-    fr: 'Vos données financières ne quittent jamais cet appareil. Aucun serveur, aucun traçage, aucun compte.', 
-    ar: 'بياناتك المالية لا تغادر هذا الهاتف أبدًا. لا خوادم، لا تتبع، ولا حاجة لإنشاء حساب.' 
+  trustDesc: {
+    en: 'Your financial data never leaves this device. No servers, no tracking, no accounts required.',
+    fr: 'Vos données financières ne quittent jamais cet appareil. Aucun serveur, aucun traçage, aucun compte.',
+    ar: 'بياناتك المالية لا تغادر هذا الهاتف أبدًا. لا خوادم، لا تتبع، ولا حاجة لإنشاء حساب.'
   },
-  
+
   startSetup: { en: 'Start Setup', fr: 'Commencer', ar: 'ابدأ الإعداد' },
   continue: { en: 'Continue', fr: 'Continuer', ar: 'متابعة' },
   next: { en: 'Next', fr: 'Suivant', ar: 'التالي' },
   back: { en: 'Back', fr: 'Retour', ar: 'عودة' },
   finish: { en: 'Finish', fr: 'Terminer', ar: 'إنهاء' },
-  
+
   enterSalary: { en: 'Net Monthly Salary', fr: 'Salaire Net Mensuel', ar: 'الراتب الشهري الصافي' },
   enterSalaryDesc: { en: 'Enter the exact amount that hits your bank account (Virement).', fr: 'Saisissez le montant exact reçu par virement bancaire.', ar: 'أدخل المبلغ الدقيق الذي يصل إلى حسابك البنكي.' },
-  
+
   addDeductions: { en: 'Loans & Commitments', fr: 'Crédits et Engagements', ar: 'القروض والالتزامات' },
   addDeductionDesc: { en: 'Add housing loans, consumer loans, or family debts to calculate your true net worth.', fr: 'Ajoutez les crédits immo, conso ou dettes familiales pour calculer votre vraie richesse.', ar: 'أضف قروض السكن، الاستهلاك أو ديون العائلة لحساب ثروتك الحقيقية.' },
   deductionSource: { en: 'Source', fr: 'Source', ar: 'المصدر' },
@@ -183,43 +183,43 @@ export const TRANSLATIONS: Translation = {
   cashFlow: { en: 'Monthly Cash Flow', fr: 'Flux de Trésorerie', ar: 'التدفق المالي الشهري' },
   income: { en: 'Income', fr: 'Entrées', ar: 'المداخيل' },
   outflow: { en: 'Expenses', fr: 'Dépenses', ar: 'المصاريف' },
-  
+
   netPosition: { en: 'Net Position', fr: 'Situation Nette', ar: 'الوضع المالي' },
   netWealth: { en: 'Net Wealth', fr: 'Patrimoine Net', ar: 'صافي الثروة' },
   netDebt: { en: 'Total Debt', fr: 'Dette Totale', ar: 'مجموع الديون' },
-  
+
   liquidAssets: { en: 'Liquid Assets', fr: 'Actifs Liquides', ar: 'الأصول السائلة' },
   emergencyFund: { en: 'Emergency Fund', fr: 'Fonds d\'Urgence', ar: 'صندوق الطوارئ' },
   freeWealth: { en: 'Investable Wealth', fr: 'Épargne Libre', ar: 'ثروة قابلة للاستثمار' },
-  
+
   pendingAssets: { en: 'Pending Backpay', fr: 'Rappel en Attente', ar: 'مستحقات (رابيل) في الانتظار' },
   claim: { en: 'Claim / Cash In', fr: 'Encaisser', ar: 'تحصيل المبلغ' },
   accruing: { en: 'Accumulating monthly...', fr: 'Cumul mensuel...', ar: 'يتراكم شهرياً...' },
-  
+
   remaining: { en: 'Remaining', fr: 'Restant', ar: 'متبقي' },
   spent: { en: 'Spent', fr: 'Dépensé', ar: 'مصروف' },
   allocation: { en: 'Target', fr: 'Cible', ar: 'هدف' },
   ofSalary: { en: 'of salary', fr: 'du salaire', ar: 'من الراتب' },
-  
+
   addExpense: { en: 'Add Expense', fr: 'Nouvelle Dépense', ar: 'تسجيل مصروف' },
   addIncome: { en: 'Add Income', fr: 'Nouveau Revenu', ar: 'تسجيل دخل' },
-  
+
   financialHealth: { en: 'Financial Health', fr: 'Santé Financière', ar: 'الصحة المالية' },
   debtCoverage: { en: 'Debt Coverage', fr: 'Couverture Dette', ar: 'تغطية الديون' },
   safetyNet: { en: 'Safety Net', fr: 'Filet de Sécurité', ar: 'شبكة الأمان' },
   buildEmergency: { en: 'Build Emergency Fund', fr: 'Remplir Fonds Urgence', ar: 'بناء صندوق الطوارئ' },
-  
+
   addGoal: { en: 'New Goal', fr: 'Nouvel Objectif', ar: 'هدف جديد' },
   reachBy: { en: 'ETA', fr: 'Prévu pour', ar: 'الوصول المتوقع' },
   contribute: { en: 'Deposit', fr: 'Verser', ar: 'إيداع' },
-  
+
   // Strategy
   freedomStrategy: { en: 'Freedom Strategy', fr: 'Stratégie Liberté', ar: 'استراتيجية الحرية' },
   payOffAdvice: { en: 'Pay off debt using Free Wealth only.', fr: 'Soldez vos dettes avec l\'Épargne Libre uniquement.', ar: 'سدد الديون باستخدام الثروة الحرة فقط.' },
   payOffButton: { en: 'Pay Off Now', fr: 'Solder Maintenant', ar: 'سداد الآن' },
   totalDebt: { en: 'Outstanding Debt', fr: 'Reste à Rembourser', ar: 'الديون المتبقية' },
   monthsLeft: { en: 'months left', fr: 'mois restants', ar: 'أشهر متبقية' },
-  
+
   // Charts
   needs: { en: 'Needs', fr: 'Besoins', ar: 'احتياجات' },
   wants: { en: 'Wants', fr: 'Envies', ar: 'رغبات' },
@@ -228,7 +228,7 @@ export const TRANSLATIONS: Translation = {
   greatJob: { en: 'Great Job!', fr: 'Bravo !', ar: 'عمل رائع!' },
   overBudget: { en: 'Over Budget', fr: 'Hors Budget', ar: 'تجاوز الميزانية' },
   projection: { en: 'Wealth Projection (12 Months)', fr: 'Projection Patrimoine (12 Mois)', ar: 'توقعات الثروة (12 شهر)' },
-  
+
   // Tools
   rappelCalc: { en: 'Backpay (Rappel) Tracker', fr: 'Calculateur de Rappel', ar: 'متتبع مستحقات الرابيل' },
   oldSalary: { en: 'Old Salary', fr: 'Ancien Salaire', ar: 'الراتب القديم' },
@@ -242,7 +242,7 @@ export const TRANSLATIONS: Translation = {
   addToAssets: { en: 'Add to Assets', fr: 'Ajouter aux Actifs', ar: 'إضافة للأصول' },
   totalOwed: { en: 'Total Accrued', fr: 'Total Cumulé', ar: 'المجموع المتراكم' },
   dateError: { en: 'Date must be in the past or current month.', fr: 'La date doit être passée ou actuelle.', ar: 'يجب أن يكون التاريخ في الماضي أو الشهر الحالي.' },
-  
+
   // History
   history: { en: 'Transaction History', fr: 'Historique des Transactions', ar: 'سجل العمليات' },
   noTransactions: { en: 'No transactions recorded yet.', fr: 'Aucune transaction enregistrée.', ar: 'لم يتم تسجيل أي عمليات بعد.' },
@@ -263,7 +263,7 @@ export const TRANSLATIONS: Translation = {
   theme: { en: 'Appearance', fr: 'Apparence', ar: 'المظهر' },
   monthlyIncome: { en: 'Net Salary', fr: 'Salaire Net', ar: 'الراتب الصافي' },
   installApp: { en: 'Install App', fr: 'Installer l\'App', ar: 'تثبيت التطبيق' },
-  
+
   // Feedback & Guard
   warningWants: { en: 'Warning: Wants > 30%', fr: 'Attention: Envies > 30%', ar: 'تنبيه: الرغبات > 30%', },
   goalReached: { en: 'Goal Reached!', fr: 'Objectif Atteint !', ar: 'تحقق الهدف!', },
@@ -278,6 +278,55 @@ export const TRANSLATIONS: Translation = {
   good: { en: 'Good', fr: 'Bien', ar: 'جيد' },
   atRisk: { en: 'At Risk', fr: 'À Risque', ar: 'في خطر' },
   secure: { en: 'Secure', fr: 'Sécurisé', ar: 'آمن' },
+
+  // New: Reset Everything
+  resetEverything: { en: 'Reset Everything', fr: 'Réinitialiser Tout', ar: 'إعادة تعيين كل شيء' },
+  resetEverythingDesc: { en: 'Erase all data and restart from onboarding', fr: 'Effacer toutes les données et recommencer', ar: 'حذف جميع البيانات والبدء من جديد' },
+  resetEverythingConfirm: { en: 'This will erase ALL your data. Are you absolutely sure?', fr: 'Cela effacera TOUTES vos données. Êtes-vous sûr ?', ar: 'سيتم حذف جميع بياناتك. هل أنت متأكد؟' },
+
+  // New: Auto Income / New Month
+  newMonthDetected: { en: 'New Month Detected', fr: 'Nouveau Mois Détecté', ar: 'تم اكتشاف شهر جديد' },
+  resetMonthDesc: { en: 'Reset monthly spending and credit salary?', fr: 'Réinitialiser les dépenses et créditer le salaire ?', ar: 'إعادة تعيين المصاريف وإضافة الراتب؟' },
+  creditSalary: { en: 'Reset & Credit Salary', fr: 'Réinitialiser et Créditer le Salaire', ar: 'إعادة تعيين وإضافة الراتب' },
+  salaryCredited: { en: 'Monthly Salary', fr: 'Salaire Mensuel', ar: 'الراتب الشهري' },
+  ignore: { en: 'Ignore', fr: 'Ignorer', ar: 'تجاهل' },
+
+  // New: Hardcoded string translations
+  available: { en: 'Available', fr: 'Disponible', ar: 'متاح' },
+  noCashFlow: { en: 'No Cash Flow', fr: 'Pas de Flux', ar: 'لا يوجد تدفق' },
+  addNewExpense: { en: 'Add New Expense', fr: 'Nouvelle Dépense', ar: 'إضافة مصروف جديد' },
+  recentEntries: { en: 'Recent Entries', fr: 'Entrées Récentes', ar: 'الإدخالات الأخيرة' },
+  noExpensesYet: { en: 'No expenses yet.', fr: 'Aucune dépense encore.', ar: 'لا مصاريف بعد.' },
+  confirm: { en: 'Confirm', fr: 'Confirmer', ar: 'تأكيد' },
+  cancel: { en: 'Cancel', fr: 'Annuler', ar: 'إلغاء' },
+  save: { en: 'Save', fr: 'Enregistrer', ar: 'حفظ' },
+  spendFromGoal: { en: 'Spend from Savings', fr: 'Dépenser depuis l\'épargne', ar: 'إنفاق من الادخار' },
+  spendFromGoalDesc: { en: 'This creates an expense record and reduces the goal amount, but does NOT reduce your current liquid assets.', fr: 'Cela crée un enregistrement de dépense et réduit le montant de l\'objectif, sans toucher à vos liquidités.', ar: 'يُنشئ سجل مصروف ويُنقص مبلغ الهدف، دون المساس بسيولتك الحالية.' },
+  confirmSpend: { en: 'Confirm Spend', fr: 'Confirmer la Dépense', ar: 'تأكيد الإنفاق' },
+  spend: { en: 'Spend', fr: 'Dépenser', ar: 'إنفاق' },
+  description: { en: 'Description', fr: 'Description', ar: 'الوصف' },
+  descriptionOptional: { en: 'Description (Optional)', fr: 'Description (Optionnel)', ar: 'الوصف (اختياري)' },
+  noDebtsListed: { en: 'No debts listed.', fr: 'Aucune dette enregistrée.', ar: 'لا ديون مسجلة.' },
+  actions: { en: 'Actions', fr: 'Actions', ar: 'الإجراءات' },
+  data: { en: 'Data', fr: 'Données', ar: 'البيانات' },
+  pocketMoneyOnly: { en: 'Pocket Money Only', fr: 'Argent de Poche Uniquement', ar: 'المصروف الشخصي فقط' },
+  debtName: { en: 'Debt Name', fr: 'Nom de la Dette', ar: 'اسم الدين' },
+  amount: { en: 'Amount', fr: 'Montant', ar: 'المبلغ' },
+  localStorage: { en: 'Local Storage', fr: 'Stockage Local', ar: 'تخزين محلي' },
+  offline: { en: 'Offline', fr: 'Hors Ligne', ar: 'بدون إنترنت' },
+  debt: { en: 'Debt', fr: 'Dette', ar: 'دين' },
+  editGoal: { en: 'Edit Goal', fr: 'Modifier l\'Objectif', ar: 'تعديل الهدف' },
+  newTarget: { en: 'New Target', fr: 'Nouvel Objectif', ar: 'هدف جديد' },
+  name: { en: 'Name', fr: 'Nom', ar: 'الاسم' },
+  target: { en: 'Target', fr: 'Cible', ar: 'الهدف' },
+  done: { en: 'Done', fr: 'Terminé', ar: 'تم' },
+  goalSpend: { en: 'Goal Spend', fr: 'Dépense Objectif', ar: 'إنفاق الهدف' },
+  spentLabel: { en: 'Spent', fr: 'Dépensé', ar: 'مصروف' },
+  investableWealth: { en: 'Investable Wealth', fr: 'Richesse Investissable', ar: 'ثروة قابلة للاستثمار' },
+  monthPrefix: { en: 'Month', fr: 'Mois', ar: 'شهر' },
+  autoIncrement: { en: 'Auto-increment monthly', fr: 'Incrémentation mensuelle', ar: 'زيادة تلقائية شهرياً' },
+  trackingInfo: { en: 'Currently tracking', fr: 'Suivi actuel', ar: 'قيد التتبع حالياً' },
+  perMonth: { en: '/ month since', fr: '/ mois depuis', ar: '/ شهر منذ' },
 };
 
 export const COLORS = {
