@@ -411,7 +411,9 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     };
 
     const handleContributeSavings = (goalId: string) => {
-        const val = parseAmount(contributionAmounts[goalId] || '0');
+        const goalEntry = contributionAmounts[goalId] || '0';
+        const val = parseAmount(goalEntry);
+
         if (val <= 0) return;
 
         // Safety: ensure liquidAssets is a number
@@ -424,7 +426,12 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
         if (window.confetti) {
             try {
-                window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#eab308', '#3b82f6'] });
+                window.confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#10b981', '#eab308', '#3b82f6']
+                });
             } catch (e) {
                 console.error("Confetti error", e);
             }
@@ -432,16 +439,21 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
         setState(prev => {
             if (!prev) return prev;
-            const goals = prev.savingsGoals || [];
+
+            // Deep copy and safety initialization
+            const goals = Array.isArray(prev.savingsGoals) ? prev.savingsGoals : [];
             const goal = goals.find(g => g.id === goalId);
             const goalName = goal ? goal.name : 'Goal';
 
             const prevTx = Array.isArray(prev.transactions) ? prev.transactions : [];
+            const prevAssets = typeof prev.liquidAssets === 'number' ? prev.liquidAssets : 0;
 
             return {
                 ...prev,
-                liquidAssets: round((prev.liquidAssets || 0) - val),
-                savingsGoals: goals.map(g => g.id === goalId ? { ...g, currentAmount: round((g.currentAmount || 0) + val) } : g),
+                liquidAssets: round(prevAssets - val),
+                savingsGoals: goals.map(g =>
+                    g.id === goalId ? { ...g, currentAmount: round((g.currentAmount || 0) + val) } : g
+                ),
                 transactions: [{
                     id: Date.now().toString(),
                     amount: val,
@@ -453,6 +465,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 }, ...prevTx]
             };
         });
+
         setContributionAmounts(prev => {
             const next = { ...prev };
             delete next[goalId];
