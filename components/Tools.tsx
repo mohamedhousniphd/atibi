@@ -124,17 +124,19 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
     if (activeBackpays.length > 0) {
         const now = new Date();
         activeBackpays.forEach(bp => {
+            if (!bp.startDate) return;
             const startD = new Date(bp.startDate);
+            if (isNaN(startD.getTime())) return;
+
             // If end date exists, use it. Otherwise use 'now' (up to the current month)
             const endD = bp.endDate ? new Date(bp.endDate) : now;
+            if (isNaN(endD.getTime())) return;
 
-            if (!isNaN(startD.getTime())) {
-                let months = (endD.getFullYear() - startD.getFullYear()) * 12;
-                months -= startD.getMonth();
-                months += endD.getMonth();
-                months = Math.max(0, months + 1);
-                displayTotalPending += (months * bp.monthlyAmount);
-            }
+            let months = (endD.getFullYear() - startD.getFullYear()) * 12;
+            months -= startD.getMonth();
+            months += endD.getMonth();
+            months = Math.max(0, months + 1);
+            displayTotalPending += (months * (bp.monthlyAmount || 0));
         });
     }
 
@@ -228,7 +230,7 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
                 </div>
                 <InputField
                     label={`${t.description[language]} ${t.optional[language]}`}
-                    value={description}
+                    value={description || ''}
                     onChange={setDescription}
                     placeholder="e.g. Promotion 2023"
                     type="text"
@@ -272,7 +274,8 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
                                             {(() => {
                                                 const startD = new Date(bp.startDate);
                                                 const endD = bp.endDate ? new Date(bp.endDate) : new Date();
-                                                if (isNaN(startD.getTime())) return '0 months';
+                                                if (isNaN(startD.getTime()) || isNaN(endD.getTime())) return `0 ${t.months[language]}`;
+
                                                 let months = (endD.getFullYear() - startD.getFullYear()) * 12;
                                                 months -= startD.getMonth();
                                                 months += endD.getMonth();

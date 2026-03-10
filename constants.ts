@@ -121,6 +121,23 @@ export const DEFAULT_STATE: AppState = {
   savingsGoals: []
 };
 
+// Defensive helper to ensure any state (imported or reset) has all required arrays
+export const validateState = (s: Partial<AppState>): AppState => {
+  return {
+    ...DEFAULT_STATE,
+    ...s,
+    categories: s.categories || DEFAULT_STATE.categories,
+    debts: s.debts || [],
+    backpays: s.backpays || [],
+    transactions: s.transactions || [],
+    savingsGoals: s.savingsGoals || [],
+    hasCompletedOnboarding: s.hasCompletedOnboarding ?? false,
+    language: s.language || 'en',
+    theme: s.theme || 'system',
+    currency: s.currency || 'MAD',
+  };
+};
+
 export const ASSET_CHIPS = [
   { id: 'savings', label: { en: 'Savings Account', fr: 'Compte Épargne', ar: 'حساب التوفير' } },
   { id: 'cash', label: { en: 'Cash on Hand', fr: 'Espèces', ar: 'كاش' } },

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Download, Upload, RefreshCw, Save, Globe, Edit3, Trash2, Plus, CreditCard, Moon, Sun, Monitor, Calendar, ExternalLink, Calculator, AlertTriangle } from 'lucide-react';
 import { AppState, Language, Debt, Theme } from '../types';
-import { DEFAULT_STATE, TRANSLATIONS } from '../constants';
+import { DEFAULT_STATE, TRANSLATIONS, validateState } from '../constants';
 
 interface SettingsProps {
     state: AppState;
@@ -55,8 +55,9 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
         reader.onload = (e) => {
             try {
                 const json = JSON.parse(e.target?.result as string);
-                if (json.categories && json.liquidAssets !== undefined) {
-                    setState(json);
+                if (json && typeof json === 'object') {
+                    const validated = validateState(json);
+                    setState(validated);
                     alert("Data imported successfully!");
                 } else {
                     alert("Invalid file format.");
@@ -147,6 +148,7 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
     const getMonthsLeft = (endDateStr: string) => {
         if (!endDateStr) return 0;
         const end = new Date(endDateStr);
+        if (isNaN(end.getTime())) return 0;
         const now = new Date();
         let months = (end.getFullYear() - now.getFullYear()) * 12;
         months -= now.getMonth();

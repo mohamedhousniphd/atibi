@@ -88,15 +88,15 @@ const Onboarding: React.FC<OnboardingProps> = ({ state, setState }) => {
         const spendable = incomeVal;
 
         // 30% Fixed, 40% Needs, 10% Wants, 10% Savings, 10% Emergency of SPENDABLE income
-        const updatedCategories = state.categories.map(cat => {
+        const updatedCategories = (state.categories || []).map(cat => {
             let ratio = 0.10;
             if (cat.id === 'c1') ratio = 0.30; // Fixed
-            if (cat.id === 'c2') ratio = 0.40; // Essentials
-            if (cat.id === 'c3') ratio = 0.10; // Personal
-            if (cat.id === 'c4') ratio = 0.10; // Savings
-            if (cat.id === 'c5') ratio = 0.10; // Emergency
+            else if (cat.id === 'c2') ratio = 0.40; // Essentials
+            else if (cat.id === 'c3') ratio = 0.10; // Personal
+            else if (cat.id === 'c4') ratio = 0.10; // Savings
+            else if (cat.id === 'c5') ratio = 0.10; // Emergency
 
-            return { ...cat, limit: Math.round(spendable * ratio) };
+            return { ...cat, limit: Math.round(spendable * ratio), spent: 0 };
         });
 
         setState(prev => ({

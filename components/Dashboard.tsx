@@ -18,7 +18,8 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
-    const { language, currency, categories, liquidAssets, backpays, monthlyIncome, savingsGoals, debts, transactions, lastResetDate } = state;
+    const { language, currency, theme, lastResetDate, monthlyIncome: rawMonthlyIncome } = state;
+    const monthlyIncome = rawMonthlyIncome || 0;
     const t = TRANSLATIONS;
     const isRTL = language === 'ar';
 
@@ -90,15 +91,23 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     };
 
     // --- Core Calculations ---
-    const totalWeeklyDebt = debts.reduce((acc, d) => acc + d.amount, 0); // This is monthly debt based on previous context, user called it monthly debt
-    const totalMonthlyDebt = round(debts.reduce((acc, d) => acc + d.amount, 0));
+    // Safety: ensure arrays exist
+    const categories = state.categories || [];
+    const transactions = state.transactions || [];
+    const savingsGoals = state.savingsGoals || [];
+    const backpays = state.backpays || [];
+    const debts = state.debts || [];
+    const liquidAssets = state.liquidAssets || 0;
+
+    // Core Calculations with fallback safety
+    const totalWeeklyDebt = debts.reduce((acc, d) => acc + (d.amount || 0), 0); // This is monthly debt based on previous context, user called it monthly debt
+    const totalMonthlyDebt = round(debts.reduce((acc, d) => acc + (d.amount || 0), 0));
     const totalOutstandingDebt = round(debts.reduce((acc, d) => acc + calculateDebtBalance(d), 0));
 
-    // User requested full salary - debt distribution
-    const spendableIncome = round(Math.max(0, monthlyIncome - totalMonthlyDebt));
+    const spendableIncome = Math.max(0, monthlyIncome - totalMonthlyDebt);
 
-    const totalAllocated = round(categories.reduce((acc, cat) => acc + cat.limit, 0));
-    const totalSpent = round(categories.reduce((acc, cat) => acc + cat.spent, 0));
+    const totalAllocated = round(categories.reduce((acc, cat) => acc + (cat.limit || 0), 0));
+    const totalSpent = round(categories.reduce((acc, cat) => acc + (cat.spent || 0), 0));
     const remainingAllocation = round(spendableIncome - totalAllocated);
 
     // Dynamic Buffer (Exclude savings spending from buffer calc)
@@ -106,8 +115,8 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const isBufferNegative = actualBuffer < 0;
 
     // Wealth & Emergency Fund Logic
-    const fixedExpenses = round(categories.filter(c => c.type === 'fixed').reduce((acc, c) => acc + c.limit, 0));
-    const essentialExpenses = round(categories.filter(c => c.type === 'need').reduce((acc, c) => acc + c.limit, 0));
+    const fixedExpenses = round(categories.filter(c => c.type === 'fixed').reduce((acc, c) => acc + (c.limit || 0), 0));
+    const essentialExpenses = round(categories.filter(c => c.type === 'need').reduce((acc, c) => acc + (c.limit || 0), 0));
     const emergencyFundTarget = round((fixedExpenses + essentialExpenses) * 6); // 6 Months Rule
 
     const emergencyFundCurrent = round(Math.min(liquidAssets, emergencyFundTarget));
@@ -116,7 +125,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
     // Net Wealth Calculation
     // Logic: Liquid Assets + Money locked in Savings Goals - Total Debt
-    const totalSavingsInGoals = round(savingsGoals.reduce((acc, g) => acc + g.currentAmount, 0));
+    const totalSavingsInGoals = round(savingsGoals.reduce((acc, g) => acc + (g.currentAmount || 0), 0));
     const netWealth = round((liquidAssets + totalSavingsInGoals) - totalOutstandingDebt);
 
     // STRICT HEALTH LOGIC: Assets vs Debt
@@ -144,9 +153,9 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 months += effectiveEndD.getMonth();
                 months = Math.max(0, months + 1);
 
-                pendingBackpay += round(months * bp.monthlyAmount);
+                pendingBackpay += round(months * (bp.monthlyAmount || 0));
                 if (!bp.endDate || new Date(bp.endDate) >= now) {
-                    totalMonthlyBackpay += bp.monthlyAmount;
+                    totalMonthlyBackpay += (bp.monthlyAmount || 0);
                 }
             }
         });
@@ -184,16 +193,16 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const handleResetMonth = () => {
         setState(prev => ({
             ...prev,
-            categories: prev.categories.map(c => ({ ...c, spent: 0 })),
-            liquidAssets: round(prev.liquidAssets + prev.monthlyIncome),
+            categories: (prev.categories || []).map(c => ({ ...c, spent: 0 })),
+            liquidAssets: round((prev.liquidAssets || 0) + (prev.monthlyIncome || 0)),
             lastResetDate: new Date().toISOString(),
             transactions: [{
                 id: Date.now().toString(),
-                amount: prev.monthlyIncome,
+                amount: prev.monthlyIncome || 0,
                 description: t.salaryCredited[language],
                 type: 'income',
                 date: new Date().toISOString()
-            }, ...prev.transactions]
+            }, ...(prev.transactions || [])]
         }));
         setShowNewMonthAlert(false);
         if (window.confetti) window.confetti({ colors: ['#6366f1', '#a855f7'] });
@@ -213,15 +222,17 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
         months += endD.getMonth();
         months = Math.max(0, months + 1);
 
-        const totalToClaim = round(months * bp.monthlyAmount);
+        const totalToClaim = round(months * (bp.monthlyAmount || 0));
 
         if (confirm(`Claim ${formatMoney(totalToClaim)} ${currency} for "${bp.description || 'Rappel'}"?`)) {
             setState(prev => {
                 const isPermanent = !bp.endDate;
-                const newSalary = isPermanent ? round(prev.monthlyIncome + bp.monthlyAmount) : prev.monthlyIncome;
+                const currentMonthlyIncome = prev.monthlyIncome || 0;
+                const bpMonthlyAmount = bp.monthlyAmount || 0;
+                const newSalary = isPermanent ? round(currentMonthlyIncome + bpMonthlyAmount) : currentMonthlyIncome;
 
                 // Propotional update for category limits if permanent salary increase
-                const totalDebt = round((prev.debts || []).reduce((acc, d) => acc + d.amount, 0));
+                const totalDebt = round((prev.debts || []).reduce((acc, d) => acc + (d.amount || 0), 0));
                 const newSpendableIncome = round(Math.max(0, newSalary - totalDebt));
 
                 const updatedCategories = isPermanent ? (prev.categories || []).map(cat => {
@@ -229,13 +240,13 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                     if (cat.id === 'c1') ratio = 0.30;
                     else if (cat.id === 'c2') ratio = 0.40;
                     return { ...cat, limit: round(newSpendableIncome * ratio) };
-                }) : prev.categories;
+                }) : (prev.categories || []);
 
                 return {
                     ...prev,
                     monthlyIncome: newSalary,
                     categories: updatedCategories,
-                    liquidAssets: round(prev.liquidAssets + totalToClaim),
+                    liquidAssets: round((prev.liquidAssets || 0) + totalToClaim),
                     backpays: (prev.backpays || []).filter(b => b.id !== bpId),
                     transactions: [{
                         id: Date.now().toString(),
@@ -254,7 +265,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
         if (selectedCategory && tempLimit) {
             const newLimit = parseAmount(tempLimit);
             if (newLimit < 0) return;
-            const otherCategoriesTotal = round(categories.filter(c => c.id !== selectedCategory.id).reduce((acc, c) => acc + c.limit, 0));
+            const otherCategoriesTotal = round(categories.filter(c => c.id !== selectedCategory.id).reduce((acc, c) => acc + (c.limit || 0), 0));
             const potentialTotal = round(otherCategoriesTotal + newLimit);
             if (potentialTotal > spendableIncome) {
                 setLimitError(`${t.budgetOver[language]} (${formatMoney(potentialTotal - spendableIncome)} ${currency})`);
@@ -262,7 +273,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
             }
             setState(prev => ({
                 ...prev,
-                categories: prev.categories.map(c => c.id === selectedCategory.id ? { ...c, limit: newLimit } : c)
+                categories: (prev.categories || []).map(c => c.id === selectedCategory.id ? { ...c, limit: newLimit } : c)
             }));
             setSelectedCategory(prev => prev ? { ...prev, limit: newLimit } : null);
             setIsEditingLimit(false);
@@ -277,7 +288,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
         // SPENDING FROM SAVINGS GOAL
         if (showModal === 'spend_goal' && selectedGoal) {
-            if (val > selectedGoal.currentAmount) {
+            if (val > (selectedGoal.currentAmount || 0)) {
                 alert("Insufficient funds in goal.");
                 return;
             }
@@ -287,7 +298,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
             // 3. Liquid Assets untouched (money already left liquid when allocated)
             setState(prev => ({
                 ...prev,
-                savingsGoals: prev.savingsGoals.map(g => g.id === selectedGoal.id ? { ...g, currentAmount: round(g.currentAmount - val) } : g),
+                savingsGoals: (prev.savingsGoals || []).map(g => g.id === selectedGoal.id ? { ...g, currentAmount: round((g.currentAmount || 0) - val) } : g),
                 transactions: [{
                     id: Date.now().toString(),
                     amount: val,
@@ -295,7 +306,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                     type: 'expense',
                     date: new Date().toISOString(),
                     excludeFromBudget: true
-                }, ...prev.transactions]
+                }, ...(prev.transactions || [])]
             }));
             setShowModal(null); setSelectedGoal(null); setAmount(''); setDescription('');
             return;
@@ -314,24 +325,24 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
             if (editingTransaction.type === 'expense' && editingTransaction.categoryId) {
                 const oldCat = categories.find(c => c.id === editingTransaction.categoryId);
                 if (oldCat) {
-                    const diff = round(val - editingTransaction.amount);
+                    const diff = round(val - (editingTransaction.amount || 0));
                     const updatedCategories = categories.map(cat =>
-                        cat.id === editingTransaction.categoryId ? { ...cat, spent: round(cat.spent + diff) } : cat
+                        cat.id === editingTransaction.categoryId ? { ...cat, spent: round((cat.spent || 0) + diff) } : cat
                     );
                     setState(prev => ({
                         ...prev,
                         categories: updatedCategories,
-                        liquidAssets: round(prev.liquidAssets - diff)
+                        liquidAssets: round((prev.liquidAssets || 0) - diff)
                     }));
                 }
             } else if (editingTransaction.type === 'income') {
-                const diff = round(val - editingTransaction.amount);
-                setState(prev => ({ ...prev, liquidAssets: round(prev.liquidAssets + diff) }));
+                const diff = round(val - (editingTransaction.amount || 0));
+                setState(prev => ({ ...prev, liquidAssets: round((prev.liquidAssets || 0) + diff) }));
             }
 
             setState(prev => ({
                 ...prev,
-                transactions: prev.transactions.map(t => t.id === editingTransaction.id ? { ...t, amount: val, description } : t)
+                transactions: (prev.transactions || []).map(t => t.id === editingTransaction.id ? { ...t, amount: val, description } : t)
             }));
 
         } else if ((showModal === 'expense' || showModal === 'category_detail') && selectedCategory) {
@@ -344,9 +355,9 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 date: new Date(transactionDate).toISOString()
             };
             const updatedCategories = categories.map(cat =>
-                cat.id === selectedCategory.id ? { ...cat, spent: round(cat.spent + val) } : cat
+                cat.id === selectedCategory.id ? { ...cat, spent: round((cat.spent || 0) + val) } : cat
             );
-            setState(prev => ({ ...prev, categories: updatedCategories, transactions: [newTransaction, ...prev.transactions], liquidAssets: round(prev.liquidAssets - val) }));
+            setState(prev => ({ ...prev, categories: updatedCategories, transactions: [newTransaction, ...(prev.transactions || [])], liquidAssets: round((prev.liquidAssets || 0) - val) }));
         } else if (showModal === 'income') {
             const newTransaction: Transaction = {
                 id: Date.now().toString(),
@@ -357,7 +368,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
             };
 
             if (window.confetti) window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-            setState(prev => ({ ...prev, liquidAssets: round(prev.liquidAssets + val), transactions: [newTransaction, ...prev.transactions] }));
+            setState(prev => ({ ...prev, liquidAssets: round((prev.liquidAssets || 0) + val), transactions: [newTransaction, ...(prev.transactions || [])] }));
         }
         setAmount(''); setDescription('');
         if (showModal !== 'category_detail') {
@@ -380,21 +391,21 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
             if (tx.type === 'expense' && tx.categoryId) {
                 setState(prev => ({
                     ...prev,
-                    liquidAssets: round(prev.liquidAssets + tx.amount),
-                    categories: prev.categories.map(c => c.id === tx.categoryId ? { ...c, spent: round(Math.max(0, c.spent - tx.amount)) } : c),
-                    transactions: prev.transactions.filter(t => t.id !== tId)
+                    liquidAssets: round((prev.liquidAssets || 0) + (tx.amount || 0)),
+                    categories: (prev.categories || []).map(c => c.id === tx.categoryId ? { ...c, spent: round(Math.max(0, (c.spent || 0) - (tx.amount || 0))) } : c),
+                    transactions: (prev.transactions || []).filter(t => t.id !== tId)
                 }));
             } else if (tx.type === 'income') {
                 setState(prev => ({
                     ...prev,
-                    liquidAssets: round(prev.liquidAssets - tx.amount),
-                    transactions: prev.transactions.filter(t => t.id !== tId)
+                    liquidAssets: round((prev.liquidAssets || 0) - (tx.amount || 0)),
+                    transactions: (prev.transactions || []).filter(t => t.id !== tId)
                 }));
             } else if (tx.excludeFromBudget) {
                 // Just delete, no asset refund logic wired automatically for goals yet
                 setState(prev => ({
                     ...prev,
-                    transactions: prev.transactions.filter(t => t.id !== tId)
+                    transactions: (prev.transactions || []).filter(t => t.id !== tId)
                 }));
             }
         }
@@ -402,7 +413,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
     const startEditTransaction = (tx: Transaction) => {
         setEditingTransaction(tx);
-        setAmount(tx.amount.toString());
+        setAmount((tx.amount || 0).toString());
         setDescription(tx.description);
         setShowModal('edit_transaction');
     };
@@ -418,7 +429,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 currentAmount: 0,
                 monthlyContribution: 0
             };
-            setState(prev => ({ ...prev, savingsGoals: [...prev.savingsGoals, newGoal] }));
+            setState(prev => ({ ...prev, savingsGoals: [...(prev.savingsGoals || []), newGoal] }));
             setShowModal(null); setNewGoalName(''); setNewGoalTarget('');
         }
     };
@@ -498,16 +509,16 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     };
 
     const deleteGoal = (goal: SavingsGoal) => {
-        const refund = goal.currentAmount > 0;
+        const refund = (goal.currentAmount || 0) > 0;
         const confirmMsg = refund
-            ? `Delete goal "${goal.name}" and return ${formatMoney(goal.currentAmount)} ${currency} to liquid assets?`
+            ? `Delete goal "${goal.name}" and return ${formatMoney(goal.currentAmount || 0)} ${currency} to liquid assets?`
             : `Delete goal "${goal.name}"?`;
 
         if (confirm(confirmMsg)) {
             setState(prev => ({
                 ...prev,
-                liquidAssets: refund ? round(prev.liquidAssets + goal.currentAmount) : prev.liquidAssets,
-                savingsGoals: prev.savingsGoals.filter(g => g.id !== goal.id)
+                liquidAssets: refund ? round((prev.liquidAssets || 0) + (goal.currentAmount || 0)) : (prev.liquidAssets || 0),
+                savingsGoals: (prev.savingsGoals || []).filter(g => g.id !== goal.id)
             }));
         }
     };
@@ -518,7 +529,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
         if (editingGoal && editGoalName && target > 0) {
             setState(prev => ({
                 ...prev,
-                savingsGoals: prev.savingsGoals.map(g =>
+                savingsGoals: (prev.savingsGoals || []).map(g =>
                     g.id === editingGoal.id ? { ...g, name: editGoalName, targetAmount: target } : g
                 )
             }));
@@ -530,24 +541,24 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const startEditGoal = (goal: SavingsGoal) => {
         setEditingGoal(goal);
         setEditGoalName(goal.name);
-        setEditGoalTarget(goal.targetAmount.toString());
+        setEditGoalTarget((goal.targetAmount || 0).toString());
         setShowModal('edit_goal');
     };
 
+    // Safe Months to goal calculation
     const monthsToGoal = (target: number, current: number) => {
-        // Use savings allocation (10% of spendable income) or fallback to 10% of monthlyIncome
+        if (current >= target) return t.done[language];
+        const remaining = target - current;
+        // Total allocated per month from salary for ALL savings
         const savingsCat = categories.find(c => c.id === 'c4');
-        const savingsAllocation = savingsCat ? savingsCat.limit : (monthlyIncome * 0.10);
+        const savingsAllocation = savingsCat ? (savingsCat.limit || 0) : (monthlyIncome * 0.10);
 
-        if (!savingsAllocation || savingsAllocation <= 0) return t.noCashFlow[language];
+        if (savingsAllocation <= 0) return t.noCashFlow[language];
 
-        const needed = round((target || 0) - (current || 0));
-        if (needed <= 0) return t.done[language];
-
-        const months = Math.ceil(needed / savingsAllocation);
+        const months = Math.ceil(remaining / savingsAllocation);
         if (isNaN(months) || !isFinite(months)) return t.noCashFlow[language];
 
-        return months + ' ' + t.monthsLeft[language];
+        return `${months} ${t.monthsLeft[language]}`;
     };
 
     const chartData = [
@@ -809,7 +820,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
                     return (
                         <div key={cat.id} className="group bg-card p-5 rounded-xl border border-border shadow-sm hover:border-primary/50 transition-all cursor-pointer relative overflow-hidden"
-                            onClick={() => { setSelectedCategory(cat); setShowModal('category_detail'); setIsEditingLimit(false); setLimitError(''); }}>
+                            onClick={() => { if (cat) { setSelectedCategory(cat); setShowModal('category_detail'); setIsEditingLimit(false); setLimitError(''); } }}>
 
                             <div className="flex justify-between items-start mb-3">
                                 <div className="flex items-center gap-3">
@@ -828,7 +839,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                     <div className="font-bold font-mono text-lg text-foreground">
                                         {formatMoney(cat.spent)}
                                     </div>
-                                    <div className="text-[10px] text-muted-foreground font-mono">/ {formatMoney(cat.limit)} {currency}</div>
+                                    <div className="text-[10px] text-muted-foreground font-mono">/ {formatMoney(cat.limit || 0)} {currency}</div>
                                 </div>
                             </div>
 
@@ -1088,7 +1099,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                             <label className="text-xs font-bold text-muted-foreground uppercase">{t.name[language]}</label>
                                             <input
                                                 placeholder="e.g. New Car, Vacation..."
-                                                value={newGoalName}
+                                                value={newGoalName || ''}
                                                 onChange={e => setNewGoalName(e.target.value)}
                                                 className="w-full bg-background border border-input rounded-xl p-3 outline-none focus:border-primary text-foreground font-medium"
                                                 autoFocus
@@ -1101,7 +1112,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                                     type="text"
                                                     inputMode="decimal"
                                                     placeholder="0.00"
-                                                    value={newGoalTarget}
+                                                    value={newGoalTarget || ''}
                                                     onChange={e => handleAmountChange(e.target.value, setNewGoalTarget)}
                                                     className="w-full bg-background border border-input rounded-xl p-3 outline-none focus:border-primary text-foreground font-mono"
                                                 />
@@ -1113,7 +1124,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                         </button>
                                     </form>
                                 </div>
-                            ) : showModal === 'edit_goal' && editingGoal ? (
+                            ) : (showModal === 'edit_goal' && editingGoal) ? (
                                 <div className="space-y-6">
                                     <h3 className="text-xl font-bold text-foreground">{t.editGoal[language]}</h3>
                                     <form onSubmit={handleSaveEditGoal} className="space-y-4">
