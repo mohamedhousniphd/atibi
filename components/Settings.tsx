@@ -36,6 +36,11 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
         return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
+    const parseAmount = (val: string) => {
+        const num = parseFloat(val.replace(/,/g, '.'));
+        return isNaN(num) ? 0 : round(num);
+    };
+
     const handleLanguageChange = (lang: Language) => {
         setState(prev => ({ ...prev, language: lang }));
     };
@@ -130,30 +135,27 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
     };
 
     const saveSalary = () => {
-        const val = parseFloat(tempSalary);
-        if (!isNaN(val) && val > 0) {
-            const roundedVal = Math.round((val + Number.EPSILON) * 100) / 100;
-            setState(prev => ({ ...prev, monthlyIncome: roundedVal }));
+        const val = parseAmount(tempSalary);
+        if (val > 0) {
+            setState(prev => ({ ...prev, monthlyIncome: val }));
             setIsEditingSalary(false);
         }
     };
 
     const addNewDebt = () => {
-        if (newDebtName && newDebtAmount) {
-            const amount = parseFloat(newDebtAmount);
-            if (!isNaN(amount)) {
-                setState(prev => ({
-                    ...prev,
-                    debts: [...prev.debts, {
-                        id: Date.now().toString(),
-                        name: newDebtName,
-                        amount: Math.round((amount + Number.EPSILON) * 100) / 100,
-                        endDate: newDebtEndDate,
-                        deductionType: newDebtType
-                    }]
-                }));
-                setNewDebtName(''); setNewDebtAmount(''); setNewDebtEndDate('');
-            }
+        const amount = parseAmount(newDebtAmount);
+        if (newDebtName && amount > 0) {
+            setState(prev => ({
+                ...prev,
+                debts: [...prev.debts, {
+                    id: Date.now().toString(),
+                    name: newDebtName,
+                    amount: amount,
+                    endDate: newDebtEndDate,
+                    deductionType: newDebtType
+                }]
+            }));
+            setNewDebtName(''); setNewDebtAmount(''); setNewDebtEndDate('');
         }
     };
 
@@ -360,7 +362,7 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
             </section>
 
             <div className="flex flex-col items-center justify-center text-xs text-muted-foreground mt-8 pb-4 space-y-1">
-                <p>esalaire v1.0</p>
+                <p>esalaire v1.1.1</p>
                 <a
                     href="https://www.mohamedhousni.com"
                     target="_blank"

@@ -35,8 +35,16 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
     const sourceDeductions = debts.filter(d => d.deductionType === 'source').reduce((acc, d) => acc + d.amount, 0);
     const estimatedBaseNet = monthlyIncome + sourceDeductions;
 
-    const formatMoney = (val: number) => {
-        return val.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const round = (num: any) => {
+        const n = typeof num === 'number' ? num : parseFloat(num);
+        if (isNaN(n) || !isFinite(n)) return 0;
+        return Math.round((n + Number.EPSILON) * 100) / 100;
+    };
+
+    const formatMoney = (val: any) => {
+        const n = typeof val === 'number' ? val : parseFloat(val);
+        if (isNaN(n) || !isFinite(n)) return "0,00";
+        return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     // Form State for NEW backpay
@@ -45,16 +53,13 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
     const [monthlyDiff, setMonthlyDiff] = useState('0');
     const [isManualDiff, setIsManualDiff] = useState(false);
     const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState(''); // New optional end date
-    const [description, setDescription] = useState(''); // New optional description
+    const [endDate, setEndDate] = useState('');
+    const [description, setDescription] = useState('');
 
-    // Parse decimal input safely
     const parseInput = (val: string): number => {
-        if (!val) return 0;
-        const clean = val.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+        const clean = val.replace(/,/g, '.');
         const num = parseFloat(clean);
-        // Round to 2 decimals to match app logic
-        return isNaN(num) ? 0 : Math.round((num + Number.EPSILON) * 100) / 100;
+        return isNaN(num) ? 0 : round(num);
     };
 
     useEffect(() => {
@@ -62,7 +67,7 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
             const oldS = parseInput(oldSalary);
             const newS = parseInput(newSalary);
             if (newS > oldS) {
-                setMonthlyDiff((newS - oldS).toFixed(2));
+                setMonthlyDiff(round(newS - oldS).toString());
             } else {
                 setMonthlyDiff('0');
             }
@@ -128,7 +133,6 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
             const startD = new Date(bp.startDate);
             if (isNaN(startD.getTime())) return;
 
-            // If end date exists, use it. Otherwise use 'now' (up to the current month)
             const endD = bp.endDate ? new Date(bp.endDate) : now;
             if (isNaN(endD.getTime())) return;
 
@@ -136,7 +140,7 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
             months -= startD.getMonth();
             months += endD.getMonth();
             months = Math.max(0, months + 1);
-            displayTotalPending += (months * (bp.monthlyAmount || 0));
+            displayTotalPending += round(months * (bp.monthlyAmount || 0));
         });
     }
 

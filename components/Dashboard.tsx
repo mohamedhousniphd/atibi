@@ -99,7 +99,6 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     };
 
     // --- Core Calculations ---
-    // Safety: ensure arrays exist
     const categories = state.categories || [];
     const transactions = state.transactions || [];
     const savingsGoals = state.savingsGoals || [];
@@ -107,8 +106,6 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const debts = state.debts || [];
     const liquidAssets = state.liquidAssets || 0;
 
-    // Core Calculations with fallback safety
-    const totalWeeklyDebt = debts.reduce((acc, d) => acc + (d.amount || 0), 0); // This is monthly debt based on previous context, user called it monthly debt
     const totalMonthlyDebt = round(debts.reduce((acc, d) => acc + (d.amount || 0), 0));
     const totalOutstandingDebt = round(debts.reduce((acc, d) => acc + calculateDebtBalance(d), 0));
 
@@ -250,6 +247,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                     let ratio = 0.10;
                     if (cat.id === 'c1') ratio = 0.30;
                     else if (cat.id === 'c2') ratio = 0.40;
+                    else ratio = 0.10; // Savings, Emergency, Wants are all 10%
                     return { ...cat, limit: round(newSpendableIncome * ratio) };
                 }) : (prev.categories || []);
 
@@ -855,7 +853,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
             <section className="grid grid-cols-1 gap-4">
                 {categories.map((cat) => {
                     const percentSpent = cat.limit > 0 ? Math.min((cat.spent / cat.limit) * 100, 100) : (cat.spent > 0 ? 100 : 0);
-                    const allocationPercent = spendableIncome > 0 ? (cat.limit / spendableIncome) * 100 : 0;
+                    const safePercent = isNaN(percentSpent) ? 0 : percentSpent;
 
                     return (
                         <div key={cat.id} className="group bg-card p-5 rounded-xl border border-border shadow-sm hover:border-primary/50 transition-all cursor-pointer relative overflow-hidden"
@@ -884,9 +882,9 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
                             <div className="relative h-2 bg-secondary rounded-full overflow-hidden">
                                 <motion.div
-                                    className={`h-full ${percentSpent > 90 ? 'bg-destructive' : (percentSpent > 75 ? 'bg-amber-500' : 'bg-primary')}`}
+                                    className={`h-full ${safePercent > 90 ? 'bg-destructive' : (safePercent > 75 ? 'bg-amber-500' : 'bg-primary')}`}
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${percentSpent}%` }}
+                                    animate={{ width: `${safePercent}%` }}
                                     transition={{ duration: 0.8, ease: "easeOut" }}
                                 />
                             </div>
