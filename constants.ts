@@ -354,7 +354,9 @@ export const TRANSLATIONS: Translation = {
   accrued: { en: 'accrued', fr: 'cumulé', ar: 'متراكم' },
   totalPending: { en: 'Total Pending', fr: 'Total en Attente', ar: 'إجمالي الانتظار' },
   activeTracking: { en: 'Active Tracking', fr: 'Suivi Actif', ar: 'تتبع نشط' },
-  date: { en: 'Date', fr: 'Date', ar: 'التاريخ' }
+  date: { en: 'Date', fr: 'Date', ar: 'التاريخ' },
+  source: { en: 'Source', fr: 'Source', ar: 'المصدر' },
+  allocateToCategory: { en: 'Allocate to Category', fr: 'Allouer à une Catégorie', ar: 'تخصيص للفئة' }
 };
 
 export const CATEGORY_NAMES: Record<string, Record<string, string>> = {

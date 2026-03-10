@@ -62,17 +62,25 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     }, [lastResetDate]);
 
     // --- Helpers ---
-    const round = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
-
-    const formatMoney = (val: number) => {
-        return val.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const round = (num: any) => {
+        const n = typeof num === 'number' ? num : parseFloat(num);
+        if (isNaN(n) || !isFinite(n)) return 0;
+        return Math.round((n + Number.EPSILON) * 100) / 100;
     };
 
-    const formatCompact = (val: number) => {
+    const formatMoney = (val: any) => {
+        const n = typeof val === 'number' ? val : parseFloat(val);
+        if (isNaN(n) || !isFinite(n)) return "0,00";
+        return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    const formatCompact = (val: any) => {
+        const n = typeof val === 'number' ? val : parseFloat(val);
+        if (isNaN(n) || !isFinite(n)) return "0";
         return Intl.NumberFormat('en-US', {
             notation: "compact",
             maximumFractionDigits: 1
-        }).format(val);
+        }).format(n);
     };
 
     const getMonthsLeft = (endDateStr: string) => {
@@ -121,7 +129,10 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
 
     const emergencyFundCurrent = round(Math.min(liquidAssets, emergencyFundTarget));
     const freeWealth = round(Math.max(0, liquidAssets - emergencyFundTarget));
-    const emergencyProgress = emergencyFundTarget > 0 ? (emergencyFundCurrent / emergencyFundTarget) * 100 : 0;
+
+    // Safety: ensure no NaN in progress
+    const rawEmergencyProgress = emergencyFundTarget > 0 ? (emergencyFundCurrent / emergencyFundTarget) * 100 : 0;
+    const emergencyProgress = isNaN(rawEmergencyProgress) ? 0 : Math.min(100, rawEmergencyProgress);
 
     // Net Wealth Calculation
     // Logic: Liquid Assets + Money locked in Savings Goals - Total Debt
@@ -286,29 +297,47 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
         const val = parseAmount(amount);
         if (val <= 0) return;
 
-        // SPENDING FROM SAVINGS GOAL
-        if (showModal === 'spend_goal' && selectedGoal) {
-            if (val > (selectedGoal.currentAmount || 0)) {
-                alert("Insufficient funds in goal.");
+        // SPENDING FROM SAVINGS GOAL OR EMERGENCY FUND
+        if ((showModal === 'spend_goal' || showModal === 'spend_emergency') && (selectedGoal || showModal === 'spend_emergency')) {
+            const isEmergency = showModal === 'spend_emergency';
+            const availableAmount = isEmergency ? emergencyFundCurrent : (selectedGoal?.currentAmount || 0);
+
+            if (val > availableAmount) {
+                alert("Insufficient funds.");
                 return;
             }
-            // Logic: 
-            // 1. Goal -= Amount
-            // 2. Add Transaction (Expense) marked excludeFromBudget
-            // 3. Liquid Assets untouched (money already left liquid when allocated)
-            setState(prev => ({
-                ...prev,
-                savingsGoals: (prev.savingsGoals || []).map(g => g.id === selectedGoal.id ? { ...g, currentAmount: round((g.currentAmount || 0) - val) } : g),
-                transactions: [{
+
+            setState(prev => {
+                const updatedGoals = isEmergency ? (prev.savingsGoals || []) : (prev.savingsGoals || []).map(g =>
+                    g.id === selectedGoal?.id ? { ...g, currentAmount: round((g.currentAmount || 0) - val) } : g
+                );
+
+                const newTransaction: Transaction = {
                     id: Date.now().toString(),
                     amount: val,
-                    description: `${description || selectedGoal.name} (Goal Spend)`,
+                    description: `${description || (isEmergency ? t.emergencyFund[language] : (selectedGoal?.name || ''))} (${t.goalSpend[language]})`,
                     type: 'expense',
                     date: new Date().toISOString(),
-                    excludeFromBudget: true
-                }, ...(prev.transactions || [])]
-            }));
-            setShowModal(null); setSelectedGoal(null); setAmount(''); setDescription('');
+                    excludeFromBudget: !selectedCategory,
+                    categoryId: selectedCategory?.id
+                };
+
+                const updatedCategories = selectedCategory
+                    ? (prev.categories || []).map(cat =>
+                        cat.id === selectedCategory.id ? { ...cat, spent: round((cat.spent || 0) + val) } : cat
+                    )
+                    : (prev.categories || []);
+
+                return {
+                    ...prev,
+                    liquidAssets: isEmergency ? round((prev.liquidAssets || 0) - val) : (prev.liquidAssets || 0),
+                    savingsGoals: updatedGoals,
+                    categories: updatedCategories,
+                    transactions: [newTransaction, ...(prev.transactions || [])],
+                };
+            });
+
+            setShowModal(null); setSelectedGoal(null); setSelectedCategory(null); setAmount(''); setDescription('');
             return;
         }
 
@@ -656,9 +685,19 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-secondary/30 p-3 rounded-xl border border-border/50">
+                    <div className="bg-secondary/30 p-3 rounded-xl border border-border/50 relative group">
                         <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1">{t.emergencyFund[language]}</div>
-                        <div className="font-mono font-bold text-lg">{formatMoney(emergencyFundCurrent)}</div>
+                        <div className="flex justify-between items-end">
+                            <div className="font-mono font-bold text-lg">{formatMoney(emergencyFundCurrent)}</div>
+                            {emergencyFundCurrent > 0 && (
+                                <button
+                                    onClick={() => { setShowModal('spend_emergency'); setAmount(''); setDescription(''); }}
+                                    className="p-1 px-2 bg-primary/20 text-primary text-[8px] font-bold rounded uppercase hover:bg-primary hover:text-white transition-all"
+                                >
+                                    {t.spend[language]}
+                                </button>
+                            )}
+                        </div>
                         <div className="w-full bg-secondary h-1.5 rounded-full mt-2 overflow-hidden">
                             <div className="h-full bg-orange-400" style={{ width: `${Math.min(emergencyProgress, 100)}%` }}></div>
                         </div>
@@ -869,7 +908,8 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 </div>
                 <div className="space-y-3">
                     {savingsGoals.map(goal => {
-                        const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+                        const rawProgress = (goal.currentAmount || 0) / (goal.targetAmount || 1) * 100;
+                        const progress = isNaN(rawProgress) ? 0 : Math.min(100, Math.max(0, rawProgress));
                         const isCompleted = progress >= 100;
                         return (
                             <div key={goal.id} className="bg-card p-4 rounded-xl border border-border shadow-sm">
@@ -901,11 +941,17 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                     </div>
                                 </div>
                                 <div className="h-2 bg-secondary rounded-full overflow-hidden mb-3">
-                                    <motion.div
-                                        className="h-full bg-primary"
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${progress}%` }}
-                                    />
+                                    {(() => {
+                                        const rawP = (goal.currentAmount / (goal.targetAmount || 1)) * 100;
+                                        const p = isNaN(rawP) ? 0 : Math.min(100, Math.max(0, rawP));
+                                        return (
+                                            <motion.div
+                                                className="h-full bg-primary"
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${p}%` }}
+                                            />
+                                        );
+                                    })()}
                                 </div>
 
                                 <div className="flex gap-2">
@@ -1154,15 +1200,19 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                         </button>
                                     </form>
                                 </div>
-                            ) : showModal === 'spend_goal' && selectedGoal ? (
+                            ) : (showModal === 'spend_goal' || showModal === 'spend_emergency') && (selectedGoal || showModal === 'spend_emergency') ? (
                                 <form onSubmit={handleTransaction} className="space-y-6">
                                     <div className="flex items-center gap-3 text-primary">
                                         <ShoppingBag size={24} />
                                         <h3 className="text-xl font-bold text-foreground">{t.spendFromGoal[language]}</h3>
                                     </div>
-                                    <p className="text-sm text-muted-foreground">
-                                        {t.spendFromGoalDesc[language]} <strong>"{selectedGoal.name}"</strong>.
-                                    </p>
+                                    <div className="bg-secondary/30 p-4 rounded-xl space-y-1">
+                                        <div className="text-[10px] text-muted-foreground uppercase font-bold">{t.source[language]}</div>
+                                        <div className="text-sm font-bold text-foreground">
+                                            {showModal === 'spend_emergency' ? t.emergencyFund[language] : (selectedGoal?.name || '')}
+                                            (Available: {formatMoney(showModal === 'spend_emergency' ? emergencyFundCurrent : (selectedGoal?.currentAmount || 0))} {currency})
+                                        </div>
+                                    </div>
 
                                     <div className="space-y-4">
                                         <div className="relative">
@@ -1177,9 +1227,27 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                             />
                                             <span className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currency}</span>
                                         </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-muted-foreground uppercase">{t.allocateToCategory[language]} {t.optional[language]}</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {(categories || []).map(cat => (
+                                                    <button
+                                                        key={cat.id}
+                                                        type="button"
+                                                        onClick={() => setSelectedCategory(selectedCategory?.id === cat.id ? null : cat)}
+                                                        className={`text-[10px] p-2 rounded-lg border flex items-center justify-center gap-2 transition-all ${selectedCategory?.id === cat.id ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-background text-muted-foreground border-border hover:border-primary'}`}
+                                                    >
+                                                        {getIcon(cat.icon)}
+                                                        {CATEGORY_NAMES[cat.id]?.[language] || cat.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         <input
                                             type="text"
-                                            value={description}
+                                            value={description || ''}
                                             onChange={(e) => setDescription(e.target.value)}
                                             placeholder={t.descriptionOptional[language]}
                                             className="w-full bg-background border border-input rounded-xl p-3 text-sm focus:border-primary outline-none text-foreground"
