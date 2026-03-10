@@ -220,9 +220,21 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 const isPermanent = !bp.endDate;
                 const newSalary = isPermanent ? round(prev.monthlyIncome + bp.monthlyAmount) : prev.monthlyIncome;
 
+                // Propotional update for category limits if permanent salary increase
+                const totalDebt = round((prev.debts || []).reduce((acc, d) => acc + d.amount, 0));
+                const newSpendableIncome = round(Math.max(0, newSalary - totalDebt));
+
+                const updatedCategories = isPermanent ? (prev.categories || []).map(cat => {
+                    let ratio = 0.10;
+                    if (cat.id === 'c1') ratio = 0.30;
+                    else if (cat.id === 'c2') ratio = 0.40;
+                    return { ...cat, limit: round(newSpendableIncome * ratio) };
+                }) : prev.categories;
+
                 return {
                     ...prev,
                     monthlyIncome: newSalary,
+                    categories: updatedCategories,
                     liquidAssets: round(prev.liquidAssets + totalToClaim),
                     backpays: (prev.backpays || []).filter(b => b.id !== bpId),
                     transactions: [{
@@ -526,10 +538,16 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
         // Use savings allocation (10% of spendable income) or fallback to 10% of monthlyIncome
         const savingsCat = categories.find(c => c.id === 'c4');
         const savingsAllocation = savingsCat ? savingsCat.limit : (monthlyIncome * 0.10);
-        if (savingsAllocation <= 0) return t.noCashFlow[language];
-        const needed = round(target - current);
+
+        if (!savingsAllocation || savingsAllocation <= 0) return t.noCashFlow[language];
+
+        const needed = round((target || 0) - (current || 0));
         if (needed <= 0) return t.done[language];
-        return Math.ceil(needed / savingsAllocation) + ' ' + t.monthsLeft[language];
+
+        const months = Math.ceil(needed / savingsAllocation);
+        if (isNaN(months) || !isFinite(months)) return t.noCashFlow[language];
+
+        return months + ' ' + t.monthsLeft[language];
     };
 
     const chartData = [
