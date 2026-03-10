@@ -84,24 +84,20 @@ const Onboarding: React.FC<OnboardingProps> = ({ state, setState }) => {
         const incomeVal = parseFloat(income) || 0;
         const assetsVal = parseFloat(assets) || 0;
 
-        // Automatically calculate category splits based on new income
-        // 30% Fixed, 40% Needs, 10% Wants, 10% Savings, 10% Emergency
+        // Calculate spendable income (after bank deductions)
+        const bankDeductions = tempDebts.filter(d => d.deductionType === 'bank').reduce((acc, d) => acc + d.amount, 0);
+        const spendable = incomeVal - bankDeductions;
+
+        // 30% Fixed, 40% Needs, 10% Wants, 10% Savings, 10% Emergency of SPENDABLE income
         const updatedCategories = state.categories.map(cat => {
-            let newLimit = 0;
-            if (cat.type === 'fixed') newLimit = incomeVal * 0.30;
-            else if (cat.type === 'need') newLimit = incomeVal * 0.40;
-            else if (cat.type === 'want') newLimit = incomeVal * 0.10;
-            else if (cat.type === 'saving') newLimit = incomeVal * 0.10; // Applies to both "Savings Goal" and "Emergency Fund" as they are marked 'saving' type in constants, wait - let's check constants ids.
-            else newLimit = incomeVal * 0.10;
+            let ratio = 0.10;
+            if (cat.id === 'c1') ratio = 0.30; // Fixed
+            if (cat.id === 'c2') ratio = 0.40; // Essentials
+            if (cat.id === 'c3') ratio = 0.10; // Personal
+            if (cat.id === 'c4') ratio = 0.10; // Savings
+            if (cat.id === 'c5') ratio = 0.10; // Emergency
 
-            // Force ID check for precision if types are ambiguous
-            if (cat.id === 'c1') newLimit = incomeVal * 0.30; // Fixed
-            if (cat.id === 'c2') newLimit = incomeVal * 0.40; // Essentials
-            if (cat.id === 'c3') newLimit = incomeVal * 0.10; // Personal
-            if (cat.id === 'c4') newLimit = incomeVal * 0.10; // Savings
-            if (cat.id === 'c5') newLimit = incomeVal * 0.10; // Emergency
-
-            return { ...cat, limit: Math.round(newLimit) };
+            return { ...cat, limit: Math.round(spendable * ratio) };
         });
 
         setState(prev => ({
@@ -249,7 +245,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ state, setState }) => {
                                 <button onClick={() => removeDebt(debt.id)} className="text-destructive p-1"><Trash2 size={16} /></button>
                             </div>
                             <div className="flex gap-2 items-center pl-2">
-                                <input type="number" placeholder={t.amount[language]} value={debt.amount || ''} onChange={(e) => updateDebt(debt.id, 'amount', parseFloat(e.target.value))} className="bg-muted/30 rounded px-3 py-2 text-lg font-bold w-full outline-none font-mono focus:bg-muted/50 transition-colors text-foreground" />
+                                <input type="number" placeholder={t.amount[language]} value={debt.amount || ''} onChange={(e) => updateDebt(debt.id, 'amount', parseFloat(e.target.value))} className="bg-background border border-input rounded px-3 py-2 text-lg font-bold w-full outline-none font-mono focus:border-primary transition-colors text-foreground" />
                                 <span className="text-sm font-bold text-muted-foreground">{currency}</span>
                             </div>
                             <div className="pl-2">
@@ -259,7 +255,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ state, setState }) => {
                                 </div>
                             </div>
                             <div className="relative pl-2">
-                                <input type="month" value={debt.endDate} onChange={(e) => updateDebt(debt.id, 'endDate', e.target.value)} className="w-full bg-muted/20 border border-input rounded text-xs px-2 py-2 outline-none font-mono text-foreground" />
+                                <input type="month" value={debt.endDate} onChange={(e) => updateDebt(debt.id, 'endDate', e.target.value)} className="w-full bg-background border border-input rounded text-xs px-2 py-2 outline-none font-mono text-foreground focus:border-primary" />
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-bold pointer-events-none uppercase">{t.endDate[language]}</span>
                             </div>
                         </motion.div>
@@ -346,8 +342,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ state, setState }) => {
                         <button
                             onClick={() => { if (step < steps.length - 1) setStep(step + 1); else finishOnboarding(); }}
                             className={`flex-1 py-4 text-lg font-bold rounded-xl shadow-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${step === 0
-                                    ? 'bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary/90'
-                                    : 'bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary/90'
+                                ? 'bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary/90'
+                                : 'bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary/90'
                                 }`}
                         >
                             {step === steps.length - 1 ? t.finish[language] : (step === 0 ? t.startSetup[language] : (step === 1 ? t.continue[language] : t.next[language]))}

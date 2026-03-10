@@ -329,6 +329,14 @@ export const TRANSLATIONS: Translation = {
   perMonth: { en: '/ month since', fr: '/ mois depuis', ar: '/ شهر منذ' },
 };
 
+export const CATEGORY_NAMES: Record<string, Record<string, string>> = {
+  'c1': { en: 'Fixed Bills & Housing', fr: 'Charges Fixes & Logement', ar: 'الفواتير الثابتة والسكن' },
+  'c2': { en: 'Living Essentials', fr: 'Essentiels du Quotidien', ar: 'الاحتياجات الأساسية' },
+  'c3': { en: 'Personal & Lifestyle', fr: 'Personnel & Style de Vie', ar: 'شخصي ونمط الحياة' },
+  'c4': { en: 'Savings & Goals', fr: 'Épargne & Objectifs', ar: 'الادخار والأهداف' },
+  'c5': { en: 'Emergency Fund', fr: 'Fonds d\'Urgence', ar: 'صندوق الطوارئ' },
+};
+
 export const COLORS = {
   needs: '#f59e0b', // Amber
   wants: '#ef4444', // Red

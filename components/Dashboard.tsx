@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Wallet, AlertTriangle, Lock, Plus, TrendingUp, TrendingDown, History, ShieldCheck, ShieldAlert, Target, Calendar, BarChart3, Coins, Hourglass, Zap, Banknote, Briefcase, Trash2, Edit2, X, Download, Save, PiggyBank, Heart, ShoppingCart, FileText, Shield, LogOut, RefreshCw, ShoppingBag } from 'lucide-react';
 import { AppState, Category, Transaction, SavingsGoal, Debt } from '../types';
-import { COLORS, TRANSLATIONS } from '../constants';
+import { COLORS, TRANSLATIONS, CATEGORY_NAMES } from '../constants';
 
 // Add confetti definition
 declare global {
@@ -422,10 +422,12 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     };
 
     const monthsToGoal = (target: number, current: number) => {
-        if (actualBuffer <= 0) return t.noCashFlow[language];
+        // Use savings allocation (10% of spendable income) for estimation
+        const savingsAllocation = categories.find(c => c.id === 'c4')?.limit || (spendableIncome * 0.10);
+        if (savingsAllocation <= 0) return t.noCashFlow[language];
         const needed = round(target - current);
         if (needed <= 0) return t.done[language];
-        return Math.ceil(needed / actualBuffer) + ' ' + t.monthsLeft[language];
+        return Math.ceil(needed / savingsAllocation) + ' ' + t.monthsLeft[language];
     };
 
     const chartData = [
@@ -505,7 +507,14 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                         {t.liquidAssets[language]}
                     </h2>
                     <div className="flex items-center gap-3">
-                        <span className="text-2xl font-mono font-bold">{formatMoney(liquidAssets)} <span className="text-sm text-muted-foreground">{currency}</span></span>
+                        <div className="text-right">
+                            <span className="text-2xl font-mono font-bold">{formatMoney(liquidAssets + totalSavingsInGoals)} <span className="text-sm text-muted-foreground">{currency}</span></span>
+                            {totalSavingsInGoals > 0 && (
+                                <div className="text-[10px] text-muted-foreground font-mono">
+                                    {formatMoney(liquidAssets)} + {formatMoney(totalSavingsInGoals)} ({t.savingsGoals[language]})
+                                </div>
+                            )}
+                        </div>
                         <button
                             onClick={() => setShowModal('income')}
                             className="bg-primary text-primary-foreground p-1.5 rounded-full hover:scale-105 transition-transform shadow-lg shadow-primary/20"
@@ -654,7 +663,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                                         {getIcon(cat.icon)}
                                     </div>
                                     <div>
-                                        <div className="font-bold text-base">{cat.name}</div>
+                                        <div className="font-bold text-base">{CATEGORY_NAMES[cat.id]?.[language] || cat.name}</div>
                                         <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                                             <Coins size={10} />
                                             {t.allocation[language]}: <span className="text-foreground font-mono font-bold">{allocationPercent.toFixed(1)}%</span>
@@ -882,7 +891,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                             ) : showModal === 'category_detail' && selectedCategory ? (
                                 <div className="space-y-6">
                                     <div className="text-center space-y-1">
-                                        <h3 className="text-2xl font-bold">{selectedCategory.name}</h3>
+                                        <h3 className="text-2xl font-bold">{CATEGORY_NAMES[selectedCategory.id]?.[language] || selectedCategory.name}</h3>
                                         <div className="text-muted-foreground text-sm flex items-center justify-center gap-2">
                                             <span>{t.spentLabel[language]}: <span className="font-mono font-bold text-foreground">{formatMoney(selectedCategory.spent)}</span> / </span>
                                             {isEditingLimit ? (

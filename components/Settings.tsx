@@ -79,7 +79,9 @@ const Settings: React.FC<SettingsProps> = ({ state, setState }) => {
     };
 
     const handleRecalculateBudgets = () => {
-        if (confirm("This will reset your category limits based on the 30/40/30 rule using your current net salary. Continue?")) {
+        if (confirm("This will reset your category limits based on the 30/40/10/10/10 rule using your spendable income (after bank deductions). Continue?")) {
+            const bankDeductions = state.debts.filter(d => d.deductionType === 'bank').reduce((acc, d) => acc + d.amount, 0);
+            const spendable = state.monthlyIncome - bankDeductions;
             const updatedCategories = state.categories.map(cat => {
                 let ratio = 0.10;
                 if (cat.id === 'c1') ratio = 0.30; // Fixed
@@ -88,7 +90,7 @@ const Settings: React.FC<SettingsProps> = ({ state, setState }) => {
                 else if (cat.id === 'c4') ratio = 0.10; // Savings
                 else if (cat.id === 'c5') ratio = 0.10; // Emergency
 
-                return { ...cat, limit: Math.round(monthlyIncome * ratio) };
+                return { ...cat, limit: Math.round(spendable * ratio) };
             });
 
             setState(prev => ({ ...prev, categories: updatedCategories }));
@@ -154,10 +156,10 @@ const Settings: React.FC<SettingsProps> = ({ state, setState }) => {
         <button
             onClick={onClick}
             className={`w-full flex items-center justify-between p-4 rounded-lg transition-all border ${variant === 'destructive'
-                    ? 'bg-destructive/10 border-destructive/30 hover:bg-destructive/20 text-destructive'
-                    : variant === 'default'
-                        ? 'bg-card border-border hover:bg-secondary/50 text-card-foreground'
-                        : 'bg-primary text-primary-foreground border-primary hover:bg-primary/90'
+                ? 'bg-destructive/10 border-destructive/30 hover:bg-destructive/20 text-destructive'
+                : variant === 'default'
+                    ? 'bg-card border-border hover:bg-secondary/50 text-card-foreground'
+                    : 'bg-primary text-primary-foreground border-primary hover:bg-primary/90'
                 }`}
         >
             <div className="text-left">
