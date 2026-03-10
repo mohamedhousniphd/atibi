@@ -11,17 +11,17 @@ interface ToolsProps {
 }
 
 // MOVED OUTSIDE to fix focus loss bug
-const InputField = ({ label, value, onChange, placeholder }: any) => (
+const InputField = ({ label, value, onChange, placeholder, type = 'number' }: any) => (
     <div>
         <label className="block text-sm font-medium text-muted-foreground mb-1.5">{label}</label>
         <input
-            type="number"
-            inputMode="decimal"
+            type={type}
+            inputMode={type === 'number' ? 'decimal' : 'text'}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             className="w-full bg-background border border-input rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:border-input outline-none transition-all placeholder:text-muted font-mono text-foreground"
             placeholder={placeholder}
-            step="0.01"
+            step={type === 'number' ? "0.01" : undefined}
         />
     </div>
 );
@@ -230,6 +230,7 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
                     value={description}
                     onChange={setDescription}
                     placeholder="e.g. Promotion 2023"
+                    type="text"
                 />
 
                 <button
@@ -259,11 +260,27 @@ const Tools: React.FC<ToolsProps> = ({ state, setState, goToDashboard }) => {
                                             {bp.startDate} {bp.endDate ? `→ ${bp.endDate}` : '→ Now'}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="font-mono font-bold text-primary">+{formatMoney(bp.monthlyAmount)}/mo</span>
-                                        <button onClick={() => deleteBackpay(bp.id)} className="text-muted-foreground hover:text-destructive p-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-                                        </button>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-mono font-bold text-primary">+{formatMoney(bp.monthlyAmount)}/mo</span>
+                                            <button onClick={() => deleteBackpay(bp.id)} className="text-muted-foreground hover:text-destructive p-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+                                            </button>
+                                        </div>
+                                        <div className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold uppercase">
+                                            {(() => {
+                                                const now = new Date();
+                                                const startD = new Date(bp.startDate);
+                                                const endD = bp.endDate ? new Date(bp.endDate) : now;
+                                                const effectiveEndD = endD < now ? endD : now;
+                                                if (isNaN(startD.getTime())) return '0 months';
+                                                let months = (effectiveEndD.getFullYear() - startD.getFullYear()) * 12;
+                                                months -= startD.getMonth();
+                                                months += effectiveEndD.getMonth();
+                                                months = Math.max(0, months + 1);
+                                                return `${months} months accrued`;
+                                            })()}
+                                        </div>
                                     </div>
                                 </div>
                             ))}

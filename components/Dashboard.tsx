@@ -413,21 +413,35 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const handleContributeSavings = (goalId: string) => {
         const val = parseAmount(contributionAmounts[goalId] || '0');
         if (val <= 0) return;
-        if (val > liquidAssets) {
+
+        // Safety: ensure liquidAssets is a number
+        const currentAssets = typeof liquidAssets === 'number' ? liquidAssets : 0;
+
+        if (val > currentAssets) {
             alert(t.insufficientFunds[language]);
             return;
         }
 
-        if (window.confetti) window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#eab308', '#3b82f6'] });
+        if (window.confetti) {
+            try {
+                window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#eab308', '#3b82f6'] });
+            } catch (e) {
+                console.error("Confetti error", e);
+            }
+        }
 
         setState(prev => {
-            const goal = prev.savingsGoals.find(g => g.id === goalId);
+            if (!prev) return prev;
+            const goals = prev.savingsGoals || [];
+            const goal = goals.find(g => g.id === goalId);
             const goalName = goal ? goal.name : 'Goal';
+
+            const prevTx = Array.isArray(prev.transactions) ? prev.transactions : [];
 
             return {
                 ...prev,
-                liquidAssets: round(prev.liquidAssets - val),
-                savingsGoals: prev.savingsGoals.map(g => g.id === goalId ? { ...g, currentAmount: round(g.currentAmount + val) } : g),
+                liquidAssets: round((prev.liquidAssets || 0) - val),
+                savingsGoals: goals.map(g => g.id === goalId ? { ...g, currentAmount: round((g.currentAmount || 0) + val) } : g),
                 transactions: [{
                     id: Date.now().toString(),
                     amount: val,
@@ -435,11 +449,15 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                     type: 'expense',
                     excludeFromBudget: true,
                     date: new Date().toISOString(),
-                    categoryId: 'c4' // Link to savings for analytics if desired
-                }, ...(prev.transactions || [])]
+                    categoryId: 'c4'
+                }, ...prevTx]
             };
         });
-        setContributionAmounts(prev => ({ ...prev, [goalId]: '' }));
+        setContributionAmounts(prev => {
+            const next = { ...prev };
+            delete next[goalId];
+            return next;
+        });
     };
 
     const deleteGoal = (goal: SavingsGoal) => {
