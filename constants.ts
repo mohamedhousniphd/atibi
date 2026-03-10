@@ -177,6 +177,9 @@ export const TRANSLATIONS: Translation = {
   consumptionLoan: { en: 'Consumer Loan', fr: 'Crédit Consommation', ar: 'قرض استهلاكي' },
   manageDebts: { en: 'Manage Debts', fr: 'Gérer les Dettes', ar: 'إدارة الديون' },
   addNewDebt: { en: 'Add New Debt', fr: 'Ajouter une dette', ar: 'إضافة دين جديد' },
+  financialTools: { en: 'Financial Tools', fr: 'Outils Financiers', ar: 'أدوات مالية' },
+  backpayTracker: { en: 'Backpay Tracker', fr: 'Suivi des Rappels', ar: 'متتبع المستحقات' },
+  backpayDesc: { en: 'Track salary increases and accumulated arrears', fr: 'Suivez les augmentations et les arriérés cumulés', ar: 'تتبع الزيادات في الراتب والمستحقات المتراكمة' },
 
   // Dashboard
   monthlyFlow: { en: 'Remaining Budget', fr: 'Budget Restant', ar: 'الميزانية المتبقية' },

@@ -30,6 +30,14 @@ const App: React.FC = () => {
         }
         delete parsed.backpay;
       }
+
+      // Ensure all arrays exist to prevent spread crashes
+      if (!parsed.backpays) parsed.backpays = [];
+      if (!parsed.transactions) parsed.transactions = [];
+      if (!parsed.savingsGoals) parsed.savingsGoals = [];
+      if (!parsed.debts) parsed.debts = [];
+      if (!parsed.categories) parsed.categories = DEFAULT_STATE.categories;
+
       return parsed;
     }
 

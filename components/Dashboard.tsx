@@ -64,7 +64,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const round = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
     const formatMoney = (val: number) => {
-        return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return val.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const formatCompact = (val: number) => {
@@ -436,7 +436,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                     excludeFromBudget: true,
                     date: new Date().toISOString(),
                     categoryId: 'c4' // Link to savings for analytics if desired
-                }, ...prev.transactions]
+                }, ...(prev.transactions || [])]
             };
         });
         setContributionAmounts(prev => ({ ...prev, [goalId]: '' }));
