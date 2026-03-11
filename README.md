@@ -119,4 +119,25 @@ The resulting `dist` folder is optimized for static hosting and includes a full 
 
 ---
 
+## 7. Visionary Roadmap (Future Features)
+
+To maintain its position as a leading financial suite, the following features are planned for future releases:
+
+### 7.1 Intelligence & Automation
+- **AI-Powered Cash Flow Forecasting:** Predictive analytics to warn about potential month-end deficits.
+- **Smart Anomaly Detection:** Real-time alerts for unusual spending patterns or subscription price hikes.
+- **Natural Language Queries:** "Search" your finances with questions like *"How much did I spend on cafes last Ramadan?"*
+
+### 7.2 Moroccan Financial Ecosystem
+- **Open Banking Integration:** Secure, read-only connections to major Moroccan banks (CIH, BMCE, Attijariwafa) using tokenized APIs.
+- **Digital Dirham Integration:** Early support for Bank Al-Maghrib's upcoming CBDC.
+- **Zakat & Sadaqa Calculator:** Native tools to calculate Zakat Al-Maal based on lunar years and current gold prices.
+
+### 7.3 Advanced Management
+- **Multi-Currency Support:** Track assets in MAD, EUR, or USD for expats and remote workers.
+- **Debt Avalanche/Snowball Simulators:** Interactive modeling to find the fastest path to being debt-free.
+- **Subscription 'Silent Spending' Tracker:** Automated identification of recurring monthly commitments.
+
+---
+
 **© 2026 Mohamed HOUSNI Ph.D. All Rights Reserved.**
