@@ -1,101 +1,122 @@
-# eSalaire - System Architecture Document (SAD)
+# 💰 eSalaire - Enterprise Financial Planning Suite
 
-**Version:** 1.3.0
-**Status:** Production
+**Version:** 1.1.2 (Stable)
+**Status:** Production-Ready
 **Author:** Mohamed HOUSNI Ph.D.
-**Last Updated:** Oct 2025
+**License:** Private / Commercial
 
 ---
 
-## 1. Executive Summary
+## 1. Executive Overview
 
-**eSalaire** is a zero-knowledge, Progressive Web Application (PWA) designed to provide advanced financial planning tools tailored specifically for the Moroccan socioeconomic context. Unlike generic budgeting apps, eSalaire natively handles local nuances such as "Source Deductions" vs "Bank Deductions," retroactive salary adjustments (Rappel), and cultural spending habits (Ramadan funds, Aid Al Adha).
+**eSalaire** is an industrial-grade, zero-knowledge financial management system designed specifically for the Moroccan socioeconomic landscape. It bridges the gap between simple budget trackers and complex accounting suites by focusing on the "Zero-Trust" mathematical reliability and local-first privacy.
+
+The application implements a unique **30/40/10/10/10 Financial Strategy**, ensuring users maintain a balanced life while building long-term wealth assets and handling local financial nuances like **Source Deductions** and **Retroactive Salary Adjustments (Rappel)**.
 
 ### 1.1 Core Value Proposition
-1.  **Privacy Sovereignty:** No data leaves the device.
-2.  **Context Awareness:** Built for the Moroccan salary structure.
-3.  **Resilience:** 100% Offline capability via Service Workers.
+- **Privacy Sovereignty:** 100% Local-First. No data ever leaves the device.
+- **Context-Aware Logic:** Tailored for Moroccan salary slips (Dahir-compliant deductions).
+- **Industrial Stability:** Hardened with React Error Boundaries and high-precision math helpers.
 
 ---
 
 ## 2. Technical Architecture
 
-### 2.1 Technology Stack
-| Component | Technology | Rationale |
-| :--- | :--- | :--- |
-| **Framework** | React 19 | Leveraging concurrent features for smooth UI transitions on low-end devices. |
-| **Language** | TypeScript | Strict type safety to prevent financial calculation errors. |
-| **Styling** | Tailwind CSS + OKLCH | Utility-first styling with high-gamut color support for modern displays. |
-| **Persistence** | LocalStorage API | Synchronous, reliable key-value storage for < 5MB datasets. |
-| **Visualization** | Recharts | D3-based, composable charting library. |
-| **Animation** | Framer Motion | Hardware-accelerated layout animations. |
+### 2.1 Component Hierarchy & Data Flow
+```mermaid
+graph TD
+    App[App.tsx - State Context] --> EB[ErrorBoundary]
+    EB --> Nav[Navbar]
+    EB --> View{View Manager}
+    View --> Dashboard[Dashboard.tsx - Logic Engine]
+    View --> Tools[Tools.tsx - Rappel Tracker]
+    View --> Settings[Settings.tsx - Config]
+    
+    subgraph "Logic Engine"
+        Dashboard --> Calcs[Core Calculations]
+        Calcs --> Round[high-precision round helper]
+        Calcs --> Proj[Wealth Projections]
+    end
+    
+    subgraph "Persistence"
+        App <--> LS[(LocalStorage)]
+    end
+```
 
-### 2.2 Application State (Data Dictionary)
-The application maintains a monolithic state object `AppState` persisted to LocalStorage.
-
-| Key | Type | Description |
+### 2.2 Technology Stack
+| Layer | Technology | Purpose |
 | :--- | :--- | :--- |
-| `monthlyIncome` | `number` | The net salary hitting the bank account (after source deductions). |
-| `liquidAssets` | `number` | The active cash pool (Savings + Cash). **Does not include money moved to Goals.** |
-| `savingsGoals` | `SavingsGoal[]` | Array of goals. Money contributed here is subtracted from `liquidAssets` but remains in Net Wealth. |
-| `debts` | `Debt[]` | Array of debt objects. Critically distinguishes between `source` (salary slip) and `bank` (direct debit) deductions. |
-| `transactions` | `Transaction[]` | History. Includes a flag `excludeFromBudget` for expenditures made directly from Savings Goals. |
+| **Foundation** | React 19 + Vite | High-performance PWA core. |
+| **Language** | TypeScript | Type-safe financial logic. |
+| **Logic** | Custom Math Helpers | IEEE 754 precision correction. |
+| **Styling** | Vanilla CSS + Framer Motion | Premium, hardware-accelerated UI. |
+| **Visualization** | Recharts | Contextual cashflow and wealth charts. |
 
 ---
 
-## 3. Business Logic Engine
+## 3. Financial Strategy Engine
 
-### 3.1 The "Spendable Income" Algorithm
-eSalaire differentiates between *Accounted Income* and *Spendable Income* to prevent overdrafts.
-$$ \text{Spendable} = \text{Monthly Income} - \sum(\text{Bank Deductions}) $$
-*Note:* Source deductions are ignored here as they are pre-subtracted from the net income input.
+### 3.1 The 30/40/10/10/10 Rule
+The system automatically enforces a balanced budget based on "Spendable Income" (Net Income - Debt):
+- **30% Fixed & Housing:** Rent, Traites, Bills.
+- **40% Living Essentials:** Groceries, Transport, Health.
+- **10% Personal/Wants:** Lifestyle, Hobbies.
+- **10% Savings Goals:** Future acquisitions (House, Car, Travel).
+- **10% Emergency Fund:** Safety net for medical or car repairs.
 
-### 3.2 The "Buffer" Calculation (Cash Flow)
-The Buffer represents the real-time health of the user's finances for the current month.
-$$ \text{Buffer} = \text{Spendable} - \sum(\text{Category Spending}_{current}) $$
-*Note:* Expenditures made from Savings Goals (flagged `excludeFromBudget`) are excluded from this calculation to preserve the monthly operational buffer.
-
-### 3.3 The "Net Wealth" Calculation
-To accurately reflect the user's financial standing, money allocated to Savings Goals is treated as an asset.
-$$ \text{Net Wealth} = (\text{Liquid Assets} + \sum\text{Savings Goal Current Amounts}) - \text{Total Outstanding Debt} $$
-
-### 3.4 Floating Point Precision
-To mitigate IEEE 754 floating-point errors (e.g., `0.1 + 0.2 !== 0.3`), all monetary calculations pass through a strict rounding wrapper:
+### 3.2 High-Precision Calculations
+To prevent floating-point drift, all arithmetic is processed via:
 ```typescript
 const round = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 ```
+This ensures that $0.1 + 0.2$ always equals $0.30$, maintaining 100% balance across all category limits.
+
+### 3.3 Dynamic Backpay (Rappel) Tracker
+The "Financial Tools" module calculates retroactive arrears based on effective dates and salary differences.
+- **Permanent Claiming:** When a permanent salary increase is claimed, the system proportionally updates **all** 5 budget categories to maintain the 30/40/10/10/10 balance in the new income bracket.
 
 ---
 
-## 4. Security & Compliance
+## 4. User Guide
 
-### 4.1 Privacy Model (Zero-Knowledge)
-*   **Storage:** Data exists only in `localStorage`. Clearing browser data wipes the account effectively.
-*   **Transmission:** No API calls are made to external servers. No analytics SDKs (Google Analytics, Mixpanel) are installed.
-*   **Encryption:** Data is stored in plain JSON within LocalStorage. Access control relies on the device's OS-level security (PIN/Biometrics).
+### 4.1 Getting Started
+1. **Onboarding:** Enter your Net Salary (as shown on Virement).
+2. **Debt Profile:** Add "Source" deductions (Paie) and "Bank" deductions (Direct Debit).
+3. **Liquid Assets:** Enter your current cash on hand to establish your baseline "Net Wealth."
 
-### 4.2 XSS Mitigation
-*   React's auto-escaping is used for all user inputs (Transaction descriptions, Debt names).
-*   No `dangerouslySetInnerHTML` is used in the application.
+### 4.2 Managing Savings Goals
+Create goals with specific targets. Deposits are deducted from your "Liquid Assets" but remain part of your "Net Wealth."
+- **Spending from Goals:** Allows you to purchase items using saved funds without impacting your current monthly operational buffer.
+
+### 4.3 Data Management
+- **Local Backup:** Export your data as a JSON file via Settings.
+- **Reset Month:** Click "Start New Month" to clear spending and credit your salary for the new cycle.
 
 ---
 
-## 5. Development Guide
+## 5. Security & Stability Pass (v1.1.2)
 
-### 5.1 Setup
+The **v1.1.2 Stability Pass** implemented critical enterprise-grade safeguards:
+- **Global Error Boundary:** Prevents "Blank Screen" crashes. If a rendering error occurs, a user-friendly recovery screen allows for a safe reload.
+- **Zero-Null Hardening:** Every array operation is guarded with `.filter(Boolean)` and optional chaining to handle malformed legacy data.
+- **Division Guarding:** Zero-value budget limits no longer cause crashes in progress bars or charts.
+
+---
+
+## 6. Installation & Deployment
+
+### 6.1 Local Development
 ```bash
-git clone https://github.com/mohamedhousni/esalaire.git
-cd esalaire
 npm install
 npm run dev
 ```
 
-### 5.2 Building for Production
+### 6.2 Production Build
 ```bash
 npm run build
 ```
-This generates a `dist` folder containing the compiled assets, `manifest.json`, and service workers ready for static hosting (Netlify/Vercel/GitHub Pages).
+The resulting `dist` folder is optimized for static hosting and includes a full PWA manifest for mobile installation.
 
 ---
 
-**© 2025 Mohamed HOUSNI Ph.D. All Rights Reserved.**
+**© 2026 Mohamed HOUSNI Ph.D. All Rights Reserved.**
