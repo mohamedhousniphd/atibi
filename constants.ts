@@ -277,7 +277,7 @@ export const TRANSLATIONS: Translation = {
   // Settings
   resetMonth: { en: 'Start New Month', fr: 'Démarrer Nouveau Mois', ar: 'بدء شهر جديد' },
   recalcBudgets: { en: 'Recalculate Budgets (Standard)', fr: 'Recalculer Budgets (Standard)', ar: 'إعادة حساب الميزانية (قياسي)' },
-  recalcDesc: { en: 'Apply 30/40/30 rule to current income', fr: 'Appliquer la règle 30/40/30', ar: 'تطبيق قاعدة 30/40/30' },
+  recalcDesc: { en: 'Apply 30/40/10/10/10 rule on Spendable Income', fr: 'Appliquer la règle 30/40/10/10/10 sur le revenu disponible', ar: 'تطبيق قاعدة 30/40/10/10/10 على الدخل المتاح' },
   exportData: { en: 'Backup Data (JSON)', fr: 'Sauvegarde (JSON)', ar: 'نسخ احتياطي (JSON)' },
   importData: { en: 'Restore Data', fr: 'Restaurer Données', ar: 'استعادة البيانات' },
   loadPlan: { en: 'Reset to Default Plan', fr: 'Réinitialiser Plan par Défaut', ar: 'العودة للخطة الافتراضية' },
