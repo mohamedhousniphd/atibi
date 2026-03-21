@@ -103,7 +103,8 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
 
     const handleRecalculateBudgets = () => {
         if (confirm("This will reset your category limits based on the 30/40/10/10/10 rule using your spendable income (after bank deductions). Continue?")) {
-            const spendable = state.monthlyIncome;
+            const totalBankDebts = (state.debts || []).filter(d => d.deductionType === 'bank').reduce((acc, d) => acc + (d.amount || 0), 0);
+            const spendable = Math.max(0, state.monthlyIncome - totalBankDebts);
             const updatedCategories = state.categories.map(cat => {
                 let ratio = 0.10;
                 if (cat.id === 'c1') ratio = 0.30; // Fixed
@@ -362,7 +363,7 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
             </section>
 
             <div className="flex flex-col items-center justify-center text-xs text-muted-foreground mt-8 pb-4 space-y-1">
-                <p>esalaire v1.1.2</p>
+                <p>esalaire v1.1.3</p>
                 <a
                     href="https://www.mohamedhousni.com"
                     target="_blank"

@@ -107,9 +107,10 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
     const liquidAssets = typeof state.liquidAssets === 'number' ? (isNaN(state.liquidAssets) ? 0 : state.liquidAssets) : 0;
 
     const totalMonthlyDebt = round(debts.reduce((acc, d) => acc + (d.amount || 0), 0));
+    const totalBankDebt = round(debts.filter(d => d.deductionType === 'bank').reduce((acc, d) => acc + (d.amount || 0), 0));
     const totalOutstandingDebt = round(debts.reduce((acc, d) => acc + calculateDebtBalance(d), 0));
 
-    const spendableIncome = Math.max(0, monthlyIncome - totalMonthlyDebt);
+    const spendableIncome = Math.max(0, monthlyIncome - totalBankDebt);
 
     const totalAllocated = round(categories.reduce((acc, cat) => acc + (cat.limit || 0), 0));
     const totalSpent = round(categories.reduce((acc, cat) => acc + (cat.spent || 0), 0));
@@ -240,8 +241,8 @@ const Dashboard: React.FC<DashboardProps> = ({ state, setState }) => {
                 const newSalary = isPermanent ? round(currentMonthlyIncome + bpMonthlyAmount) : currentMonthlyIncome;
 
                 // Propotional update for category limits if permanent salary increase
-                const totalDebt = round((prev.debts || []).reduce((acc, d) => acc + (d.amount || 0), 0));
-                const newSpendableIncome = round(Math.max(0, newSalary - totalDebt));
+                const totalBankDebt = round((prev.debts || []).filter(d => d.deductionType === 'bank').reduce((acc, d) => acc + (d.amount || 0), 0));
+                const newSpendableIncome = round(Math.max(0, newSalary - totalBankDebt));
 
                 const updatedCategories = isPermanent ? (prev.categories || []).map(cat => {
                     let ratio = 0.10;
