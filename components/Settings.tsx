@@ -363,7 +363,7 @@ const Settings: React.FC<SettingsProps> = ({ state, setState, goToDashboard }) =
             </section>
 
             <div className="flex flex-col items-center justify-center text-xs text-muted-foreground mt-8 pb-4 space-y-1">
-                <p>esalaire v1.1.3</p>
+                <p>esalaire v1.1.4</p>
                 <a
                     href="https://www.mohamedhousni.com"
                     target="_blank"
