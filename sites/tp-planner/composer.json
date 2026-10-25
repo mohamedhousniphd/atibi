@@ -1,0 +1,12 @@
+{
+  "name": "tp-planner/app",
+  "description": "TP Planner - Practical work session manager",
+  "require": {
+    "tecnickcom/tcpdf": "^6.6",
+    "propa/tcpdi": "^1.3",
+    "smalot/pdfparser": "^2.12"
+  },
+  "config": {
+    "vendor-dir": "vendor"
+  }
+}

@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="generator" content="Hostinger Horizons" />
+		<link rel="icon" type="image/png" href="https://i.ibb.co/RwCmsRc/jjjjhfddxdcg.png" />
+		
+		<!-- SEO Meta Tags -->
+		<title>Chimie360 - Plateforme d'apprentissage de la chimie</title>
+		<meta name="description" content="Chimie360 est une plateforme éducative interactive pour l'apprentissage de la chimie. Cours, travaux pratiques, quiz et ressources pédagogiques pour enseignants et étudiants." />
+		<meta name="keywords" content="chimie, éducation, cours de chimie, travaux pratiques, quiz chimie, plateforme éducative, enseignement, apprentissage" />
+		<meta name="author" content="Chimie360" />
+		<meta name="language" content="French" />
+		
+		<!-- Open Graph / Facebook / WhatsApp / LinkedIn -->
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="https://chimie360.com/" />
+		<meta property="og:title" content="Chimie360 - Plateforme d'apprentissage de la chimie" />
+		<meta property="og:description" content="Plateforme éducative interactive pour l'apprentissage de la chimie. Cours, TP, quiz et ressources pour enseignants et étudiants." />
+		<meta property="og:image" content="https://chimie360.com/og-image.jpg" />
+		<meta property="og:locale" content="fr_FR" />
+		<meta property="og:site_name" content="Chimie360" />
+		
+		<!-- Twitter Card -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:url" content="https://chimie360.com/" />
+		<meta name="twitter:title" content="Chimie360 - Plateforme d'apprentissage de la chimie" />
+		<meta name="twitter:description" content="Plateforme éducative interactive pour l'apprentissage de la chimie. Cours, TP, quiz et ressources pour enseignants et étudiants." />
+		<meta name="twitter:image" content="https://chimie360.com/twitter-image.jpg" />
+		
+		<!-- CSS Animations -->
+		<style>
+			@keyframes float-atom {
+				0%, 100% { transform: translateY(0) rotate(0deg); }
+				50% { transform: translateY(-25px) rotate(15deg); }
+			}
+			@keyframes float-mol {
+				0%, 100% { transform: translateY(0) rotate(0deg); }
+				50% { transform: translateY(-15px) rotate(-10deg); }
+			}
+			@keyframes float-particle {
+				0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+				50% { transform: translateY(-40px) scale(1.5); opacity: 0.8; }
+			}
+			@keyframes spin-slow {
+				from { transform: rotate(0deg); }
+				to { transform: rotate(360deg); }
+			}
+			.animate-float-atom { animation: float-atom 8s ease-in-out infinite; }
+			.animate-float-mol { animation: float-mol 10s ease-in-out infinite; }
+			.animate-float-particle { animation: float-particle 6s ease-in-out infinite; }
+			.animate-spin-slow { animation: spin-slow 20s linear infinite; }
+		</style>
+		<script type="module" crossorigin src="assets/index-CVLEAJ-a.js"></script>
+		<link rel="stylesheet" crossorigin href="assets/index-CSs0nha-.css">
+		<script type="module">
+window.onerror = (message, source, lineno, colno, errorObj) => {
+	const errorDetails = errorObj ? JSON.stringify({
+		name: errorObj.name,
+		message: errorObj.message,
+		stack: errorObj.stack,
+		source,
+		lineno,
+		colno,
+	}) : null;
+
+	window.parent.postMessage({
+		type: 'horizons-runtime-error',
+		message,
+		error: errorDetails
+	}, '*');
+};
+</script>
+		<script type="module">
+const observer = new MutationObserver((mutations) => {
+	for (const mutation of mutations) {
+		for (const addedNode of mutation.addedNodes) {
+			if (
+				addedNode.nodeType === Node.ELEMENT_NODE &&
+				(
+					addedNode.tagName?.toLowerCase() === 'vite-error-overlay' ||
+					addedNode.classList?.contains('backdrop')
+				)
+			) {
+				handleViteOverlay(addedNode);
+			}
+		}
+	}
+});
+
+observer.observe(document.documentElement, {
+	childList: true,
+	subtree: true
+});
+
+function handleViteOverlay(node) {
+	if (!node.shadowRoot) {
+		return;
+	}
+
+	const backdrop = node.shadowRoot.querySelector('.backdrop');
+
+	if (backdrop) {
+		const overlayHtml = backdrop.outerHTML;
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(overlayHtml, 'text/html');
+		const messageBodyElement = doc.querySelector('.message-body');
+		const fileElement = doc.querySelector('.file');
+		const messageText = messageBodyElement ? messageBodyElement.textContent.trim() : '';
+		const fileText = fileElement ? fileElement.textContent.trim() : '';
+		const error = messageText + (fileText ? ' File:' + fileText : '');
+
+		window.parent.postMessage({
+			type: 'horizons-vite-error',
+			error,
+		}, '*');
+	}
+}
+</script>
+		<script type="module">
+const originalConsoleError = console.error;
+const MATCH_LINE_COL_REGEX = /:(\d+):(\d+)\)?\s*$/; // regex to match the :lineNum:colNum
+const MATCH_AT_REGEX = /^\s*at\s+(?:async\s+)?(?:.*?\s+)?\(?/; // regex to remove the 'at' keyword and any 'async' or function name
+const MATCH_PATH_REGEX = /^\//; // regex to remove the leading slash
+
+function parseStackFrameLine(line) {
+	const lineColMatch = line.match(MATCH_LINE_COL_REGEX);
+	if (!lineColMatch) return null;
+	const [, lineNum, colNum] = lineColMatch;
+	const suffix = `:${lineNum}:${colNum}`;
+	const idx = line.lastIndexOf(suffix);
+	if (idx === -1) return null;
+	const before = line.substring(0, idx);
+	const path = before.replace(MATCH_AT_REGEX, '').trim();
+	
+	if (!path) return null;
+
+	try {
+		const pathname = new URL(path).pathname;
+		const filePath = pathname.replace(MATCH_PATH_REGEX, '') || pathname;
+		return `${filePath}:${lineNum}:${colNum}`;
+	} catch (e) {
+		const filePath = path.replace(MATCH_PATH_REGEX, '') || path;
+		return `${filePath}:${lineNum}:${colNum}`;
+	}
+}
+
+function getFilePathFromStack(stack, skipFrames = 0) {
+	if (!stack || typeof stack !== 'string') return null;
+	const lines = stack.split('\n').slice(1);
+
+	const frames = lines.map(line => parseStackFrameLine(line.replace(/\r$/, ''))).filter(Boolean);
+
+	return frames[skipFrames] ?? null;
+}
+
+console.error = function(...args) {
+	originalConsoleError.apply(console, args);
+
+	let errorString = '';
+	let filePath = null;
+
+	for (let i = 0; i < args.length; i++) {
+		const arg = args[i];
+		if (arg instanceof Error) {
+			filePath = getFilePathFromStack(arg.stack, 0);
+			errorString = `${arg.name}: ${arg.message}`;
+			if (filePath) {
+				errorString = `${errorString} at ${filePath}`;
+			}
+			break;
+		}
+	}
+
+	if (!errorString) {
+		errorString = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+		const stack = new Error().stack;
+		filePath = getFilePathFromStack(stack, 1);
+		if (filePath) {
+			errorString = `${errorString} at ${filePath}`;
+		}
+	}
+
+	window.parent.postMessage({
+		type: 'horizons-console-error',
+		error: errorString
+	}, '*');
+};
+</script>
+		<script type="module">
+const originalFetch = window.fetch;
+
+window.fetch = function(...args) {
+	const url = args[0] instanceof Request ? args[0].url : args[0];
+
+	// Skip WebSocket URLs
+	if (url.startsWith('ws:') || url.startsWith('wss:')) {
+		return originalFetch.apply(this, args);
+	}
+
+	return originalFetch.apply(this, args)
+		.then(async response => {
+			const contentType = response.headers.get('Content-Type') || '';
+
+			// Exclude HTML document responses
+			const isDocumentResponse =
+				contentType.includes('text/html') ||
+				contentType.includes('application/xhtml+xml');
+
+			if (!response.ok && !isDocumentResponse) {
+					const responseClone = response.clone();
+					const errorFromRes = await responseClone.text();
+					const requestUrl = response.url;
+					console.error(`Fetch error from ${requestUrl}: ${errorFromRes}`);
+			}
+
+			return response;
+		})
+		.catch(error => {
+			if (!url.match(/.html?$/i)) {
+				console.error(error);
+			}
+
+			throw error;
+		});
+};
+</script>
+		<script type="module">
+if (window.navigation && window.self !== window.top) {
+	window.navigation.addEventListener('navigate', (event) => {
+		const url = event.destination.url;
+
+		try {
+			const destinationUrl = new URL(url);
+			const destinationOrigin = destinationUrl.origin;
+			const currentOrigin = window.location.origin;
+
+			if (destinationOrigin === currentOrigin) {
+				return;
+			}
+		} catch (error) {
+			return;
+		}
+
+		window.parent.postMessage({
+			type: 'horizons-navigation-error',
+			url,
+		}, '*');
+	});
+}
+</script>
+	</head>
+	<body>
+		<div id="root"></div>
+	</body>
+</html>

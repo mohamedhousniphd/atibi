@@ -1,0 +1,4594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Unité 2 — Suivi temporel d'une transformation chimique — Vitesse de réaction</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2333;--bg4:#242d3d;
+  --text:#e6edf3;--text2:#8b949e;--accent:#58a6ff;
+  --green:#2dc653;--red:#e63946;--orange:#f77f00;
+  --cyan:#00b4d8;--violet:#9b5de5;--pink:#ff69b4;
+  --teal:#16a085;--gold:#daa520;
+  --panel:#13171f;--border:#30363d;--radius:10px;
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text)}
+#topNav{position:fixed;top:0;left:0;right:0;height:52px;background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;z-index:1000;gap:4px;overflow-x:auto}
+#topNav::-webkit-scrollbar{height:4px}
+#topNav::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.nav-btn{padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:4px;flex-shrink:0}
+.nav-btn:hover:not(.locked){background:var(--bg4);color:var(--text)}
+.nav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.nav-btn.locked{opacity:.4;cursor:not-allowed}
+.nav-btn .lk{font-size:9px}
+.nav-title{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);margin-right:10px;flex-shrink:0;padding-left:4px}
+.nav-title b{color:var(--accent)}
+#mainContainer{position:fixed;top:52px;left:0;right:0;bottom:0;display:flex;overflow:hidden}
+#canvasWrap{flex:1;position:relative;min-width:0;background:radial-gradient(ellipse at center,#11151c 0%,#0a0d12 100%)}
+#canvas3d{display:block;width:100%;height:100%}
+#chronoOverlay{position:absolute;top:14px;left:14px;background:rgba(13,17,23,.85);border:1px solid var(--accent);border-radius:var(--radius);padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--accent);box-shadow:0 0 20px rgba(88,166,255,.25);display:none;z-index:50}
+#chronoOverlay.show{display:block}
+#chronoOverlay .lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);font-weight:500;margin-bottom:2px}
+#sidePanel{width:380px;min-width:380px;background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+#sidePanel>*{flex-shrink:0}
+#sidePanel::-webkit-scrollbar{width:5px}
+#sidePanel::-webkit-scrollbar-track{background:var(--bg)}
+#sidePanel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.pt{font-size:16px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+.pt .sub{display:block;font-size:11px;color:var(--text2);font-weight:400;text-transform:none;letter-spacing:0;margin-top:3px;font-family:'Outfit',sans-serif}
+.bx{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.bx h3{font-size:11px;font-weight:600;margin-bottom:8px;color:var(--text);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px}
+.bx h3 .ic{color:var(--accent)}
+.bx p{font-size:12px;line-height:1.55;color:var(--text2);margin-bottom:6px}
+.bx p.eq{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);background:var(--bg);padding:8px 10px;border-radius:6px;border-left:2px solid var(--accent);margin:6px 0}
+.btn{padding:10px 14px;border:none;border-radius:var(--radius);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.bp{background:var(--accent);color:#fff}
+.bp:hover:not(:disabled){background:#4090e0}
+.bo{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.bo:hover:not(:disabled){border-color:var(--accent);color:var(--text)}
+.bg-row{display:flex;gap:6px;flex-wrap:wrap}
+.bg-row .btn{flex:1;min-width:0}
+.fb{padding:10px 12px;border-radius:var(--radius);font-size:12px;line-height:1.5;display:none;animation:fi .3s}
+.fb.show{display:block}
+.fb.ok{background:rgba(45,198,83,.12);border:1px solid var(--green);color:#6ee89a}
+.fb.err{background:rgba(230,57,70,.12);border:1px solid var(--red);color:#ff6b7a}
+.fb.inf{background:rgba(88,166,255,.12);border:1px solid var(--accent);color:#7dc4ff}
+.fb.wrn{background:rgba(247,127,0,.12);border:1px solid var(--orange);color:#ffaa44}
+.fb.show + .fb.show{margin-top:8px}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.slider-row{display:flex;flex-direction:column;gap:6px}
+.slider-row .sh{display:flex;justify-content:space-between;align-items:baseline;font-size:11px}
+.slider-row .sh .lbl{color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;font-size:10px}
+.slider-row .sh .val{color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px}
+.slider-row input[type=range]{-webkit-appearance:none;width:100%;height:5px;background:var(--bg);border-radius:5px;outline:none}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg2);box-shadow:0 0 6px rgba(88,166,255,.4)}
+.slider-row input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg2)}
+.dtbl{width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace}
+.dtbl th,.dtbl td{padding:5px 4px;border:1px solid var(--border);text-align:center}
+.dtbl th{background:var(--bg2);color:var(--accent);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.5px}
+.dtbl td{background:var(--bg);color:var(--text)}
+.dtbl td.lbl{background:var(--bg2);color:var(--text2);font-weight:600}
+.dtbl tr.warn td{color:var(--red);background:rgba(230,57,70,.08)}
+.steps-list{display:flex;flex-direction:column;gap:6px}
+.step{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:7px;font-size:12px;transition:all .2s}
+.step.done{border-color:var(--green);background:rgba(45,198,83,.08)}
+.step.done .step-num{background:var(--green);color:#fff}
+.step.active{border-color:var(--accent);background:rgba(88,166,255,.08);box-shadow:0 0 10px rgba(88,166,255,.15)}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--bg3);color:var(--text2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.step.active .step-num{background:var(--accent);color:#fff}
+.step-txt{flex:1;color:var(--text)}
+.step.done .step-txt{color:var(--text2)}
+.cc{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px;min-height:160px}
+.cc canvas{max-width:100%}
+.mo{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.78);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:20px}
+.mo.show{display:flex}
+.md{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto}
+.md h2{font-size:17px;margin-bottom:12px;color:var(--accent);display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace}
+.md p{font-size:13px;line-height:1.6;color:var(--text);margin-bottom:8px}
+.md p.eq{font-family:'JetBrains Mono',monospace;background:var(--bg);padding:8px 10px;border-radius:6px;border-left:2px solid var(--accent);color:var(--text);font-size:12px;margin:8px 0}
+.md p.hl{color:var(--accent);font-weight:600}
+.md .md-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.md input[type=text],.md input[type=number]{padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;width:120px}
+.md input:focus{outline:none;border-color:var(--accent)}
+.tag{display:inline-block;padding:2px 7px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace;margin:2px 3px 2px 0}
+.tag.lim{border-color:var(--red);color:#ff6b7a;background:rgba(230,57,70,.1)}
+.tag.ok{border-color:var(--green);color:#6ee89a;background:rgba(45,198,83,.1)}
+.tag.info{border-color:var(--accent);color:#7dc4ff;background:rgba(88,166,255,.1)}
+.kbd{font-family:'JetBrains Mono',monospace;background:var(--bg);padding:1px 5px;border-radius:3px;border:1px solid var(--border);font-size:11px;color:var(--accent)}
+.divider{height:1px;background:var(--border);margin:4px 0}
+#loader{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .4s}
+#loader.hide{opacity:0;pointer-events:none}
+#loader .lo-ti{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text2);text-transform:uppercase;letter-spacing:2px}
+#loader .lo-bar{width:200px;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+#loader .lo-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--cyan));width:0%;transition:width .3s;border-radius:2px}
+@media(max-width:900px){#mainContainer{flex-direction:column}#sidePanel{width:100%;min-width:0;max-height:50vh;border-left:none;border-top:1px solid var(--border)}#canvasWrap{min-height:40vh}}
+</style>
+</head>
+<body>
+<a href="index.html" id="pc3d-home-btn" title="Retour à l'accueil · العودة للرئيسية" style="position:fixed;bottom:18px;left:18px;z-index:2147483647;display:inline-flex;align-items:center;gap:7px;padding:9px 15px 9px 12px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#e8f0ff;text-decoration:none;background:linear-gradient(180deg,rgba(10,21,48,.94),rgba(5,10,24,.9));border:1px solid rgba(0,184,169,.45);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 0 1px rgba(0,184,169,.08);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00b8a9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+<span>PC3D · Accueil</span>
+</a>
+<style>#pc3d-home-btn:hover{transform:translateY(-2px);border-color:rgba(0,184,169,.85);box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 18px rgba(0,184,169,.35);}</style>
+<a href="#" id="pc3d-contact-btn" title="Contact · تواصل معنا" style="position:fixed;right:18px;bottom:18px;z-index:9000;display:inline-flex;align-items:center;gap:8px;padding:11px 16px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#04121f;text-decoration:none;background:linear-gradient(180deg,#4ECDC4,#00B8A9);border:1px solid rgba(255,255,255,.28);border-radius:999px;box-shadow:0 8px 26px rgba(0,184,169,.45),0 2px 8px rgba(0,0,0,.4);transition:transform .18s ease,box-shadow .18s ease;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#04121f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>Contact</span></a><style>#pc3d-contact-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,184,169,.6),0 2px 8px rgba(0,0,0,.5);}@media(max-width:600px){#pc3d-contact-btn span{display:none;}#pc3d-contact-btn{padding:13px;}}</style>
+<div class="pc3d-uload" id="pc3d-uload"><div class="pc3d-uload-logo"><svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="uldc" cx="50%" cy="45%" r="55%"><stop offset="0%" stop-color="#F5F7FA"/><stop offset="45%" stop-color="#4ECDC4"/><stop offset="100%" stop-color="#00B8A9" stop-opacity="0"/></radialGradient><linearGradient id="uldp" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4ECDC4"/><stop offset="50%" stop-color="#00B8A9"/><stop offset="100%" stop-color="#9B59B6"/></linearGradient></defs><ellipse class="ulorbit" cx="60" cy="66" rx="54" ry="18" fill="none" stroke="#4ECDC4" stroke-opacity=".4" stroke-width="1.5"/><circle class="ulorbit" cx="6" cy="66" r="3" fill="#FF9A3C"/><path class="ulpyr" d="M60 14 L102 94 L18 94 Z" fill="url(#uldp)" fill-opacity=".14" stroke="url(#uldp)" stroke-width="3" stroke-linejoin="round"/><circle class="ulcore" cx="60" cy="70" r="13" fill="url(#uldc)"/></svg></div><div class="pc3d-uload-txt"><span>P</span><span>C</span><span>3</span><span>D</span></div></div><style>.pc3d-uload{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:#050a18;transition:opacity .6s ease,visibility .6s;font-family:'Outfit',system-ui,sans-serif;}.pc3d-uload.done{opacity:0;visibility:hidden;pointer-events:none;}.pc3d-uload-logo{width:120px;height:120px;}.pc3d-uload-logo svg{width:100%;height:100%;overflow:visible;}.pc3d-uload .ulorbit{transform-origin:60px 64px;animation:ulspin 1.4s linear infinite;}@keyframes ulspin{to{transform:rotate(360deg);}}.pc3d-uload .ulpyr{transform-origin:60px 60px;animation:ulpyr 1.6s ease-in-out infinite;}@keyframes ulpyr{0%,100%{transform:scale(.86) rotate(-4deg);}50%{transform:scale(1.06) rotate(4deg);}}.pc3d-uload .ulcore{transform-origin:60px 66px;animation:ulcore 1.1s ease-in-out infinite;}@keyframes ulcore{0%,100%{opacity:.5;transform:scale(.7);}50%{opacity:1;transform:scale(1.25);}}.pc3d-uload-txt{display:flex;gap:3px;font-size:12px;letter-spacing:.32em;color:#7fe9e0;text-transform:uppercase;}.pc3d-uload-txt span{animation:ultxt 1.4s ease-in-out infinite;}.pc3d-uload-txt span:nth-child(2){animation-delay:.1s;}.pc3d-uload-txt span:nth-child(3){animation-delay:.2s;}.pc3d-uload-txt span:nth-child(4){animation-delay:.3s;}@keyframes ultxt{0%,100%{opacity:.3;transform:translateY(0);}50%{opacity:1;transform:translateY(-3px);}}</style><script>(function(){function h(){var l=document.getElementById("pc3d-uload");if(l){l.classList.add("done");setTimeout(function(){l&&l.remove();},700);}}window.addEventListener("load",function(){setTimeout(h,1100);});setTimeout(h,3000);})();</script>
+
+
+<div id="loader">
+  <div class="lo-ti">Initialisation</div>
+  <div class="lo-bar"><div class="lo-fill" id="loFill"></div></div>
+</div>
+
+<div id="topNav">
+  <div class="nav-title">UNITÉ 2 · <b>Cinétique</b></div>
+  <div class="nav-btn active" data-scene="0" onclick="goToScene(0)">1. Photo</div>
+  <div class="nav-btn" data-scene="1" onclick="goToScene(1)">2. Avancement</div>
+  <div class="nav-btn" data-scene="2" onclick="goToScene(2)">3. Titrage</div>
+  <div class="nav-btn" data-scene="3" onclick="goToScene(3)">4. Trempe</div>
+  <div class="nav-btn" data-scene="4" onclick="goToScene(4)">5. Pression</div>
+  <div class="nav-btn" data-scene="5" onclick="goToScene(5)">6. Conductimétrie</div>
+  <div class="nav-btn" data-scene="6" onclick="goToScene(6)">7. Vitesse</div>
+  <div class="nav-btn" data-scene="7" onclick="goToScene(7)">8. t½</div>
+  <div class="nav-btn" data-scene="8" onclick="goToScene(8)">9. Chocs</div>
+  <div class="nav-btn" data-scene="9" onclick="goToScene(9)">10. Facteurs</div>
+  <div class="nav-btn" data-scene="10" onclick="goToScene(10)">11. Synthèse</div>
+</div>
+
+<div id="mainContainer">
+  <div id="canvasWrap">
+    <canvas id="canvas3d"></canvas>
+    <div id="chronoOverlay">
+      <div class="lbl">Chronomètre</div>
+      <div id="chronoVal">00:00.0</div>
+    </div>
+  </div>
+  <div id="sidePanel"></div>
+</div>
+
+<div class="mo" id="modal">
+  <div class="md" id="modalContent"></div>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   GLOBAL STATE & UTILITIES
+   ============================================================ */
+const STATE = {
+  scene: null, camera: null, renderer: null, controls: null,
+  clock: null,
+  currentSceneIndex: 0,
+  scenes: [],
+  activeTimers: [],
+  rafId: null,
+  animationInProgress: false,
+  simulationRunning: false,
+  pendingScene: null,
+  unlockedMax: 10, // toutes les scènes (0..10) déverrouillées par défaut
+  chart: null,
+  chronoT0: 0,
+  chronoRunning: false
+};
+
+const Util = {
+  lerp: (a,b,t)=>a+(b-a)*t,
+  clamp: (v,a,b)=>Math.max(a,Math.min(b,v)),
+  easeInOut: t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,
+  easeOut: t=>1-Math.pow(1-t,3),
+  rand: (a,b)=>a+Math.random()*(b-a),
+
+  addTimer(handle){ STATE.activeTimers.push(handle); return handle; },
+  setTimeout(fn,ms){ const h=setTimeout(fn,ms); STATE.activeTimers.push({type:'to',h}); return h; },
+  setInterval(fn,ms){ const h=setInterval(fn,ms); STATE.activeTimers.push({type:'in',h}); return h; },
+  clearAllTimers(){
+    for(const t of STATE.activeTimers){
+      if(!t) continue;
+      if(t.type==='to') clearTimeout(t.h);
+      else if(t.type==='in') clearInterval(t.h);
+      else if(typeof t==='number') { clearTimeout(t); clearInterval(t); }
+    }
+    STATE.activeTimers.length=0;
+  },
+
+  disposeNode(node){
+    if(!node) return;
+    node.traverse(child=>{
+      if(child.geometry){ try{child.geometry.dispose();}catch(e){} }
+      if(child.material){
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        for(const m of mats){
+          if(m.map) { try{m.map.dispose();}catch(e){} }
+          if(m.alphaMap) { try{m.alphaMap.dispose();}catch(e){} }
+          try{ m.dispose(); }catch(e){}
+        }
+      }
+    });
+    if(node.parent) node.parent.remove(node);
+  },
+
+  // sprite text labels (for billboard text)
+  makeTextSprite(txt, opts={}){
+    const fontSize = opts.fontSize||64;
+    const color = opts.color||'#ffffff';
+    const bg = opts.bg||null;
+    const padding = 16;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.font = `bold ${fontSize}px Arial`;
+    const w = ctx.measureText(txt).width;
+    canvas.width = Math.max(256, Math.ceil(w + padding*2));
+    canvas.height = fontSize + padding*2;
+    ctx.font = `bold ${fontSize}px Arial`;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    if(bg){
+      ctx.fillStyle = bg;
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+    ctx.fillStyle = color;
+    ctx.fillText(txt, canvas.width/2, canvas.height/2);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+    const sp = new THREE.Sprite(mat);
+    sp.renderOrder = 999;
+    const scale = opts.scale||0.5;
+    sp.scale.set(scale * canvas.width/canvas.height, scale, 1);
+    return sp;
+  }
+};
+
+/* ============================================================
+   MUTEX (anti double-click during animations)
+   ============================================================ */
+async function runAnimation(animFn, triggerBtnId){
+  if(STATE.animationInProgress) return false;
+  STATE.animationInProgress = true;
+  const btn = triggerBtnId ? document.getElementById(triggerBtnId) : null;
+  if(btn) btn.disabled = true;
+  try{ await animFn(); }
+  catch(e){ console.error('Animation error:', e); }
+  finally{
+    STATE.animationInProgress = false;
+    if(btn) btn.disabled = false;
+    if(STATE.pendingScene !== null){
+      const n = STATE.pendingScene;
+      STATE.pendingScene = null;
+      goToScene(n);
+    }
+  }
+  return true;
+}
+
+function sleep(ms){
+  return new Promise(res=>{ const t=setTimeout(res,ms); STATE.activeTimers.push({type:'to',h:t}); });
+}
+
+async function animateValue(from, to, duration, onUpdate, ease=Util.easeInOut){
+  const start = performance.now();
+  return new Promise(resolve=>{
+    function tick(now){
+      const t = Util.clamp((now-start)/duration, 0, 1);
+      const v = from + (to-from) * ease(t);
+      onUpdate(v, t);
+      if(t < 1) requestAnimationFrame(tick);
+      else resolve();
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+/* ============================================================
+   THREE.JS CORE INIT
+   ============================================================ */
+function initThree(){
+  const canvas = document.getElementById('canvas3d');
+  const wrap = document.getElementById('canvasWrap');
+  STATE.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  STATE.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  STATE.renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  STATE.renderer.setClearColor(0x000000, 0);
+  STATE.renderer.shadowMap.enabled = true;
+  STATE.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  STATE.scene = new THREE.Scene();
+  STATE.scene.fog = new THREE.Fog(0x0a0d12, 15, 40);
+
+  STATE.camera = new THREE.PerspectiveCamera(50, wrap.clientWidth/wrap.clientHeight, 0.1, 100);
+  STATE.camera.position.set(0, 2, 7);
+
+  STATE.controls = new THREE.OrbitControls(STATE.camera, canvas);
+  STATE.controls.enableDamping = true;
+  STATE.controls.dampingFactor = 0.08;
+  STATE.controls.minDistance = 2;
+  STATE.controls.maxDistance = 20;
+  STATE.controls.maxPolarAngle = Math.PI * 0.85;
+
+  // Ambient & key lights (scenes can add their own)
+  const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+  STATE.scene.add(ambient);
+  const keyLight = new THREE.DirectionalLight(0xffffff, 0.7);
+  keyLight.position.set(5, 8, 5);
+  STATE.scene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0x88aaff, 0.25);
+  fillLight.position.set(-5, 3, -3);
+  STATE.scene.add(fillLight);
+
+  STATE.clock = new THREE.Clock();
+
+  window.addEventListener('resize', onResize);
+}
+
+function onResize(){
+  if(!STATE.renderer) return;
+  const wrap = document.getElementById('canvasWrap');
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if(w<2||h<2) return;
+  STATE.camera.aspect = w/h;
+  STATE.camera.updateProjectionMatrix();
+  STATE.renderer.setSize(w, h);
+}
+
+function animateRAF(){
+  STATE.rafId = requestAnimationFrame(animateRAF);
+  const dt = STATE.clock.getDelta();
+  if(STATE.controls) STATE.controls.update();
+  const cur = STATE.scenes[STATE.currentSceneIndex];
+  if(cur && cur.active && cur.update) {
+    try{ cur.update(dt); }catch(e){ console.error('Scene update error:', e); }
+  }
+  if(STATE.renderer && STATE.scene && STATE.camera) STATE.renderer.render(STATE.scene, STATE.camera);
+}
+
+/* ============================================================
+   SCENE LIFECYCLE
+   ============================================================ */
+function goToScene(n){
+  if(n === STATE.currentSceneIndex) return;
+  if(n > STATE.unlockedMax) return; // locked
+  if(STATE.animationInProgress){ STATE.pendingScene = n; return; }
+  const prev = STATE.scenes[STATE.currentSceneIndex];
+  if(prev && prev.destroy){ try{ prev.destroy(); }catch(e){ console.error(e); } }
+  STATE.currentSceneIndex = n;
+  const cur = STATE.scenes[n];
+  if(cur && cur.init){ try{ cur.init(); }catch(e){ console.error(e); } }
+  updateNavUI(n);
+}
+
+function updateNavUI(n){
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    const idx = parseInt(b.dataset.scene);
+    b.classList.toggle('active', idx===n);
+    if(idx <= STATE.unlockedMax){
+      b.classList.remove('locked');
+      const lk = b.querySelector('.lk');
+      if(lk) lk.remove();
+    }
+  });
+}
+
+function unlockScene(n){
+  if(n > STATE.unlockedMax){
+    STATE.unlockedMax = n;
+    updateNavUI(STATE.currentSceneIndex);
+  }
+}
+
+function setSidePanel(html){
+  document.getElementById('sidePanel').innerHTML = html;
+}
+
+/* ============================================================
+   MODAL SYSTEM
+   ============================================================ */
+function openModal(html){
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
+}
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') closeModal();
+});
+
+/* ============================================================
+   CHRONOMETER
+   ============================================================ */
+const Chrono = {
+  show(){ document.getElementById('chronoOverlay').classList.add('show'); },
+  hide(){ document.getElementById('chronoOverlay').classList.remove('show'); this.stop(); this.update(0); },
+  start(){
+    if(STATE.chronoRunning) return;
+    STATE.chronoT0 = performance.now();
+    STATE.chronoRunning = true;
+    const tick = ()=>{
+      if(!STATE.chronoRunning) return;
+      this.update((performance.now()-STATE.chronoT0)/1000);
+      requestAnimationFrame(tick);
+    };
+    tick();
+  },
+  stop(){ STATE.chronoRunning = false; },
+  update(t){
+    const m = Math.floor(t/60);
+    const s = Math.floor(t%60);
+    const ms = Math.floor((t*10)%10);
+    document.getElementById('chronoVal').textContent =
+      String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+'.'+ms;
+  }
+};
+
+/* ============================================================
+   FEEDBACK HELPERS
+   ============================================================ */
+function showFB(id, kind, msg){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.className = 'fb show '+kind;
+  el.innerHTML = msg;
+}
+function hideFB(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.remove('show');
+}
+
+/* ============================================================
+   ============================================================
+   SCENE 1 — Le Développement Photographique
+   ============================================================
+   ============================================================ */
+const Scene1 = {
+  active: false,
+  group: null,
+  paperMesh: null,
+  paperTex: null,
+  paperCanvas: null,
+  paperCtx: null,
+  revealProgress: 0,
+  redLight: null,
+  ambientBefore: null,
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+
+    // Camera
+    STATE.camera.position.set(0, 2.2, 6.5);
+    STATE.controls.target.set(0, 1, 0);
+    STATE.controls.update();
+
+    // Red darkroom light
+    this.redLight = new THREE.PointLight(0xff3a2a, 1.2, 18, 1.5);
+    this.redLight.position.set(0, 4, 2);
+    this.group.add(this.redLight);
+
+    // Subtle wall (back)
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a0808, roughness: 0.9, metalness: 0 });
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(16, 8), wallMat);
+    wall.position.set(0, 2, -4);
+    this.group.add(wall);
+
+    // Floor
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(20, 8),
+      new THREE.MeshStandardMaterial({ color: 0x1a0606, roughness: 1, metalness: 0 })
+    );
+    floor.rotation.x = -Math.PI/2;
+    floor.position.y = 0;
+    this.group.add(floor);
+
+    // Table
+    const tableMat = new THREE.MeshStandardMaterial({ color: 0x3a1a0a, roughness: 0.8, metalness: 0.1 });
+    const table = new THREE.Mesh(new THREE.BoxGeometry(6, 0.18, 3), tableMat);
+    table.position.set(0, 0.9, 0);
+    this.group.add(table);
+    // Table legs
+    for(const [x,z] of [[-2.7,-1.2],[2.7,-1.2],[-2.7,1.2],[2.7,1.2]]){
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.15,0.9,0.15), tableMat);
+      leg.position.set(x, 0.45, z);
+      this.group.add(leg);
+    }
+
+    // Developing tray (bac)
+    const trayMat = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.7, metalness: 0.2 });
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.15, 1.6), trayMat);
+    tray.position.set(0, 1.05, 0);
+    this.group.add(tray);
+    // Tray inner liquid
+    const liquidMat = new THREE.MeshPhysicalMaterial({
+      color: 0x2c3a3a, roughness: 0.3, transmission: 0.5, transparent: true, opacity: 0.8
+    });
+    const liquid = new THREE.Mesh(new THREE.BoxGeometry(2.25, 0.06, 1.45), liquidMat);
+    liquid.position.set(0, 1.13, 0);
+    this.group.add(liquid);
+
+    // Photo paper — PlaneGeometry with CanvasTexture
+    this.paperCanvas = document.createElement('canvas');
+    this.paperCanvas.width = 512;
+    this.paperCanvas.height = 384;
+    this.paperCtx = this.paperCanvas.getContext('2d');
+    this._drawPaper(0); // 0 = blank
+    this.paperTex = new THREE.CanvasTexture(this.paperCanvas);
+    this.paperTex.needsUpdate = true;
+    const paperMat = new THREE.MeshStandardMaterial({
+      map: this.paperTex,
+      roughness: 0.95,
+      metalness: 0
+    });
+    this.paperMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.35), paperMat);
+    this.paperMesh.position.set(0, 1.18, 0);
+    this.paperMesh.rotation.x = -Math.PI/2;
+    this.group.add(this.paperMesh);
+
+    // Shelves with bottles
+    const shelfMat = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 0.8 });
+    const shelf = new THREE.Mesh(new THREE.BoxGeometry(4, 0.08, 0.5), shelfMat);
+    shelf.position.set(-3.5, 3, -2);
+    this.group.add(shelf);
+    // Bottles
+    const bottleLabels = [
+      { x: -4.6, color: 0x6b3410, txt: 'Révélateur' },
+      { x: -3.8, color: 0x8b4513, txt: 'Fixateur' },
+      { x: -3.0, color: 0x5a2a08, txt: 'Acide' },
+      { x: -2.2, color: 0x44210a, txt: 'Eau' }
+    ];
+    for(const b of bottleLabels){
+      const bottle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.18, 0.55, 16),
+        new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.4, metalness: 0.3 })
+      );
+      bottle.position.set(b.x, 3.32, -2);
+      this.group.add(bottle);
+      // bottle neck
+      const neck = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.1, 0.18, 16),
+        new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.5 })
+      );
+      neck.position.set(b.x, 3.7, -2);
+      this.group.add(neck);
+      // label
+      const lblSp = Util.makeTextSprite(b.txt, { fontSize: 56, color: '#f0c060', scale: 0.32 });
+      lblSp.position.set(b.x, 3.05, -1.72);
+      this.group.add(lblSp);
+    }
+
+    // Subtle title label above
+    const title = Util.makeTextSprite('Chambre noire', { fontSize: 64, color: '#ff8a7a', scale: 0.55 });
+    title.position.set(0, 4.5, -3);
+    this.group.add(title);
+
+    STATE.scene.add(this.group);
+
+    Chrono.show();
+    Chrono.update(0);
+
+    this._renderPanel();
+  },
+
+  _drawPaper(progress){
+    // progress: 0 = blank white, 1 = full B&W photo
+    const ctx = this.paperCtx;
+    const w = this.paperCanvas.width, h = this.paperCanvas.height;
+    // Blank base
+    ctx.fillStyle = '#f0eadd';
+    ctx.fillRect(0,0,w,h);
+    // Slight paper grain
+    ctx.fillStyle = 'rgba(0,0,0,0.02)';
+    for(let i=0;i<200;i++){
+      ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
+    }
+    if(progress <= 0){
+      this.paperTex && (this.paperTex.needsUpdate = true);
+      return;
+    }
+    // Draw a scenic photo (mountains + sky + tree silhouette) with alpha = progress
+    ctx.save();
+    ctx.globalAlpha = Util.clamp(progress, 0, 1);
+    // Sky gradient
+    const skyG = ctx.createLinearGradient(0,0,0,h*0.5);
+    skyG.addColorStop(0, '#3a3a3a');
+    skyG.addColorStop(1, '#aaaaaa');
+    ctx.fillStyle = skyG;
+    ctx.fillRect(0,0,w,h*0.55);
+    // Sun
+    ctx.fillStyle = '#f5f5f5';
+    ctx.beginPath();
+    ctx.arc(w*0.78, h*0.22, h*0.07, 0, Math.PI*2);
+    ctx.fill();
+    // Mountains far
+    ctx.fillStyle = '#5a5a5a';
+    ctx.beginPath();
+    ctx.moveTo(0, h*0.55);
+    ctx.lineTo(w*0.15, h*0.32);
+    ctx.lineTo(w*0.30, h*0.45);
+    ctx.lineTo(w*0.50, h*0.25);
+    ctx.lineTo(w*0.72, h*0.42);
+    ctx.lineTo(w*0.90, h*0.30);
+    ctx.lineTo(w, h*0.40);
+    ctx.lineTo(w, h*0.55);
+    ctx.closePath();
+    ctx.fill();
+    // Mountains near
+    ctx.fillStyle = '#2c2c2c';
+    ctx.beginPath();
+    ctx.moveTo(0, h*0.65);
+    ctx.lineTo(w*0.20, h*0.45);
+    ctx.lineTo(w*0.40, h*0.60);
+    ctx.lineTo(w*0.60, h*0.40);
+    ctx.lineTo(w*0.80, h*0.55);
+    ctx.lineTo(w, h*0.50);
+    ctx.lineTo(w, h*0.65);
+    ctx.closePath();
+    ctx.fill();
+    // Ground
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, h*0.65, w, h*0.35);
+    // Tree silhouette
+    ctx.fillStyle = '#0a0a0a';
+    ctx.beginPath();
+    ctx.moveTo(w*0.22, h);
+    ctx.lineTo(w*0.22, h*0.45);
+    ctx.lineTo(w*0.20, h*0.45);
+    ctx.lineTo(w*0.20, h);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(w*0.21, h*0.42, h*0.10, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+    if(this.paperTex) this.paperTex.needsUpdate = true;
+  },
+
+  async _revealImage(){
+    Chrono.start();
+    const duration = 4000;
+    const start = performance.now();
+    return new Promise(resolve=>{
+      const tick = ()=>{
+        if(!this.active) return;
+        const elapsed = performance.now() - start;
+        const t = Util.clamp(elapsed/duration, 0, 1);
+        this.revealProgress = Util.easeOut(t);
+        this._drawPaper(this.revealProgress);
+        if(t < 1) requestAnimationFrame(tick);
+        else { Chrono.stop(); resolve(); }
+      };
+      tick();
+    });
+  },
+
+  update(dt){
+    if(!this.active) return;
+    // gentle red light flicker
+    if(this.redLight){
+      this.redLight.intensity = 1.1 + Math.sin(performance.now()*0.002)*0.08;
+    }
+  },
+
+  destroy(){
+    this.active = false;
+    Chrono.hide();
+    Util.clearAllTimers();
+    if(this.paperTex){ try{this.paperTex.dispose();}catch(e){} this.paperTex=null; }
+    Util.disposeNode(this.group);
+    this.group = null;
+    this.paperMesh = null;
+    this.paperCanvas = null;
+    this.paperCtx = null;
+    this.revealProgress = 0;
+    this.redLight = null;
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 1 — Le développement photographique
+        <span class="sub">Unité 2 · Suivi temporel d'une transformation</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">▸</span>Mise en situation</h3>
+        <p>Le développement photographique repose sur des transformations chimiques <b style="color:var(--accent)">LENTES</b>.</p>
+        <p>Trop rapides : l'image serait surexposée. Trop lentes : elle n'apparaîtrait jamais.</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">?</span>Questions de l'unité</h3>
+        <p style="color:var(--text)"><b>Comment SUIT-ON une transformation au cours du temps ?</b></p>
+        <p style="color:var(--text)"><b>Comment MESURE-T-ON sa vitesse ?</b></p>
+        <p style="color:var(--text)"><b>Comment la CONTRÔLE-T-ON ?</b></p>
+      </div>
+      <button id="btnReveal" class="btn bp" onclick="Scene1.onReveal()">▶ Révéler l'image</button>
+      <div id="fb1" class="fb"></div>
+      <button id="btnNext1" class="btn bo" onclick="goToScene(1)" disabled>Suivant ⏭ — Scène 2</button>
+    `);
+  },
+
+  async onReveal(){
+    await runAnimation(async()=>{
+      await this._revealImage();
+      showFB('fb1','inf',
+        `<b>Révélation terminée en ~4 s</b> (accéléré ici).<br>
+         En réalité : <b>30 s à plusieurs minutes</b> selon la température du bain.<br>
+         <span style="color:var(--text)">→ La <b>VITESSE</b> de la réaction dépend de facteurs qu'on va étudier.</span>`);
+      document.getElementById('btnNext1').disabled = false;
+    }, 'btnReveal');
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 2 — Tableau d'Avancement
+   ============================================================
+   ============================================================ */
+const Scene2 = {
+  active: false,
+  group: null,
+  beaker: null,
+  liquidMat: null,
+  moleculeBins: { H2O2:[], I:[], H:[], I2:[] },
+  // initial counts (visual approximation of n_i values in mmol)
+  N_INIT: { H2O2: 28, I: 100, H: 60 }, // sphere counts for visual
+  // n_i actual: H2O2=0.28, I=1.00, H=0.60 mmol
+  RATIO: 0.01, // mmol per displayed sphere
+  XMAX: 0.28, // mmol
+  currentX: 0,
+  xmaxFound: false,
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.currentX = 0;
+    this.xmaxFound = false;
+
+    STATE.camera.position.set(0, 1.8, 5.5);
+    STATE.controls.target.set(0, 0.7, 0);
+    STATE.controls.update();
+
+    // Table
+    const table = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 0.1, 4),
+      new THREE.MeshStandardMaterial({ color: 0x1a2030, roughness: 0.6, metalness: 0.2 })
+    );
+    table.position.set(0, -0.05, 0);
+    this.group.add(table);
+
+    // Beaker (cylinder open top)
+    const beakerGlass = new THREE.MeshPhysicalMaterial({
+      color: 0xddeeff, roughness: 0.05, metalness: 0,
+      transmission: 0.92, transparent: true, opacity: 0.4,
+      depthWrite: false
+    });
+    // Wall (cylinder no top)
+    const wallGeo = new THREE.CylinderGeometry(0.9, 0.9, 1.8, 48, 1, true);
+    const wall = new THREE.Mesh(wallGeo, beakerGlass);
+    wall.position.set(0, 0.9, 0);
+    wall.renderOrder = 2;
+    this.group.add(wall);
+    // Bottom
+    const bottomGeo = new THREE.CylinderGeometry(0.9, 0.9, 0.05, 48);
+    const bottom = new THREE.Mesh(bottomGeo, beakerGlass);
+    bottom.position.set(0, 0.025, 0);
+    bottom.renderOrder = 2;
+    this.group.add(bottom);
+    this.beaker = wall;
+
+    // Liquid
+    this.liquidMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf0f4ff, roughness: 0.1, metalness: 0,
+      transmission: 0.7, transparent: true, opacity: 0.55,
+      depthWrite: false
+    });
+    const liquid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.87, 0.87, 1.5, 48),
+      this.liquidMat
+    );
+    liquid.position.set(0, 0.78, 0);
+    liquid.renderOrder = 1;
+    this.group.add(liquid);
+
+    // Populate molecules (initial state)
+    this._populateMolecules();
+
+    // Label
+    const label = Util.makeTextSprite('Mélange réactionnel', { fontSize:52, color:'#7dc4ff', scale:0.4 });
+    label.position.set(0, 2.2, 0);
+    this.group.add(label);
+
+    STATE.scene.add(this.group);
+    this._renderPanel();
+    this._updateView();
+  },
+
+  _populateMolecules(){
+    const colors = {
+      H2O2: 0xaed6f1,
+      I:    0x9b59b6,
+      H:    0xff7675,
+      I2:   0x7d4f1e
+    };
+    const ranges = {
+      H2O2: { count: this.N_INIT.H2O2, radius: 0.07 },
+      I:    { count: this.N_INIT.I,    radius: 0.05 },
+      H:    { count: this.N_INIT.H,    radius: 0.045 },
+      I2:   { count: 0, radius: 0.09 }
+    };
+    for(const key of Object.keys(ranges)){
+      const r = ranges[key];
+      const geo = new THREE.SphereGeometry(r.radius, 10, 10);
+      const mat = new THREE.MeshStandardMaterial({
+        color: colors[key],
+        roughness: 0.4,
+        metalness: 0.2,
+        emissive: colors[key],
+        emissiveIntensity: 0.15
+      });
+      for(let i=0;i<Math.max(r.count, 30);i++){
+        const sphere = new THREE.Mesh(geo, mat);
+        // random position inside cylinder of radius 0.78 height 0..1.5
+        const theta = Math.random()*Math.PI*2;
+        const radius = Math.sqrt(Math.random())*0.78;
+        sphere.position.set(
+          Math.cos(theta)*radius,
+          0.1 + Math.random()*1.4,
+          Math.sin(theta)*radius
+        );
+        sphere.userData.baseY = sphere.position.y;
+        sphere.userData.phase = Math.random()*Math.PI*2;
+        sphere.visible = i < r.count;
+        this.group.add(sphere);
+        this.moleculeBins[key].push(sphere);
+      }
+    }
+  },
+
+  _updateView(){
+    // Compute current quantities (in mmol) based on currentX (in mmol)
+    const x = this.currentX;
+    const n = {
+      H2O2: this.N_INIT.H2O2/100 - x,
+      I:    this.N_INIT.I/100 - 2*x,
+      H:    this.N_INIT.H/100 - 2*x,
+      I2:   x
+    };
+    // update visibility counts
+    const visCounts = {
+      H2O2: Math.max(0, Math.round(n.H2O2 / this.RATIO)),
+      I:    Math.max(0, Math.round(n.I    / this.RATIO)),
+      H:    Math.max(0, Math.round(n.H    / this.RATIO)),
+      I2:   Math.max(0, Math.round(n.I2   / this.RATIO))
+    };
+    for(const key of Object.keys(this.moleculeBins)){
+      const bin = this.moleculeBins[key];
+      for(let i=0;i<bin.length;i++){
+        bin[i].visible = i < visCounts[key];
+      }
+    }
+    // Liquid color shift (clear → yellow/brown)
+    const ratio = Util.clamp(x / this.XMAX, 0, 1);
+    const r = Util.lerp(240, 200, ratio); // 240→200
+    const g = Util.lerp(244, 130, ratio); // 244→130
+    const b = Util.lerp(255, 30,  ratio); // 255→30
+    this.liquidMat.color.setRGB(r/255, g/255, b/255);
+
+    // Update table display
+    const tH2O2 = document.getElementById('val-H2O2');
+    if(tH2O2) tH2O2.textContent = n.H2O2.toFixed(2);
+    const tI = document.getElementById('val-I');
+    if(tI) tI.textContent = n.I.toFixed(2);
+    const tH = document.getElementById('val-H');
+    if(tH) tH.textContent = n.H.toFixed(2);
+    const tI2 = document.getElementById('val-I2');
+    if(tI2) tI2.textContent = n.I2.toFixed(2);
+    const sliderVal = document.getElementById('xval');
+    if(sliderVal) sliderVal.textContent = x.toFixed(2);
+
+    // warning row if any quantity < 0
+    const row = document.getElementById('row-t');
+    if(row){
+      const neg = (n.H2O2 < -0.001) || (n.I < -0.001) || (n.H < -0.001);
+      row.classList.toggle('warn', neg);
+      if(neg){
+        showFB('fb2', 'wrn', '⚠️ Une quantité est devenue NÉGATIVE — x dépasse x_max. Identifie le réactif limitant.');
+      } else {
+        hideFB('fb2');
+      }
+    }
+  },
+
+  onSliderChange(v){
+    this.currentX = parseFloat(v);
+    this._updateView();
+  },
+
+  onFindXmax(){
+    openModal(`
+      <h2>🔍 Trouver le réactif limitant</h2>
+      <p>On cherche la valeur maximale de <span class="kbd">x</span> telle que toutes les quantités restent ≥ 0.</p>
+      <p>Pour chaque réactif, on résout : <b>n(t) = 0</b></p>
+      <p class="eq">H₂O₂ s'annule : 0.28 − x = 0  ⟹  x = <b style="color:var(--accent)">0.28 mmol</b></p>
+      <p class="eq">I⁻ s'annule : 1.00 − 2x = 0  ⟹  x = <b>0.50 mmol</b></p>
+      <p class="eq">H⁺ s'annule : 0.60 − 2x = 0  ⟹  x = <b>0.30 mmol</b></p>
+      <p class="hl">→ x_max = MIN(0.28, 0.50, 0.30) = <b>0.28 mmol</b></p>
+      <p style="margin-top:8px">Le <b style="color:var(--red)">réactif LIMITANT</b> est <b style="color:var(--accent)">H₂O₂</b> (eau oxygénée).</p>
+      <div class="md-actions">
+        <button class="btn bp" onclick="Scene2.confirmXmax()">J'ai compris</button>
+      </div>
+    `);
+  },
+
+  confirmXmax(){
+    this.xmaxFound = true;
+    closeModal();
+    // Set slider to x_max and sync both displays
+    const sl = document.getElementById('xslider');
+    const slVal = document.getElementById('xslider-val');
+    if(sl){ sl.value = this.XMAX.toString(); this.onSliderChange(this.XMAX); }
+    if(slVal){ slVal.textContent = this.XMAX.toFixed(2); }
+    showFB('fb2','ok',
+      `<b>x_max = 0.28 mmol</b> · Réactif limitant : <b>H₂O₂</b> <span class="tag lim">limitant</span><br>
+       À x_max, n(H₂O₂) = 0, mais il reste I⁻ et H⁺ <span class="tag info">en excès</span>.`);
+    document.getElementById('btnNext2').disabled = false;
+    unlockScene(2);
+  },
+
+  update(dt){
+    if(!this.active) return;
+    // Gentle floating animation for visible molecules
+    const t = performance.now()*0.001;
+    for(const key of Object.keys(this.moleculeBins)){
+      const bin = this.moleculeBins[key];
+      for(const m of bin){
+        if(!m.visible) continue;
+        m.position.y = m.userData.baseY + Math.sin(t + m.userData.phase)*0.02;
+      }
+    }
+  },
+
+  destroy(){
+    this.active = false;
+    Util.clearAllTimers();
+    Util.disposeNode(this.group);
+    this.group = null;
+    this.beaker = null;
+    this.liquidMat = null;
+    for(const k of Object.keys(this.moleculeBins)) this.moleculeBins[k] = [];
+    this.currentX = 0;
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 2 — Le tableau d'avancement
+        <span class="sub">Réaction de référence de l'unité</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚗️</span>Équation</h3>
+        <p class="eq">H₂O₂(aq) + 2I⁻(aq) + 2H⁺(aq) → I₂(aq) + 2H₂O(l)</p>
+        <p>Observable : apparition du <b style="color:#cda260">I₂ (jaune-brun)</b>.</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">Σ</span>Tableau descriptif (en mmol)</h3>
+        <table class="dtbl">
+          <tr><th>État</th><th>x</th><th>H₂O₂</th><th>I⁻</th><th>H⁺</th><th>I₂</th></tr>
+          <tr><td class="lbl">Initial</td><td>0</td><td>0.28</td><td>1.00</td><td>0.60</td><td>0</td></tr>
+          <tr id="row-t"><td class="lbl">À t</td><td><span id="xval">0.00</span></td>
+            <td><span id="val-H2O2">0.28</span></td>
+            <td><span id="val-I">1.00</span></td>
+            <td><span id="val-H">0.60</span></td>
+            <td><span id="val-I2">0.00</span></td>
+          </tr>
+        </table>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">↔</span>Avancement x</h3>
+        <div class="slider-row">
+          <div class="sh"><span class="lbl">x (mmol)</span><span class="val" id="xslider-val">0.00</span></div>
+          <input type="range" id="xslider" min="0" max="0.35" step="0.005" value="0"
+            oninput="Scene2.onSliderChange(this.value); document.getElementById('xslider-val').textContent=parseFloat(this.value).toFixed(2)">
+        </div>
+        <p style="font-size:11px;color:var(--text2);margin-top:6px">
+          Pour chaque Δx : 1 H₂O₂ + 2 I⁻ + 2 H⁺ disparaissent, 1 I₂ apparaît.
+        </p>
+      </div>
+      <button id="btnFindXmax" class="btn bp" onclick="Scene2.onFindXmax()">🔍 Trouver le réactif limitant et x_max</button>
+      <div id="fb2" class="fb"></div>
+      <button id="btnNext2" class="btn bo" onclick="goToScene(2)" disabled>Suivant ⏭ — Scène 3 (Titrage)</button>
+    `);
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 3 — Activité 1 : Suivi par Titrage
+   ============================================================
+   ============================================================ */
+const Scene3 = {
+  active: false,
+  group: null,
+  reactionBeaker: null,
+  reactionLiquidMat: null,
+  burette: null,
+  buretteLiquidMat: null,
+  iceBeaker: null,
+  iceBeakerLiquidMat: null,
+  iceCube: null,
+  iceSampleColor: null, // changes when sample is dropped in
+  pipette: null,
+  agitatorBar: null,
+  chart: null,
+  step: 0, // current step (0..6)
+  // Data from the manual
+  DATA: {
+    t_s:    [0,    60,    160,   270,  360,  510,  720,  900, 1080, 1440, 1800],
+    V_E_mL: [0,    2.2,   4.8,   6.5,  7.5,  9.0,  10.5, 11.6, 12.3, 13.5, 14.0],
+    n_I2:   [0,    0.044, 0.096, 0.13, 0.15, 0.18, 0.21, 0.23, 0.25, 0.27, 0.28]
+  },
+  currentMeasureIdx: 0, // for step-by-step single measurement (we'll use idx 4 = t=360s as demo)
+  reactionT: 0, // simulated time for visual
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.step = 0;
+    this.currentMeasureIdx = 4; // demonstrate the manual's worked example
+    this.reactionT = 0;
+
+    STATE.camera.position.set(0, 2.3, 6.5);
+    STATE.controls.target.set(0, 1.1, 0);
+    STATE.controls.update();
+
+    // Lab bench
+    const bench = new THREE.Mesh(
+      new THREE.BoxGeometry(10, 0.1, 4),
+      new THREE.MeshStandardMaterial({ color: 0x1a2030, roughness: 0.7 })
+    );
+    bench.position.set(0, -0.05, 0);
+    this.group.add(bench);
+
+    // Magnetic stirrer (gray box)
+    const stirrer = new THREE.Mesh(
+      new THREE.BoxGeometry(1.4, 0.15, 1.4),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6, metalness: 0.4 })
+    );
+    stirrer.position.set(-1.6, 0.075, 0);
+    this.group.add(stirrer);
+    // power knob
+    const knob = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, 0.04, 12),
+      new THREE.MeshStandardMaterial({ color: 0xeeaa44 })
+    );
+    knob.position.set(-1.0, 0.17, 0.5);
+    knob.rotation.x = Math.PI/2;
+    this.group.add(knob);
+
+    // Reaction beaker (250 mL)
+    const beakerGlass = new THREE.MeshPhysicalMaterial({
+      color: 0xddeeff, roughness: 0.05,
+      transmission: 0.92, transparent: true, opacity: 0.4,
+      depthWrite: false
+    });
+    const beakerWall = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.6, 0.6, 1.2, 48, 1, true),
+      beakerGlass
+    );
+    beakerWall.position.set(-1.6, 0.75, 0);
+    beakerWall.renderOrder = 2;
+    this.group.add(beakerWall);
+    const beakerBottom = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.6, 0.6, 0.03, 48),
+      beakerGlass
+    );
+    beakerBottom.position.set(-1.6, 0.165, 0);
+    beakerBottom.renderOrder = 2;
+    this.group.add(beakerBottom);
+    this.reactionBeaker = beakerWall;
+    // Reaction liquid (pale yellow, will deepen)
+    this.reactionLiquidMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf5d68b, roughness: 0.1,
+      transmission: 0.65, transparent: true, opacity: 0.7,
+      depthWrite: false
+    });
+    const rLiquid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.58, 0.58, 1.0, 48),
+      this.reactionLiquidMat
+    );
+    rLiquid.position.set(-1.6, 0.65, 0);
+    rLiquid.renderOrder = 1;
+    this.group.add(rLiquid);
+
+    // Agitator bar (spinning)
+    const _agGeo = (typeof THREE.CapsuleGeometry !== 'undefined')
+      ? new THREE.CapsuleGeometry(0.05, 0.3, 4, 8)
+      : new THREE.CylinderGeometry(0.05, 0.05, 0.4, 12);
+    this.agitatorBar = new THREE.Mesh(
+      _agGeo,
+      new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.3, metalness: 0.8 })
+    );
+    this.agitatorBar.position.set(-1.6, 0.2, 0);
+    this.agitatorBar.rotation.z = Math.PI/2;
+    this.group.add(this.agitatorBar);
+
+    // Burette stand (vertical rod)
+    const rod = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.04, 4.5, 12),
+      new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.7, roughness: 0.4 })
+    );
+    rod.position.set(1.8, 2.2, -0.8);
+    this.group.add(rod);
+    // Base
+    const standBase = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.05, 0.8),
+      new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6 })
+    );
+    standBase.position.set(1.8, 0.025, -0.8);
+    this.group.add(standBase);
+    // Clamp/arm extending toward beaker
+    const clamp = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.05, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.6 })
+    );
+    clamp.position.set(1.2, 3.3, -0.8);
+    this.group.add(clamp);
+
+    // Burette (graduated tube)
+    const buretteGlass = new THREE.MeshPhysicalMaterial({
+      color: 0xddeeff, roughness: 0.1,
+      transmission: 0.85, transparent: true, opacity: 0.35,
+      depthWrite: false
+    });
+    this.burette = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.08, 2.4, 24, 1, true),
+      buretteGlass
+    );
+    this.burette.position.set(0.6, 2.3, -0.8);
+    this.burette.renderOrder = 2;
+    this.group.add(this.burette);
+    // Burette top cap
+    const buretteCap = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16),
+      new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.7 })
+    );
+    buretteCap.position.set(0.6, 3.5, -0.8);
+    this.group.add(buretteCap);
+    // Burette tap (bottom)
+    const buretteTap = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, 0.12, 12),
+      new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.7 })
+    );
+    buretteTap.position.set(0.6, 1.02, -0.8);
+    this.group.add(buretteTap);
+    // Burette liquid (thiosulfate, colorless)
+    this.buretteLiquidMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf0f8ff, roughness: 0.1,
+      transmission: 0.7, transparent: true, opacity: 0.5,
+      depthWrite: false
+    });
+    const buretteLiquid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.075, 0.075, 2.2, 24),
+      this.buretteLiquidMat
+    );
+    buretteLiquid.position.set(0.6, 2.2, -0.8);
+    buretteLiquid.renderOrder = 1;
+    this.group.add(buretteLiquid);
+    // Graduations (thin black lines as decoration)
+    for(let i=0;i<10;i++){
+      const grad = new THREE.Mesh(
+        new THREE.BoxGeometry(0.02, 0.005, 0.005),
+        new THREE.MeshBasicMaterial({ color: 0x000000 })
+      );
+      grad.position.set(0.68, 1.3 + i*0.22, -0.72);
+      this.group.add(grad);
+    }
+    // Label
+    const buretteLbl = Util.makeTextSprite('Burette · S₂O₃²⁻', { fontSize:42, color:'#7dc4ff', scale:0.3 });
+    buretteLbl.position.set(0.6, 3.8, -0.8);
+    this.group.add(buretteLbl);
+
+    // Ice water beaker
+    const iceBeakerGlass = new THREE.MeshPhysicalMaterial({
+      color: 0xddeeff, roughness: 0.05,
+      transmission: 0.9, transparent: true, opacity: 0.4,
+      depthWrite: false
+    });
+    this.iceBeaker = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.45, 0.45, 0.9, 32, 1, true),
+      iceBeakerGlass
+    );
+    this.iceBeaker.position.set(3.2, 0.6, 0);
+    this.iceBeaker.renderOrder = 2;
+    this.group.add(this.iceBeaker);
+    const iceBottom = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.45, 0.45, 0.03, 32),
+      iceBeakerGlass
+    );
+    iceBottom.position.set(3.2, 0.165, 0);
+    iceBottom.renderOrder = 2;
+    this.group.add(iceBottom);
+    // Ice water liquid
+    this.iceBeakerLiquidMat = new THREE.MeshPhysicalMaterial({
+      color: 0xb3e5fc, roughness: 0.1,
+      transmission: 0.7, transparent: true, opacity: 0.6,
+      depthWrite: false
+    });
+    const iceLiquid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.43, 0.43, 0.7, 32),
+      this.iceBeakerLiquidMat
+    );
+    iceLiquid.position.set(3.2, 0.55, 0);
+    iceLiquid.renderOrder = 1;
+    this.group.add(iceLiquid);
+    // Ice cube (white translucent)
+    this.iceCube = new THREE.Mesh(
+      new THREE.BoxGeometry(0.18, 0.18, 0.18),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xe8f4f8, roughness: 0.2,
+        transmission: 0.4, transparent: true, opacity: 0.75,
+        depthWrite: false
+      })
+    );
+    this.iceCube.position.set(3.05, 0.85, 0.1);
+    this.iceCube.renderOrder = 1;
+    this.group.add(this.iceCube);
+    // Ice label
+    const iceLbl = Util.makeTextSprite('Eau glacée', { fontSize:42, color:'#a0d8ff', scale:0.28 });
+    iceLbl.position.set(3.2, 1.4, 0);
+    this.group.add(iceLbl);
+
+    // Pipette (initially next to ice beaker)
+    this.pipette = new THREE.Group();
+    const pipBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, 0.7, 16),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xeeeeee, roughness: 0.1,
+        transmission: 0.6, transparent: true, opacity: 0.5,
+        depthWrite: false
+      })
+    );
+    pipBody.renderOrder = 2;
+    this.pipette.add(pipBody);
+    const pipTip = new THREE.Mesh(
+      new THREE.ConeGeometry(0.035, 0.18, 12),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xeeeeee, roughness: 0.1,
+        transmission: 0.6, transparent: true, opacity: 0.5,
+        depthWrite: false
+      })
+    );
+    pipTip.position.y = -0.45;
+    pipTip.renderOrder = 2;
+    this.pipette.add(pipTip);
+    const pipBulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.07, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0xcc6655, roughness: 0.5 })
+    );
+    pipBulb.position.y = 0.45;
+    this.pipette.add(pipBulb);
+    // Sample liquid inside pipette (invisible at start)
+    const pipLiquidMat = new THREE.MeshStandardMaterial({
+      color: 0xf5d68b, transparent: true, opacity: 0, depthWrite: false
+    });
+    const pipLiquid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.025, 0.025, 0.5, 12),
+      pipLiquidMat
+    );
+    pipLiquid.position.y = -0.15;
+    pipLiquid.renderOrder = 3;
+    this.pipette.add(pipLiquid);
+    this.pipette.userData.liquidMat = pipLiquidMat;
+    this.pipette.position.set(5.0, 1.6, 0);
+    this.group.add(this.pipette);
+
+    // Labels
+    const beakerLbl = Util.makeTextSprite('Mélange réactionnel', { fontSize:42, color:'#f0c060', scale:0.32 });
+    beakerLbl.position.set(-1.6, 1.7, 0);
+    this.group.add(beakerLbl);
+
+    STATE.scene.add(this.group);
+
+    Chrono.show();
+    Chrono.update(0);
+
+    this._renderPanel();
+  },
+
+  update(dt){
+    if(!this.active) return;
+    // Spin agitator
+    if(this.agitatorBar && this.step >= 1){
+      this.agitatorBar.rotation.y += dt * 6;
+    }
+  },
+
+  destroy(){
+    this.active = false;
+    Chrono.hide();
+    Util.clearAllTimers();
+    // Destroy chart
+    if(this.chart){
+      try{ this.chart.destroy(); }catch(e){}
+      this.chart = null;
+    }
+    const cv = document.getElementById('chartXt');
+    if(cv && Chart.getChart){
+      const existing = Chart.getChart(cv);
+      if(existing) try{ existing.destroy(); }catch(e){}
+    }
+    Util.disposeNode(this.group);
+    this.group = null;
+    this.reactionBeaker = null;
+    this.reactionLiquidMat = null;
+    this.burette = null;
+    this.buretteLiquidMat = null;
+    this.iceBeaker = null;
+    this.iceBeakerLiquidMat = null;
+    this.iceCube = null;
+    this.pipette = null;
+    this.agitatorBar = null;
+    this.step = 0;
+    this.reactionT = 0;
+  },
+
+  _setStepActive(idx){
+    document.querySelectorAll('.scn3-step').forEach((el, i)=>{
+      el.classList.remove('active');
+      if(i < idx) el.classList.add('done');
+      if(i === idx) el.classList.add('active');
+    });
+    // Disable already-completed step buttons (visually mark as done)
+    for(let i=1; i<=6; i++){
+      const btn = document.getElementById('btn-step'+i);
+      if(!btn) continue;
+      if(i <= idx){
+        btn.disabled = true;
+        if(!btn.textContent.startsWith('✓')) btn.textContent = '✓ ' + btn.textContent.replace(/^▶ /, '');
+      }
+    }
+  },
+
+  // ---- STEP 1: Démarrer chronomètre ----
+  async onStep1(){
+    if(this.step >= 1) return;
+    await runAnimation(async()=>{
+      Chrono.start();
+      this.step = 1;
+      this._setStepActive(1);
+      showFB('fb3','inf','Chronomètre lancé. Le mélange réactionnel s\'agite continuellement.');
+      document.getElementById('btn-step2').disabled = false;
+    }, 'btn-step1');
+  },
+
+  // ---- STEP 2: Prélever ----
+  async onStep2(){
+    if(this.step >= 2) return;
+    await runAnimation(async()=>{
+      // Pipette moves to reaction beaker, dips down, aspirates (liquid becomes visible)
+      const startPos = this.pipette.position.clone();
+      const targetPos = new THREE.Vector3(-1.6, 1.8, 0);
+      await animateValue(0,1,1200,(t)=>{
+        this.pipette.position.lerpVectors(startPos, targetPos, t);
+      });
+      // Dip into beaker
+      await animateValue(1.8,1.0,800,(y)=>{
+        this.pipette.position.y = y;
+      });
+      // Aspirate (liquid becomes visible)
+      await animateValue(0,1,1000,(t)=>{
+        this.pipette.userData.liquidMat.opacity = 0.85*t;
+      });
+      // Lift up
+      await animateValue(1.0,2.0,700,(y)=>{
+        this.pipette.position.y = y;
+      });
+      this.step = 2;
+      this._setStepActive(2);
+      showFB('fb3','inf','Prélèvement de 10 mL effectué. Échantillon jaune visible dans la pipette.');
+      document.getElementById('btn-step3').disabled = false;
+    }, 'btn-step2');
+  },
+
+  // ---- STEP 3: Tremper ----
+  async onStep3(){
+    if(this.step >= 3) return;
+    await runAnimation(async()=>{
+      // Move pipette over ice beaker
+      const startPos = this.pipette.position.clone();
+      const targetPos = new THREE.Vector3(3.2, 2.0, 0);
+      await animateValue(0,1,1200,(t)=>{
+        this.pipette.position.lerpVectors(startPos, targetPos, t);
+      });
+      // Dip
+      await animateValue(2.0,1.4,500,(y)=>{
+        this.pipette.position.y = y;
+      });
+      // Discharge (liquid in pipette disappears, ice beaker color shifts slightly to pale yellow)
+      await animateValue(0,1,1500,(t)=>{
+        this.pipette.userData.liquidMat.opacity = 0.85*(1-t);
+        // Ice beaker becomes very faintly tinted (sample diluted)
+        const r = Util.lerp(0xb3, 0xcde0, t)/255;
+        const g = Util.lerp(0xe5, 0xe5, t)/255;
+        const b = Util.lerp(0xfc, 0xa0, t)/255;
+        this.iceBeakerLiquidMat.color.setRGB(r, g, b);
+      });
+      // Frost effect: brief flash + label
+      showFB('fb3','inf','❄️ <b>Trempe</b> · Le froid + la dilution figent la réaction. La composition est constante le temps du titrage. ' +
+        '<span style="color:var(--text2)">(Pourquoi exactement ? Détails en Scène 4.)</span>');
+      // Lift
+      await animateValue(1.4,2.0,500,(y)=>{
+        this.pipette.position.y = y;
+      });
+      // Return pipette to side
+      await animateValue(0,1,800,(t)=>{
+        this.pipette.position.x = Util.lerp(3.2, 5.0, t);
+        this.pipette.position.y = Util.lerp(2.0, 1.6, t);
+      });
+      this.step = 3;
+      this._setStepActive(3);
+      document.getElementById('btn-step4').disabled = false;
+    }, 'btn-step3');
+  },
+
+  // ---- STEP 4: Titrer ----
+  async onStep4(){
+    if(this.step >= 4) return;
+    await runAnimation(async()=>{
+      // Animate burette tap opening: drops fall into ice beaker (move ice beaker under conceptually)
+      // For visual simplicity: fade burette liquid down + simulate color change of ice beaker
+      const dropCount = 12;
+      for(let i=0;i<dropCount;i++){
+        // Create a drop
+        const drop = new THREE.Mesh(
+          new THREE.SphereGeometry(0.025, 8, 8),
+          new THREE.MeshPhysicalMaterial({ color: 0xf0f8ff, transmission: 0.7, transparent: true, opacity: 0.7, depthWrite: false })
+        );
+        drop.position.set(0.6, 0.95, -0.8);
+        this.group.add(drop);
+        // Animate drop falling toward an imaginary titration cup (we'll move the ice beaker symbolically)
+        animateValue(0,1,500,(t)=>{
+          drop.position.y = Util.lerp(0.95, 0.7, t);
+          drop.position.x = Util.lerp(0.6, 3.2, t);
+        }).then(()=>{
+          drop.geometry.dispose();
+          drop.material.dispose();
+          this.group.remove(drop);
+        });
+        // Burette liquid level drops
+        this.buretteLiquidMat.opacity = Math.max(0.15, 0.5 - i*0.025);
+        // Ice beaker: yellow fades, briefly turns blue (amidon), then back to colorless
+        if(i < dropCount-2){
+          // Fade yellow
+          const r = Util.lerp(0xcd, 0xb0, i/(dropCount-2))/255;
+          const g = Util.lerp(0xe0, 0xc0, i/(dropCount-2))/255;
+          const b = Util.lerp(0xa0, 0xe8, i/(dropCount-2))/255;
+          this.iceBeakerLiquidMat.color.setRGB(r, g, b);
+        }
+        await sleep(450);
+      }
+      // Equivalence: add starch indicator → deep blue flash
+      showFB('fb3','wrn','💡 On ajoute l\'<b>empois d\'amidon</b> (indicateur)...');
+      await sleep(400);
+      this.iceBeakerLiquidMat.color.setRGB(0x1a/255, 0x23/255, 0x7e/255);
+      await sleep(800);
+      // Last drop: blue disappears
+      const lastDrop = new THREE.Mesh(
+        new THREE.SphereGeometry(0.025, 8, 8),
+        new THREE.MeshPhysicalMaterial({ color: 0xf0f8ff, transmission: 0.7, transparent: true, opacity: 0.7, depthWrite: false })
+      );
+      lastDrop.position.set(0.6, 0.95, -0.8);
+      this.group.add(lastDrop);
+      await animateValue(0,1,500,(t)=>{
+        lastDrop.position.y = Util.lerp(0.95, 0.7, t);
+        lastDrop.position.x = Util.lerp(0.6, 3.2, t);
+      });
+      lastDrop.geometry.dispose();
+      lastDrop.material.dispose();
+      this.group.remove(lastDrop);
+      // Bleu disappears
+      await animateValue(0,1,800,(t)=>{
+        const r = Util.lerp(0x1a, 0xe8, t)/255;
+        const g = Util.lerp(0x23, 0xf4, t)/255;
+        const b = Util.lerp(0x7e, 0xf8, t)/255;
+        this.iceBeakerLiquidMat.color.setRGB(r, g, b);
+      });
+      showFB('fb3','ok','✅ <b>Équivalence atteinte</b> · La couleur disparaît à la dernière goutte. V_E = <b>7.5 mL</b> (pour t = 360 s).');
+      this.step = 4;
+      this._setStepActive(4);
+      document.getElementById('btn-step5').disabled = false;
+    }, 'btn-step4');
+  },
+
+  // ---- STEP 5: Lire V_E et calculer ----
+  onStep5(){
+    if(this.step >= 5) return;
+    const idx = this.currentMeasureIdx;
+    const t = this.DATA.t_s[idx];
+    const VE = this.DATA.V_E_mL[idx];
+    const nI2 = this.DATA.n_I2[idx];
+    openModal(`
+      <h2>🧮 Calcul de n(I₂)</h2>
+      <p>Pour cet instant <span class="kbd">t = ${t} s</span>, la burette indique <b>V_E = ${VE} mL</b>.</p>
+      <p class="eq">n(I₂) = (C × V_E) / 2  =  (0.040 × ${VE}×10⁻³) / 2</p>
+      <p class="eq">n(I₂) = <b style="color:var(--accent)">${nI2} mmol</b> = ${nI2}×10⁻³ mol</p>
+      <p>C est la concentration du thiosulfate (0.040 mol/L). Le coefficient 2 vient de la stœchiométrie I₂ + 2 S₂O₃²⁻ → 2 I⁻ + S₄O₆²⁻.</p>
+      <p class="hl">Comme x = n(I₂) (un I₂ formé par avancement), on a directement <b>x(${t} s) = ${nI2} mmol</b>.</p>
+      <div class="md-actions">
+        <button class="btn bp" onclick="Scene3.confirmStep5()">OK, mesure enregistrée</button>
+      </div>
+    `);
+  },
+
+  confirmStep5(){
+    closeModal();
+    this.step = 5;
+    this._setStepActive(5);
+    showFB('fb3','ok',
+      `Mesure enregistrée pour t = ${this.DATA.t_s[this.currentMeasureIdx]} s : n(I₂) = <b>${this.DATA.n_I2[this.currentMeasureIdx]} mmol</b>.`);
+    document.getElementById('btn-step6').disabled = false;
+    // Insert first chart with single point
+    this._initChart();
+    this._addChartPoint(this.currentMeasureIdx);
+  },
+
+  // ---- STEP 6: Répéter pour tous les instants ----
+  async onStep6(){
+    if(this.step >= 6) return;
+    await runAnimation(async()=>{
+      // Animate adding all data points to chart sequentially
+      if(!this.chart) this._initChart();
+      for(let i=0;i<this.DATA.t_s.length;i++){
+        if(i === this.currentMeasureIdx) continue; // already added
+        this._addChartPoint(i);
+        await sleep(180);
+      }
+      this.step = 6;
+      this._setStepActive(6);
+      showFB('fb3','ok',
+        `<b>11 mesures tracées.</b> x(t) croît rapidement au début puis ralentit → la réaction approche de son état final.<br>
+         <span style="color:var(--text2)">Asymptote ≈ 0.28 mmol = x_max (réactif limitant H₂O₂ épuisé).</span>`);
+      document.getElementById('btnNext3').disabled = false;
+      unlockScene(3);
+    }, 'btn-step6');
+  },
+
+  _initChart(){
+    const cv = document.getElementById('chartXt');
+    if(!cv) return;
+    // Destroy existing if any
+    if(Chart.getChart){
+      const existing = Chart.getChart(cv);
+      if(existing) try{ existing.destroy(); }catch(e){}
+    }
+    if(this.chart){ try{ this.chart.destroy(); }catch(e){} this.chart = null; }
+    this.chart = new Chart(cv, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'n(I₂) (mmol)',
+          data: [],
+          borderColor: '#e74c3c',
+          backgroundColor: 'rgba(231,76,60,0.15)',
+          pointBackgroundColor: '#e74c3c',
+          pointRadius: 4,
+          showLine: true,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 200 },
+        plugins: {
+          legend: { labels: { color: '#e6edf3', font: { size: 10 } } }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            title: { display: true, text: 'Temps t (s)', color: '#8b949e' },
+            min: 0, max: 2000,
+            ticks: { color: '#8b949e', font:{size:10} },
+            grid: { color: 'rgba(48,54,61,0.5)' }
+          },
+          y: {
+            title: { display: true, text: 'n(I₂) (mmol)', color: '#8b949e' },
+            min: 0, max: 0.32,
+            ticks: { color: '#8b949e', font:{size:10} },
+            grid: { color: 'rgba(48,54,61,0.5)' }
+          }
+        }
+      }
+    });
+  },
+
+  _addChartPoint(idx){
+    if(!this.chart) return;
+    const t = this.DATA.t_s[idx];
+    const y = this.DATA.n_I2[idx];
+    // Insert sorted by x
+    this.chart.data.datasets[0].data.push({ x: t, y: y });
+    this.chart.data.datasets[0].data.sort((a,b)=>a.x-b.x);
+    this.chart.update('none');
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 3 — Activité 1 : Suivi par titrage
+        <span class="sub">H₂O₂ + 2I⁻ + 2H⁺ → I₂ + 2H₂O</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚗️</span>Principe</h3>
+        <p class="eq">Réaction (lente) : H₂O₂ + 2I⁻ + 2H⁺ → I₂ + 2H₂O</p>
+        <p class="eq">Titrage : I₂ + 2S₂O₃²⁻ → 2I⁻ + S₄O₆²⁻</p>
+        <p>À l'équivalence : <span class="kbd">n(I₂) = C·V_E / 2</span> avec C = 0.040 mol/L (thiosulfate).</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">📋</span>Protocole — 6 étapes</h3>
+        <div class="steps-list">
+          <div class="scn3-step step active"><div class="step-num">1</div><div class="step-txt">Démarrer le chronomètre (t = 0)</div></div>
+          <div class="scn3-step step"><div class="step-num">2</div><div class="step-txt">Prélever 10 mL à un instant t</div></div>
+          <div class="scn3-step step"><div class="step-num">3</div><div class="step-txt">Tremper dans l'eau glacée (figer la réaction)</div></div>
+          <div class="scn3-step step"><div class="step-num">4</div><div class="step-txt">Titrer avec le thiosulfate jusqu'à l'équivalence</div></div>
+          <div class="scn3-step step"><div class="step-num">5</div><div class="step-txt">Lire V_E et calculer n(I₂)</div></div>
+          <div class="scn3-step step"><div class="step-num">6</div><div class="step-txt">Répéter pour plusieurs instants → tracer x(t)</div></div>
+        </div>
+      </div>
+      <div class="bg-row" style="flex-direction:column;gap:6px">
+        <button id="btn-step1" class="btn bp" onclick="Scene3.onStep1()">▶ Étape 1 — Démarrer</button>
+        <button id="btn-step2" class="btn bp" onclick="Scene3.onStep2()" disabled>▶ Étape 2 — Prélever 10 mL</button>
+        <button id="btn-step3" class="btn bp" onclick="Scene3.onStep3()" disabled>▶ Étape 3 — Tremper</button>
+        <button id="btn-step4" class="btn bp" onclick="Scene3.onStep4()" disabled>▶ Étape 4 — Titrer</button>
+        <button id="btn-step5" class="btn bp" onclick="Scene3.onStep5()" disabled>▶ Étape 5 — Calculer n(I₂)</button>
+        <button id="btn-step6" class="btn bp" onclick="Scene3.onStep6()" disabled>▶ Étape 6 — Tracer les 11 points</button>
+      </div>
+      <div id="fb3" class="fb"></div>
+      <div class="bx">
+        <h3><span class="ic">📈</span>Courbe n(I₂) vs t</h3>
+        <div class="cc" style="height:220px"><canvas id="chartXt"></canvas></div>
+      </div>
+      <button id="btnNext3" class="btn bo" onclick="goToScene(3)" disabled>Suivant ⏭ — Scène 4 (Trempe)</button>
+    `);
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 4 — La Trempe : Blocage Cinétique
+   ============================================================
+   ============================================================ */
+const Scene4 = {
+  active: false,
+  group: null,
+  zoneL: null, // warm
+  zoneR: null, // controlled by slider
+  T_right: 0, // °C (default cold)
+  flashes: [], // active collision flashes
+  flashTimers: { L: 0, R: 0 }, // accumulators for flash scheduling
+  bgL: null, bgR: null,
+  divider: null,
+  labelL: null, labelR: null,
+
+  CONSTANTS: {
+    boxW: 1.5,    // half-width per zone
+    boxH: 1.6,    // total height
+    boxD: 1.0,    // depth
+    countPerType: 8 // 8 H2O2 + 8 I + 8 H = 24 molecules per zone
+  },
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.T_right = 0;
+    this.flashes = [];
+    this.flashTimers = { L: 0, R: 0 };
+
+    // Immersive camera
+    STATE.camera.position.set(0, 0, 4);
+    STATE.controls.target.set(0, 0, 0);
+    STATE.controls.minDistance = 2;
+    STATE.controls.maxDistance = 10;
+    STATE.controls.update();
+
+    const C = this.CONSTANTS;
+
+    // Background gradient panels (warm vs cold)
+    this.bgL = new THREE.Mesh(
+      new THREE.PlaneGeometry(C.boxW*2, C.boxH+0.4),
+      new THREE.MeshBasicMaterial({ color: 0x1e2434, transparent: true, opacity: 0.6, side: THREE.DoubleSide })
+    );
+    this.bgL.position.set(-C.boxW, 0, -1.2);
+    this.group.add(this.bgL);
+
+    this.bgR = new THREE.Mesh(
+      new THREE.PlaneGeometry(C.boxW*2, C.boxH+0.4),
+      new THREE.MeshBasicMaterial({ color: 0x1e3a5c, transparent: true, opacity: 0.6, side: THREE.DoubleSide })
+    );
+    this.bgR.position.set(C.boxW, 0, -1.2);
+    this.group.add(this.bgR);
+
+    // Divider line
+    this.divider = new THREE.Mesh(
+      new THREE.BoxGeometry(0.015, C.boxH+0.4, 0.02),
+      new THREE.MeshBasicMaterial({ color: 0x58a6ff })
+    );
+    this.divider.position.set(0, 0, -1.1);
+    this.group.add(this.divider);
+
+    // Labels
+    this.labelL = Util.makeTextSprite('Mélange · 25 °C', { fontSize: 56, color: '#ffa86b', scale: 0.36 });
+    this.labelL.position.set(-C.boxW, C.boxH/2 + 0.3, 0);
+    this.group.add(this.labelL);
+
+    this.labelR = Util.makeTextSprite('Échantillon trempé', { fontSize: 56, color: '#9ad1ff', scale: 0.36 });
+    this.labelR.position.set(C.boxW, C.boxH/2 + 0.3, 0);
+    this.group.add(this.labelR);
+
+    // Frost decoration on right side
+    for(let i=0;i<8;i++){
+      const flake = new THREE.Mesh(
+        new THREE.SphereGeometry(0.025 + Math.random()*0.015, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0xddeeff, transparent: true, opacity: 0.7 })
+      );
+      flake.position.set(
+        C.boxW + (Math.random()-0.5)*C.boxW*2*0.95,
+        (Math.random()-0.5)*C.boxH*0.95,
+        (Math.random()-0.5)*0.4 - 0.5
+      );
+      this.group.add(flake);
+    }
+
+    // Create both zones
+    this.zoneL = this._createZone(-C.boxW, 1.0);
+    this.zoneR = this._createZone( C.boxW, 0.1); // initially very slow (0°C)
+
+    STATE.scene.add(this.group);
+    this._renderPanel();
+    this._updateDisplay();
+  },
+
+  _createZone(centerX, speedMult){
+    const C = this.CONSTANTS;
+    const zone = {
+      centerX,
+      speedMult,
+      molecules: [],
+      baseSpeed: 0.5
+    };
+    const types = [
+      { count: C.countPerType, color: 0xaed6f1, radius: 0.06, name: 'H2O2' },
+      { count: C.countPerType, color: 0x9b59b6, radius: 0.05, name: 'I' },
+      { count: C.countPerType, color: 0xff7675, radius: 0.045, name: 'H' }
+    ];
+    for(const t of types){
+      const geo = new THREE.SphereGeometry(t.radius, 10, 10);
+      const mat = new THREE.MeshStandardMaterial({
+        color: t.color, roughness: 0.4, metalness: 0.2,
+        emissive: t.color, emissiveIntensity: 0.2
+      });
+      for(let i=0;i<t.count;i++){
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(
+          centerX + (Math.random()-0.5)*C.boxW*1.9,
+          (Math.random()-0.5)*C.boxH*0.9,
+          (Math.random()-0.5)*C.boxD*0.9
+        );
+        m.userData.vel = new THREE.Vector3(
+          (Math.random()-0.5)*zone.baseSpeed,
+          (Math.random()-0.5)*zone.baseSpeed,
+          (Math.random()-0.5)*zone.baseSpeed
+        );
+        m.userData.type = t.name;
+        this.group.add(m);
+        zone.molecules.push(m);
+      }
+    }
+    return zone;
+  },
+
+  _stepZone(zone, dt){
+    const C = this.CONSTANTS;
+    const halfW = C.boxW * 0.95;
+    const halfH = C.boxH * 0.45;
+    const halfD = C.boxD * 0.45;
+    for(const m of zone.molecules){
+      // move
+      m.position.x += m.userData.vel.x * zone.speedMult * dt;
+      m.position.y += m.userData.vel.y * zone.speedMult * dt;
+      m.position.z += m.userData.vel.z * zone.speedMult * dt;
+      // bounce off boundaries (relative to zone centerX)
+      const dx = m.position.x - zone.centerX;
+      if(dx > halfW || dx < -halfW){ m.userData.vel.x *= -1; m.position.x = zone.centerX + Math.sign(dx)*halfW; }
+      if(m.position.y > halfH || m.position.y < -halfH){ m.userData.vel.y *= -1; m.position.y = Math.sign(m.position.y)*halfH; }
+      if(m.position.z > halfD || m.position.z < -halfD){ m.userData.vel.z *= -1; m.position.z = Math.sign(m.position.z)*halfD; }
+    }
+  },
+
+  _spawnFlash(zone){
+    // pick random molecule, flash a sprite at its position
+    if(!zone.molecules.length) return;
+    const m = zone.molecules[Math.floor(Math.random()*zone.molecules.length)];
+    const flash = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffe066, transparent: true, opacity: 0.8 })
+    );
+    flash.position.copy(m.position);
+    flash.userData.life = 0;
+    flash.userData.maxLife = 0.4;
+    this.group.add(flash);
+    this.flashes.push(flash);
+  },
+
+  _updateFlashes(dt){
+    for(let i=this.flashes.length-1; i>=0; i--){
+      const f = this.flashes[i];
+      f.userData.life += dt;
+      const t = f.userData.life / f.userData.maxLife;
+      if(t >= 1){
+        f.geometry.dispose();
+        f.material.dispose();
+        this.group.remove(f);
+        this.flashes.splice(i, 1);
+      } else {
+        f.material.opacity = 0.8 * (1-t);
+        f.scale.setScalar(1 + t*1.5);
+      }
+    }
+  },
+
+  update(dt){
+    if(!this.active) return;
+    if(!this.zoneL || !this.zoneR) return;
+    // Step molecules
+    this._stepZone(this.zoneL, dt);
+    this._stepZone(this.zoneR, dt);
+
+    // Compute collision rates based on temperature
+    // Left zone: 25°C ref → 10 chocs/s
+    // Right zone: scales with (T+273)/(298) to power 1.5 (collision frequency)
+    const rateL = 10; // /s
+    const Tk = this.T_right + 273;
+    const rateR = Math.max(0.5, 10 * Math.pow(Tk/298, 1.5) * this.zoneR.speedMult / 1.0);
+    // but speedMult is set independently — let's compute consistently
+    // Approach: rateR ∝ speedMult (since faster = more collisions)
+    const rateR_computed = 10 * this.zoneR.speedMult;
+
+    // Schedule flashes
+    this.flashTimers.L += dt;
+    const periodL = 1/rateL;
+    while(this.flashTimers.L >= periodL){
+      this._spawnFlash(this.zoneL);
+      this.flashTimers.L -= periodL;
+    }
+
+    this.flashTimers.R += dt;
+    const periodR = 1/Math.max(0.3, rateR_computed);
+    while(this.flashTimers.R >= periodR){
+      this._spawnFlash(this.zoneR);
+      this.flashTimers.R -= periodR;
+    }
+
+    this._updateFlashes(dt);
+
+    // Update side panel readouts (throttled)
+    if(!this._lastDisplayT || performance.now() - this._lastDisplayT > 150){
+      this._updateDisplay();
+      this._lastDisplayT = performance.now();
+    }
+  },
+
+  _updateDisplay(){
+    const chocsL = document.getElementById('chocsL');
+    const chocsR = document.getElementById('chocsR');
+    const vrelR = document.getElementById('vrelR');
+    const TR = document.getElementById('tempR');
+    if(chocsL) chocsL.textContent = '~10 /s';
+    if(chocsR) chocsR.textContent = '~' + (10 * this.zoneR.speedMult).toFixed(1) + ' /s';
+    if(vrelR) vrelR.textContent = this.zoneR.speedMult.toFixed(2) + '×';
+    if(TR) TR.textContent = this.T_right + ' °C';
+  },
+
+  onTempChange(v){
+    this.T_right = parseInt(v);
+    // Empirical mapping: 0°C → 0.10× ; 25°C → 1.0× ; 60°C → 3.0×
+    // Use exponential: v_rel = exp(0.06 * (T - 25))
+    this.zoneR.speedMult = Math.max(0.05, Math.exp(0.06 * (this.T_right - 25)));
+    // Update background tint (cold = blue, warm = redder)
+    if(this.bgR){
+      const t = Util.clamp((this.T_right - 0) / 60, 0, 1); // 0..1
+      const r = Util.lerp(0x1e, 0x4a, t)/255;
+      const g = Util.lerp(0x3a, 0x2c, t)/255;
+      const b = Util.lerp(0x5c, 0x30, t)/255;
+      this.bgR.material.color.setRGB(r, g, b);
+    }
+    this._updateDisplay();
+  },
+
+  onCompare(){
+    openModal(`
+      <h2>🔬 Comparaison des deux zones</h2>
+      <p>À <b>25 °C</b> (mélange ambiant) :</p>
+      <p class="eq">~10 chocs efficaces / s &nbsp;→&nbsp; réaction active, x croît.</p>
+      <p>À <b>0 °C</b> (échantillon trempé) :</p>
+      <p class="eq">~1 choc / s &nbsp;→&nbsp; réaction <b style="color:var(--cyan)">quasi-figée</b>.</p>
+      <p class="hl">Refroidir d'environ 25 °C divise la vitesse par ~10.</p>
+      <p>→ La trempe permet de <b>titrer sans que x change</b> pendant la mesure.</p>
+      <p style="background:var(--bg);padding:8px;border-radius:6px;border-left:2px solid var(--orange)">
+        <b style="color:var(--orange)">Règle pratique</b> · à +10 °C, la vitesse est multipliée par environ 2 à 3.
+        Formule empirique : <span class="kbd">v(T) = v(25°C) × 2^((T−25)/10)</span>
+      </p>
+      <p>S'ajoute en outre l'effet de <b>dilution</b> (l'eau ajoutée baisse [réactifs]) → double effet du blocage cinétique.</p>
+      <div class="md-actions">
+        <button class="btn bp" onclick="Scene4.confirmCompare()">J'ai compris</button>
+      </div>
+    `);
+  },
+
+  confirmCompare(){
+    closeModal();
+    showFB('fb4','ok',
+      `<b>Trempe = double effet</b> · refroidissement (chocs ↓) + dilution ([réactifs] ↓).<br>
+       <span style="color:var(--text2)">⚠️ Ne JAMAIS arrêter le chronomètre pendant le prélèvement !</span>`);
+    document.getElementById('btnNext4').disabled = false;
+    unlockScene(4);
+  },
+
+  destroy(){
+    this.active = false;
+    Util.clearAllTimers();
+    // dispose flashes
+    for(const f of this.flashes){
+      f.geometry && f.geometry.dispose();
+      f.material && f.material.dispose();
+    }
+    this.flashes = [];
+    Util.disposeNode(this.group);
+    this.group = null;
+    this.zoneL = null;
+    this.zoneR = null;
+    this.bgL = null; this.bgR = null;
+    this.divider = null; this.labelL = null; this.labelR = null;
+    this._lastDisplayT = 0;
+    // Restore controls limits
+    if(STATE.controls){ STATE.controls.minDistance = 2; STATE.controls.maxDistance = 20; }
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 4 — La trempe
+        <span class="sub">Blocage cinétique — interprétation microscopique</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">❓</span>Le problème</h3>
+        <p>Pour titrer, il faut une composition <b>FIGÉE</b> le temps de la mesure. Mais la réaction continue d'avancer dans le bécher !</p>
+        <p style="color:var(--accent)">→ Solution : la TREMPE dans l'eau glacée.</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚙️</span>Deux effets simultanés</h3>
+        <p><b style="color:var(--cyan)">1. Refroidissement</b> — Le froid abaisse l'agitation thermique → moins de chocs → la réaction quasi-s'arrête.</p>
+        <p><b style="color:var(--cyan)">2. Dilution</b> — L'eau dilue le mélange → [réactifs] baisse → moins de chocs.</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">🌡️</span>Température de l'échantillon (zone droite)</h3>
+        <div class="slider-row">
+          <div class="sh"><span class="lbl">T (°C)</span><span class="val" id="tempR">0 °C</span></div>
+          <input type="range" min="0" max="60" step="1" value="0"
+            oninput="Scene4.onTempChange(this.value)">
+        </div>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">📊</span>Lecture en temps réel</h3>
+        <table class="dtbl">
+          <tr><th>Zone</th><th>Chocs /s</th><th>v relative</th></tr>
+          <tr><td class="lbl">Gauche (25 °C)</td><td id="chocsL">~10 /s</td><td>1.00×</td></tr>
+          <tr><td class="lbl">Droite (T variable)</td><td id="chocsR">~1.0 /s</td><td id="vrelR">0.10×</td></tr>
+        </table>
+      </div>
+      <button id="btnCompare" class="btn bp" onclick="Scene4.onCompare()">🔬 Comparer les deux zones</button>
+      <div id="fb4" class="fb"></div>
+      <button id="btnNext4" class="btn bo" onclick="goToScene(4)" disabled>Suivant ⏭ — Scène 5 (Pression)</button>
+    `);
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 5 — Activité 2 : Suivi par Mesure de Pression
+   ============================================================
+   ============================================================ */
+const Scene5 = {
+  active: false,
+  group: null,
+  flask: null,
+  flaskLiquidMat: null,
+  pressureMeter: null,
+  pressureLCD: null, // sprite that shows numeric value
+  pressureLCDcanvas: null,
+  pressureLCDctx: null,
+  pressureLCDtex: null,
+  NaHCO3coupelle: null,
+  bubbles: [],
+  step: 0,
+  simRunning: false,
+  simSpeed: 1,
+  simT: 0,
+  P0: 101.3, // kPa
+  deltaP_max: 38, // kPa (visual asymptote)
+  k: 0.012, // s^-1, t1/2 ~ 60s
+  chart: null,
+  chartMode: 'dP', // 'dP' or 'x'
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.step = 0;
+    this.simRunning = false;
+    this.simSpeed = 1;
+    this.simT = 0;
+    this.bubbles = [];
+
+    STATE.camera.position.set(0, 2.0, 6);
+    STATE.controls.target.set(0, 1.2, 0);
+    STATE.controls.update();
+
+    // Lab bench
+    const bench = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 0.1, 4),
+      new THREE.MeshStandardMaterial({ color: 0x1a2030, roughness: 0.7 })
+    );
+    bench.position.set(0, -0.05, 0);
+    this.group.add(bench);
+
+    // Magnetic stirrer
+    const stirrer = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.15, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6, metalness: 0.4 })
+    );
+    stirrer.position.set(-1.5, 0.075, 0);
+    this.group.add(stirrer);
+
+    // Round-bottom flask (ballon à long col)
+    const flaskMat = new THREE.MeshPhysicalMaterial({
+      color: 0xddeeff, roughness: 0.05,
+      transmission: 0.85, transparent: true, opacity: 0.4,
+      depthWrite: false
+    });
+    const flaskBody = new THREE.Mesh(new THREE.SphereGeometry(0.55, 32, 24), flaskMat);
+    flaskBody.position.set(-1.5, 0.7, 0);
+    flaskBody.renderOrder = 2;
+    this.group.add(flaskBody);
+    this.flask = flaskBody;
+    // Long neck
+    const flaskNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.13, 0.9, 24, 1, true), flaskMat);
+    flaskNeck.position.set(-1.5, 1.55, 0);
+    flaskNeck.renderOrder = 2;
+    this.group.add(flaskNeck);
+    // Stopper
+    const stopper = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.11, 0.11, 0.12, 16),
+      new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 })
+    );
+    stopper.position.set(-1.5, 2.05, 0);
+    this.group.add(stopper);
+
+    // Liquid inside flask (acide éthanoïque, incolore)
+    this.flaskLiquidMat = new THREE.MeshPhysicalMaterial({
+      color: 0xeeeeff, roughness: 0.1,
+      transmission: 0.7, transparent: true, opacity: 0.55,
+      depthWrite: false
+    });
+    const flaskLiquid = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 16, 0, Math.PI*2, Math.PI*0.55, Math.PI*0.45), this.flaskLiquidMat);
+    flaskLiquid.position.set(-1.5, 0.7, 0);
+    flaskLiquid.renderOrder = 1;
+    this.group.add(flaskLiquid);
+
+    // Tube from stopper to pressure meter (Bezier curve)
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.5, 2.18, 0),
+      new THREE.Vector3(-1.0, 2.8, 0),
+      new THREE.Vector3(0.5, 2.8, 0),
+      new THREE.Vector3(1.8, 2.4, 0),
+      new THREE.Vector3(2.4, 2.0, 0)
+    ]);
+    const tubeGeo = new THREE.TubeGeometry(curve, 30, 0.04, 12, false);
+    const tubeMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5 });
+    const tube = new THREE.Mesh(tubeGeo, tubeMat);
+    this.group.add(tube);
+
+    // Pressure meter box
+    const pmBody = new THREE.Mesh(
+      new THREE.BoxGeometry(1.0, 0.7, 0.4),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5, metalness: 0.4 })
+    );
+    pmBody.position.set(2.6, 1.7, 0);
+    this.group.add(pmBody);
+    this.pressureMeter = pmBody;
+
+    // LCD screen (canvas texture)
+    this.pressureLCDcanvas = document.createElement('canvas');
+    this.pressureLCDcanvas.width = 512;
+    this.pressureLCDcanvas.height = 256;
+    this.pressureLCDctx = this.pressureLCDcanvas.getContext('2d');
+    this._drawPressureLCD(this.P0);
+    this.pressureLCDtex = new THREE.CanvasTexture(this.pressureLCDcanvas);
+    this.pressureLCDtex.needsUpdate = true;
+    const lcd = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.8, 0.4),
+      new THREE.MeshBasicMaterial({ map: this.pressureLCDtex })
+    );
+    lcd.position.set(2.6, 1.75, 0.21);
+    this.group.add(lcd);
+    this.pressureLCD = lcd;
+
+    // "Pressiomètre" label
+    const pmLbl = Util.makeTextSprite('Pressiomètre', { fontSize: 42, color: '#7dc4ff', scale: 0.3 });
+    pmLbl.position.set(2.6, 2.2, 0);
+    this.group.add(pmLbl);
+
+    // NaHCO3 coupelle (small dish with white powder)
+    const coupelle = new THREE.Group();
+    const dish = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.15, 0.06, 24),
+      new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4, metalness: 0.6 })
+    );
+    coupelle.add(dish);
+    const powder = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.15, 0.04, 24),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 })
+    );
+    powder.position.y = 0.04;
+    coupelle.add(powder);
+    coupelle.position.set(1.0, 0.13, 1.3);
+    this.NaHCO3coupelle = coupelle;
+    this.group.add(coupelle);
+    const naLbl = Util.makeTextSprite('NaHCO₃ (1.25 g)', { fontSize: 36, color: '#ffffff', scale: 0.28 });
+    naLbl.position.set(1.0, 0.55, 1.3);
+    this.group.add(naLbl);
+
+    // Flask label
+    const fLbl = Util.makeTextSprite('CH₃CO₂H (60 mL)', { fontSize: 38, color: '#f0c060', scale: 0.32 });
+    fLbl.position.set(-1.5, 0.0, 1.0);
+    this.group.add(fLbl);
+
+    STATE.scene.add(this.group);
+
+    Chrono.show();
+    Chrono.update(0);
+
+    this._renderPanel();
+  },
+
+  _drawPressureLCD(P){
+    const ctx = this.pressureLCDctx;
+    const w = this.pressureLCDcanvas.width, h = this.pressureLCDcanvas.height;
+    ctx.fillStyle = '#0a1a0a';
+    ctx.fillRect(0, 0, w, h);
+    ctx.font = 'bold 96px JetBrains Mono, Arial';
+    ctx.fillStyle = '#3aff6e';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(P.toFixed(1), w/2, h*0.45);
+    ctx.font = 'bold 32px Arial';
+    ctx.fillStyle = '#3aff6e';
+    ctx.fillText('kPa', w/2, h*0.82);
+    if(this.pressureLCDtex) this.pressureLCDtex.needsUpdate = true;
+  },
+
+  _spawnBubble(){
+    const bubble = new THREE.Mesh(
+      new THREE.SphereGeometry(0.03 + Math.random()*0.025, 8, 8),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.65,
+        transmission: 0.5, roughness: 0.1, depthWrite: false
+      })
+    );
+    bubble.position.set(
+      -1.5 + (Math.random()-0.5)*0.4,
+      0.4,
+      (Math.random()-0.5)*0.4
+    );
+    bubble.userData.vy = 0.4 + Math.random()*0.3;
+    bubble.userData.life = 0;
+    this.group.add(bubble);
+    this.bubbles.push(bubble);
+  },
+
+  _updateBubbles(dt){
+    for(let i=this.bubbles.length-1; i>=0; i--){
+      const b = this.bubbles[i];
+      b.position.y += b.userData.vy * dt;
+      b.userData.life += dt;
+      // pop when above liquid (y > 1.05)
+      if(b.position.y > 1.1){
+        b.geometry.dispose();
+        b.material.dispose();
+        this.group.remove(b);
+        this.bubbles.splice(i, 1);
+      }
+    }
+  },
+
+  update(dt){
+    if(!this.active) return;
+    this._updateBubbles(dt);
+    if(this.simRunning){
+      this.simT += dt * this.simSpeed;
+      // order-1 kinetics: ΔP(t) = deltaP_max * (1 - exp(-k*t))
+      const dP = this.deltaP_max * (1 - Math.exp(-this.k * this.simT));
+      const P = this.P0 + dP;
+      this._drawPressureLCD(P);
+      // bubble spawn rate decreases as reaction progresses
+      const rate = 4 * Math.exp(-this.k * this.simT); // bubbles/s
+      this._bubbleAcc = (this._bubbleAcc||0) + dt * this.simSpeed * rate;
+      while(this._bubbleAcc >= 1){
+        this._spawnBubble();
+        this._bubbleAcc -= 1;
+      }
+      // update chart
+      if(this.chart && (this.simT * 10 % 5 < 0.5)){
+        this._pushChartPoint(this.simT, dP);
+      }
+      // stop after deltaP_max is essentially reached (~5 t1/2)
+      if(this.simT > 5 * (Math.log(2)/this.k)){
+        this.simRunning = false;
+        Chrono.stop();
+        const sb = document.getElementById('btn-p2');
+        if(sb){ sb.disabled = true; sb.textContent = '✓ Réaction terminée'; }
+        document.getElementById('btn-p4').disabled = false;
+      }
+    }
+  },
+
+  destroy(){
+    this.active = false;
+    this.simRunning = false;
+    Chrono.hide();
+    Util.clearAllTimers();
+    if(this.chart){ try{this.chart.destroy();}catch(e){} this.chart = null; }
+    const cv = document.getElementById('chartPress');
+    if(cv && Chart.getChart){
+      const ex = Chart.getChart(cv);
+      if(ex) try{ ex.destroy(); }catch(e){}
+    }
+    if(this.pressureLCDtex){ try{this.pressureLCDtex.dispose();}catch(e){} this.pressureLCDtex = null; }
+    // dispose bubbles
+    for(const b of this.bubbles){
+      b.geometry && b.geometry.dispose();
+      b.material && b.material.dispose();
+    }
+    this.bubbles = [];
+    Util.disposeNode(this.group);
+    this.group = null;
+    this.flask = null;
+    this.flaskLiquidMat = null;
+    this.pressureMeter = null;
+    this.pressureLCD = null;
+    this.NaHCO3coupelle = null;
+    this.step = 0;
+    this.simT = 0;
+    this._bubbleAcc = 0;
+  },
+
+  // STEP 1
+  onP1(){
+    if(this.step >= 1) return;
+    this.step = 1;
+    showFB('fb5','inf','P(0) = <b>101.3 kPa</b> (pression de l\'air dans le ballon, avant ajout de NaHCO₃).');
+    document.getElementById('btn-p2').disabled = false;
+    document.getElementById('btn-p1').disabled = true;
+    document.getElementById('btn-p1').textContent = '✓ Étape 1 — P(0) mesurée';
+    this._initChart();
+  },
+
+  // STEP 2 — add NaHCO3 and start simulation
+  async onP2(){
+    if(this.step >= 2) return;
+    await runAnimation(async()=>{
+      // Animate coupelle dropping into flask
+      const startPos = this.NaHCO3coupelle.position.clone();
+      const overFlask = new THREE.Vector3(-1.5, 1.8, 0);
+      // Move over the flask
+      await animateValue(0, 1, 1000, (t)=>{
+        this.NaHCO3coupelle.position.lerpVectors(startPos, overFlask, t);
+        this.NaHCO3coupelle.rotation.z = t * Math.PI * 0.3;
+      });
+      // Tilt and drop powder (visual: hide coupelle, drop tiny spheres)
+      for(let i=0;i<8;i++){
+        const grain = new THREE.Mesh(
+          new THREE.SphereGeometry(0.025, 6, 6),
+          new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 })
+        );
+        grain.position.set(-1.5 + (Math.random()-0.5)*0.1, 1.7, 0);
+        this.group.add(grain);
+        animateValue(1.7, 0.6, 800, (y)=>{ grain.position.y = y; }).then(()=>{
+          grain.geometry.dispose();
+          grain.material.dispose();
+          this.group.remove(grain);
+        });
+      }
+      await sleep(900);
+      // Move coupelle away
+      animateValue(0, 1, 600, (t)=>{
+        this.NaHCO3coupelle.position.set(
+          Util.lerp(-1.5, 1.0, t),
+          Util.lerp(1.8, 0.13, t),
+          Util.lerp(0, 1.3, t)
+        );
+        this.NaHCO3coupelle.rotation.z = Util.lerp(Math.PI*0.3, 0, t);
+      });
+      // Start simulation
+      this.simT = 0;
+      this.simRunning = true;
+      Chrono.start();
+      this.step = 2;
+      document.getElementById('btn-p2').textContent = '⏵ Simulation en cours...';
+      document.getElementById('btn-p2').disabled = true;
+      showFB('fb5','inf','💨 NaHCO₃ ajouté · <b>Effervescence</b> visible · Le CO₂ remplit le ballon → la pression augmente.');
+    }, 'btn-p2');
+  },
+
+  // STEP 4 (3 is the "Enregistrer ΔP(t)" which is automatic in the simulation)
+  onP4(){
+    if(this.step >= 4) return;
+    const dP_demo = 25; // kPa
+    const n_CO2 = 5.45e-7 * dP_demo * 1000; // ΔP en Pa
+    const x_demo = n_CO2;
+    openModal(`
+      <h2>🧮 Conversion ΔP → x</h2>
+      <p>À un instant t donné, le pressiomètre indique <b>ΔP = 25 kPa</b> (par exemple).</p>
+      <p>Loi des gaz parfaits :</p>
+      <p class="eq">P(CO₂)·V = n(CO₂)·R·T</p>
+      <p>Avec V = 1.35 L et T = 298 K, on obtient :</p>
+      <p class="eq">n(CO₂) = 5.45×10⁻⁷ × ΔP   (ΔP en Pa)</p>
+      <p class="eq">n(CO₂) = 5.45×10⁻⁷ × 25 000 = <b style="color:var(--accent)">${(n_CO2*1000).toFixed(2)} mmol</b></p>
+      <p class="hl">Comme chaque CO₂ correspond à un avancement Δx, on a directement <b>x(t) = n(CO₂)(t)</b>.</p>
+      <div class="md-actions">
+        <button class="btn bp" onclick="Scene5.confirmP4()">OK — basculer chart ΔP → x</button>
+      </div>
+    `);
+  },
+
+  confirmP4(){
+    closeModal();
+    this.step = 4;
+    this._switchChartToX();
+    document.getElementById('btn-p4').disabled = true;
+    document.getElementById('btn-p4').textContent = '✓ ΔP → x converti';
+    document.getElementById('btn-p5').disabled = false;
+    showFB('fb5','ok','Chart basculé en x(t). On voit l\'avancement croître asymptotiquement vers x_max.');
+  },
+
+  onP5(){
+    if(this.step >= 5) return;
+    this.step = 5;
+    showFB('fb5','ok',
+      `<b>Comparaison des vitesses</b><br>
+       Pente à t = 30 s : forte (réaction rapide, beaucoup de réactifs).<br>
+       Pente à t = 300 s : faible (les réactifs se raréfient).<br>
+       <span style="color:var(--accent)">→ v(30 s) > v(300 s) · La vitesse DÉCROÎT.</span><br>
+       <span style="color:var(--text2)">t₁/₂ observé ≈ 60 s (manuel BIOF page 36).</span>`);
+    document.getElementById('btn-p5').disabled = true;
+    document.getElementById('btn-p5').textContent = '✓ Vitesses comparées';
+    document.getElementById('btnNext5').disabled = false;
+    unlockScene(5);
+  },
+
+  onSpeedChange(s){
+    this.simSpeed = parseInt(s);
+    const lbl = document.getElementById('simSpeedLbl');
+    if(lbl) lbl.textContent = s + '×';
+  },
+
+  _initChart(){
+    const cv = document.getElementById('chartPress');
+    if(!cv) return;
+    if(Chart.getChart){
+      const ex = Chart.getChart(cv);
+      if(ex) try{ ex.destroy(); }catch(e){}
+    }
+    if(this.chart){ try{this.chart.destroy();}catch(e){} this.chart = null; }
+    this.chartMode = 'dP';
+    this.chart = new Chart(cv, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'ΔP(t) (kPa)',
+          data: [],
+          borderColor: '#58a6ff',
+          backgroundColor: 'rgba(88,166,255,0.15)',
+          pointBackgroundColor: '#58a6ff',
+          pointRadius: 1.5,
+          showLine: true,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { labels: { color: '#e6edf3', font: { size: 10 } } } },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: 'Temps t (s)', color: '#8b949e' },
+            min: 0, max: 500, ticks: { color: '#8b949e', font:{size:10} }, grid: { color: 'rgba(48,54,61,0.5)' } },
+          y: { title: { display: true, text: 'ΔP (kPa)', color: '#8b949e' },
+            min: 0, max: 40, ticks: { color: '#8b949e', font:{size:10} }, grid: { color: 'rgba(48,54,61,0.5)' } }
+        }
+      }
+    });
+  },
+
+  _pushChartPoint(t, dP){
+    if(!this.chart) return;
+    if(this.chartMode === 'dP'){
+      this.chart.data.datasets[0].data.push({ x: t, y: dP });
+    } else {
+      const x = 5.45e-7 * dP * 1000 * 1000; // mmol
+      this.chart.data.datasets[0].data.push({ x: t, y: x });
+    }
+    this.chart.update('none');
+  },
+
+  _switchChartToX(){
+    if(!this.chart) return;
+    this.chartMode = 'x';
+    const newData = this.chart.data.datasets[0].data.map(p=>({
+      x: p.x, y: 5.45e-7 * p.y * 1000 * 1000 // dP kPa → Pa, × 5.45e-7 = mol, × 1000 = mmol
+    }));
+    this.chart.data.datasets[0].label = 'x(t) (mmol)';
+    this.chart.data.datasets[0].borderColor = '#2dc653';
+    this.chart.data.datasets[0].backgroundColor = 'rgba(45,198,83,0.15)';
+    this.chart.data.datasets[0].pointBackgroundColor = '#2dc653';
+    this.chart.data.datasets[0].data = newData;
+    this.chart.options.scales.y.title.text = 'x(t) (mmol)';
+    this.chart.options.scales.y.max = 25;
+    this.chart.update('none');
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 5 — Activité 2 : pression
+        <span class="sub">CH₃CO₂H + HCO₃⁻ → CH₃CO₂⁻ + CO₂ + H₂O</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚗️</span>Principe</h3>
+        <p>Le CO₂ dégagé augmente la pression dans le ballon fermé.</p>
+        <p class="eq">P(t) = P(CO₂) + P(0) &nbsp;⟹&nbsp; ΔP = P(t) − P(0)</p>
+        <p class="eq">P(CO₂)·V = n(CO₂)·R·T &nbsp;⟹&nbsp; n(CO₂) = 5.45×10⁻⁷ × ΔP</p>
+        <p>Avec V = 1.35 L et T = 298 K. Comme x = n(CO₂), on remonte directement à l'avancement.</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">📋</span>Étapes</h3>
+        <div class="steps-list">
+          <div class="step active"><div class="step-num">1</div><div class="step-txt">Mesurer P(0)</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-txt">Ajouter 1.25 g de NaHCO₃ + chrono</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-txt">Enregistrer ΔP(t) (automatique)</div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-txt">Convertir ΔP → n(CO₂) = x</div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-txt">Comparer les vitesses</div></div>
+        </div>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚡</span>Vitesse de simulation</h3>
+        <div class="slider-row">
+          <div class="sh"><span class="lbl">Accélération</span><span class="val" id="simSpeedLbl">1×</span></div>
+          <input type="range" min="1" max="20" step="1" value="1" oninput="Scene5.onSpeedChange(this.value)">
+        </div>
+      </div>
+      <div class="bg-row" style="flex-direction:column;gap:6px">
+        <button id="btn-p1" class="btn bp" onclick="Scene5.onP1()">▶ Étape 1 — Mesurer P(0)</button>
+        <button id="btn-p2" class="btn bp" onclick="Scene5.onP2()" disabled>▶ Étape 2 — Ajouter NaHCO₃ + démarrer</button>
+        <button id="btn-p4" class="btn bp" onclick="Scene5.onP4()" disabled>▶ Étape 4 — Convertir ΔP → x</button>
+        <button id="btn-p5" class="btn bp" onclick="Scene5.onP5()" disabled>▶ Étape 5 — Comparer les vitesses</button>
+      </div>
+      <div id="fb5" class="fb"></div>
+      <div class="bx">
+        <h3><span class="ic">📈</span>Courbe ΔP(t) → x(t)</h3>
+        <div class="cc" style="height:220px"><canvas id="chartPress"></canvas></div>
+      </div>
+      <button id="btnNext5" class="btn bo" onclick="goToScene(5)" disabled>Suivant ⏭ — Scène 6 (Conductimétrie)</button>
+    `);
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 6 — Suivi par Conductimétrie (NEW from addendum)
+   ============================================================
+   ============================================================ */
+const Scene6 = {
+  active: false,
+  group: null,
+  beaker: null,
+  liquidMat: null,
+  cellPlates: [],
+  conductimeter: null,
+  conductLCDcanvas: null,
+  conductLCDctx: null,
+  conductLCDtex: null,
+  rClSpheres: [], // (CH3)3CCl molecules (initial reactant)
+  hSpheres: [],   // H+ ions (appear over time)
+  clSpheres: [],  // Cl- ions (appear over time)
+  simRunning: false,
+  simSpeed: 1,
+  simT: 0,
+  // Kinetics
+  k: 5e-4,          // s^-1
+  t_max: 3600,      // s (60 min)
+  G0: 2,            // µS
+  Ginf: 230,        // µS
+  N_total: 60,      // visual molecule count
+  chart: null,
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.simRunning = false;
+    this.simSpeed = 1;
+    this.simT = 0;
+    this.rClSpheres = [];
+    this.hSpheres = [];
+    this.clSpheres = [];
+    this.cellPlates = [];
+
+    STATE.camera.position.set(0, 1.8, 5.5);
+    STATE.controls.target.set(0, 0.8, 0);
+    STATE.controls.update();
+
+    // Lab bench
+    const bench = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 0.1, 4),
+      new THREE.MeshStandardMaterial({ color: 0x1a2030, roughness: 0.7 })
+    );
+    bench.position.set(0, -0.05, 0);
+    this.group.add(bench);
+
+    // Magnetic stirrer
+    const stirrer = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.15, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6, metalness: 0.4 })
+    );
+    stirrer.position.set(-1.2, 0.075, 0);
+    this.group.add(stirrer);
+
+    // Beaker
+    const beakerMat = new THREE.MeshPhysicalMaterial({
+      color: 0xddeeff, roughness: 0.05,
+      transmission: 0.92, transparent: true, opacity: 0.4,
+      depthWrite: false
+    });
+    const beakerWall = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.7, 0.7, 1.3, 48, 1, true), beakerMat
+    );
+    beakerWall.position.set(-1.2, 0.8, 0);
+    beakerWall.renderOrder = 2;
+    this.group.add(beakerWall);
+    const beakerBottom = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.7, 0.7, 0.03, 48), beakerMat
+    );
+    beakerBottom.position.set(-1.2, 0.17, 0);
+    beakerBottom.renderOrder = 2;
+    this.group.add(beakerBottom);
+    this.beaker = beakerWall;
+
+    // Liquid (initially clear, transparent)
+    this.liquidMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf0f4ff, roughness: 0.1,
+      transmission: 0.65, transparent: true, opacity: 0.55,
+      depthWrite: false
+    });
+    const liquid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.68, 0.68, 1.1, 48), this.liquidMat
+    );
+    liquid.position.set(-1.2, 0.72, 0);
+    liquid.renderOrder = 1;
+    this.group.add(liquid);
+
+    // Conductivity cell — 2 gold plates parallel
+    const plateMat = new THREE.MeshStandardMaterial({
+      color: 0xdaa520, roughness: 0.3, metalness: 0.85
+    });
+    for(let i=0;i<2;i++){
+      const plate = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.35, 0.5),
+        plateMat
+      );
+      plate.position.set(-1.2 + (i===0 ? -0.13 : 0.13), 0.75, 0);
+      plate.rotation.y = Math.PI/2;
+      this.group.add(plate);
+      this.cellPlates.push(plate);
+    }
+    // Cell support (vertical insulator + connectors above water)
+    const cellSupport = new THREE.Mesh(
+      new THREE.BoxGeometry(0.32, 0.15, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 })
+    );
+    cellSupport.position.set(-1.2, 1.4, 0);
+    this.group.add(cellSupport);
+
+    // Wires from cell to conductimeter (Bezier)
+    const w1Curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.35, 1.45, 0.02),
+      new THREE.Vector3(-0.8, 1.7, 0.05),
+      new THREE.Vector3(0.5, 1.7, 0.05),
+      new THREE.Vector3(1.6, 1.6, 0.05)
+    ]);
+    const w2Curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.05, 1.45, -0.02),
+      new THREE.Vector3(-0.6, 1.65, -0.05),
+      new THREE.Vector3(0.5, 1.65, -0.05),
+      new THREE.Vector3(1.6, 1.55, -0.05)
+    ]);
+    const wireMat = new THREE.MeshStandardMaterial({ color: 0x661111, roughness: 0.6 });
+    const w1 = new THREE.Mesh(new THREE.TubeGeometry(w1Curve, 20, 0.02, 8, false), wireMat);
+    const w2 = new THREE.Mesh(new THREE.TubeGeometry(w2Curve, 20, 0.02, 8, false), new THREE.MeshStandardMaterial({ color: 0x111166, roughness: 0.6 }));
+    this.group.add(w1);
+    this.group.add(w2);
+
+    // Conductimeter box
+    const cmBody = new THREE.Mesh(
+      new THREE.BoxGeometry(1.0, 0.7, 0.4),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5, metalness: 0.4 })
+    );
+    cmBody.position.set(2.0, 1.55, 0);
+    this.group.add(cmBody);
+    this.conductimeter = cmBody;
+
+    // LCD
+    this.conductLCDcanvas = document.createElement('canvas');
+    this.conductLCDcanvas.width = 512;
+    this.conductLCDcanvas.height = 256;
+    this.conductLCDctx = this.conductLCDcanvas.getContext('2d');
+    this._drawConductLCD(this.G0);
+    this.conductLCDtex = new THREE.CanvasTexture(this.conductLCDcanvas);
+    const lcd = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.8, 0.4),
+      new THREE.MeshBasicMaterial({ map: this.conductLCDtex })
+    );
+    lcd.position.set(2.0, 1.6, 0.21);
+    this.group.add(lcd);
+
+    // Labels
+    const cmLbl = Util.makeTextSprite('Conductimètre', { fontSize: 42, color: '#7dc4ff', scale: 0.3 });
+    cmLbl.position.set(2.0, 2.05, 0);
+    this.group.add(cmLbl);
+    const beakerLbl = Util.makeTextSprite('(CH₃)₃CCl + eau/éthanol', { fontSize: 36, color: '#f0c060', scale: 0.32 });
+    beakerLbl.position.set(-1.2, 1.85, 0);
+    this.group.add(beakerLbl);
+
+    // Initial (CH3)3CCl molecules — light blue spheres
+    const rclGeo = new THREE.SphereGeometry(0.05, 10, 10);
+    const rclMat = new THREE.MeshStandardMaterial({
+      color: 0xaed6f1, roughness: 0.5,
+      emissive: 0xaed6f1, emissiveIntensity: 0.15
+    });
+    for(let i=0;i<this.N_total;i++){
+      const m = new THREE.Mesh(rclGeo, rclMat);
+      const theta = Math.random()*Math.PI*2;
+      const r = Math.sqrt(Math.random())*0.6;
+      m.position.set(-1.2 + Math.cos(theta)*r, 0.3 + Math.random()*0.9, Math.sin(theta)*r);
+      m.userData.baseY = m.position.y;
+      m.userData.phase = Math.random()*Math.PI*2;
+      this.group.add(m);
+      this.rClSpheres.push(m);
+    }
+    // Pre-create H+ and Cl- ion pools (hidden initially)
+    const hGeo = new THREE.SphereGeometry(0.035, 10, 10);
+    const hMat = new THREE.MeshStandardMaterial({
+      color: 0xff7675, roughness: 0.3,
+      emissive: 0xff7675, emissiveIntensity: 0.4
+    });
+    const clGeo = new THREE.SphereGeometry(0.05, 10, 10);
+    const clMat = new THREE.MeshStandardMaterial({
+      color: 0x2ecc71, roughness: 0.3,
+      emissive: 0x2ecc71, emissiveIntensity: 0.4
+    });
+    for(let i=0;i<this.N_total;i++){
+      const h = new THREE.Mesh(hGeo, hMat);
+      h.visible = false;
+      const theta = Math.random()*Math.PI*2;
+      const r = Math.sqrt(Math.random())*0.6;
+      h.position.set(-1.2 + Math.cos(theta)*r, 0.3 + Math.random()*0.9, Math.sin(theta)*r);
+      h.userData.baseY = h.position.y;
+      h.userData.phase = Math.random()*Math.PI*2;
+      this.group.add(h);
+      this.hSpheres.push(h);
+
+      const cl = new THREE.Mesh(clGeo, clMat);
+      cl.visible = false;
+      const theta2 = Math.random()*Math.PI*2;
+      const r2 = Math.sqrt(Math.random())*0.6;
+      cl.position.set(-1.2 + Math.cos(theta2)*r2, 0.3 + Math.random()*0.9, Math.sin(theta2)*r2);
+      cl.userData.baseY = cl.position.y;
+      cl.userData.phase = Math.random()*Math.PI*2;
+      this.group.add(cl);
+      this.clSpheres.push(cl);
+    }
+
+    STATE.scene.add(this.group);
+    Chrono.show();
+    Chrono.update(0);
+
+    this._renderPanel();
+    this._initChart();
+  },
+
+  _drawConductLCD(G){
+    const ctx = this.conductLCDctx;
+    const w = this.conductLCDcanvas.width, h = this.conductLCDcanvas.height;
+    ctx.fillStyle = '#0a1a0a';
+    ctx.fillRect(0, 0, w, h);
+    ctx.font = 'bold 96px JetBrains Mono, Arial';
+    ctx.fillStyle = '#3aff6e';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(G.toFixed(1), w/2, h*0.45);
+    ctx.font = 'bold 32px Arial';
+    ctx.fillText('µS', w/2, h*0.82);
+    if(this.conductLCDtex) this.conductLCDtex.needsUpdate = true;
+  },
+
+  _updateVisibleIons(progress){
+    // progress ∈ [0..1] = fraction of reaction completed
+    const nVisible = Math.round(this.N_total * progress);
+    const nRClVisible = Math.round(this.N_total * (1 - progress));
+    for(let i=0;i<this.N_total;i++){
+      this.rClSpheres[i].visible = i < nRClVisible;
+      this.hSpheres[i].visible = i < nVisible;
+      this.clSpheres[i].visible = i < nVisible;
+    }
+  },
+
+  update(dt){
+    if(!this.active) return;
+    // Gentle ion movement
+    const t = performance.now()*0.001;
+    for(const arr of [this.rClSpheres, this.hSpheres, this.clSpheres]){
+      for(const m of arr){
+        if(!m.visible) continue;
+        m.position.y = m.userData.baseY + Math.sin(t + m.userData.phase)*0.025;
+      }
+    }
+    if(this.simRunning){
+      this.simT += dt * this.simSpeed;
+      const progress = 1 - Math.exp(-this.k * this.simT);
+      const G = this.G0 + (this.Ginf - this.G0) * progress;
+      this._drawConductLCD(G);
+      this._updateVisibleIons(progress);
+      // chart update every ~30s of sim time
+      if(!this._lastChartT || this.simT - this._lastChartT > 30){
+        this._pushChartPoint(this.simT/60, G); // minutes on x-axis
+        this._lastChartT = this.simT;
+      }
+      // stop after 60 min
+      if(this.simT >= this.t_max){
+        this.simRunning = false;
+        Chrono.stop();
+        const sb = document.getElementById('btn-c-start');
+        if(sb){ sb.disabled = true; sb.textContent = '✓ Réaction terminée (~60 min)'; }
+        document.getElementById('btn-c-calc').disabled = false;
+        document.getElementById('btnNext6').disabled = false;
+        unlockScene(6);
+        showFB('fb6','ok',
+          `<b>Réaction terminée.</b> G(∞) ≈ ${this.Ginf} µS. La conductivité s'est stabilisée → tout le réactif est consommé.<br>
+           <span style="color:var(--text2)">t₁/₂ ≈ ${Math.round(Math.log(2)/this.k/60)} min (cinétique d'ordre 1).</span>`);
+      }
+    }
+  },
+
+  destroy(){
+    this.active = false;
+    this.simRunning = false;
+    Chrono.hide();
+    Util.clearAllTimers();
+    if(this.chart){ try{this.chart.destroy();}catch(e){} this.chart = null; }
+    const cv = document.getElementById('chartCond');
+    if(cv && Chart.getChart){
+      const ex = Chart.getChart(cv);
+      if(ex) try{ ex.destroy(); }catch(e){}
+    }
+    if(this.conductLCDtex){ try{this.conductLCDtex.dispose();}catch(e){} this.conductLCDtex = null; }
+    Util.disposeNode(this.group);
+    this.group = null;
+    this.beaker = null;
+    this.liquidMat = null;
+    this.cellPlates = [];
+    this.conductimeter = null;
+    this.rClSpheres = []; this.hSpheres = []; this.clSpheres = [];
+    this.simT = 0;
+    this._lastChartT = 0;
+  },
+
+  // Actions
+  onStart(){
+    if(this.simRunning) return;
+    this.simRunning = true;
+    this.simT = 0;
+    Chrono.start();
+    document.getElementById('btn-c-start').disabled = true;
+    document.getElementById('btn-c-start').textContent = '⏵ Simulation en cours...';
+    document.getElementById('btn-c-pause').disabled = false;
+    showFB('fb6','inf','▶️ Simulation lancée · les ions H⁺ (rouge) et Cl⁻ (vert) apparaissent → la conductivité augmente.');
+  },
+
+  onPause(){
+    this.simRunning = !this.simRunning;
+    const btn = document.getElementById('btn-c-pause');
+    if(btn) btn.textContent = this.simRunning ? '⏸ Pause' : '▶ Reprendre';
+    if(this.simRunning) Chrono.start();
+    else Chrono.stop();
+  },
+
+  onReset(){
+    this.simRunning = false;
+    this.simT = 0;
+    Chrono.stop();
+    Chrono.update(0);
+    this._updateVisibleIons(0);
+    this._drawConductLCD(this.G0);
+    if(this.chart){
+      this.chart.data.datasets[0].data = [];
+      this.chart.update('none');
+    }
+    this._lastChartT = 0;
+    document.getElementById('btn-c-start').disabled = false;
+    document.getElementById('btn-c-start').textContent = '▶ Démarrer';
+    document.getElementById('btn-c-pause').disabled = true;
+    document.getElementById('btn-c-pause').textContent = '⏸ Pause';
+  },
+
+  onSpeedChange(s){
+    this.simSpeed = parseInt(s);
+    const lbl = document.getElementById('cSpeedLbl');
+    if(lbl) lbl.textContent = s + '×';
+  },
+
+  onCalcX(){
+    // Current G value
+    const progress = 1 - Math.exp(-this.k * this.simT);
+    const G = this.G0 + (this.Ginf - this.G0) * progress;
+    const CV = 1.0e-2 * 100e-3; // C·V in mol = 1.0e-3 mol = 1 mmol
+    const x_correct = CV * (G - this.G0) / (this.Ginf - this.G0); // mol
+    const x_correct_mmol = x_correct * 1000;
+    openModal(`
+      <h2>🧮 Calculer x à partir de G</h2>
+      <p>À cet instant t = ${Math.round(this.simT)} s (~${(this.simT/60).toFixed(1)} min), la lecture est :</p>
+      <p class="eq">G(t) = ${G.toFixed(1)} µS</p>
+      <p>Avec G(0) ≈ ${this.G0} µS et G(∞) = ${this.Ginf} µS (mesuré sur un mélange "vieilli" plusieurs jours).</p>
+      <p class="hl">Formule clé :</p>
+      <p class="eq">x(t) = C·V × (G(t) − G(0)) / (G(∞) − G(0))</p>
+      <p>Avec C = 10⁻² mol/L et V = 100 mL = 10⁻¹ L, on a C·V = 10⁻³ mol = 1 mmol.</p>
+      <p>Calcule x (en mmol) :</p>
+      <p><input type="number" id="userX" placeholder="x en mmol" step="0.001"> mmol</p>
+      <div class="md-actions">
+        <button class="btn bo" onclick="closeModal()">Annuler</button>
+        <button class="btn bp" onclick="Scene6.verifyX(${x_correct_mmol})">Vérifier</button>
+      </div>
+    `);
+  },
+
+  verifyX(correct){
+    const inp = document.getElementById('userX');
+    if(!inp){ closeModal(); return; }
+    const v = parseFloat(inp.value);
+    if(isNaN(v)){
+      inp.style.borderColor = '#e63946';
+      return;
+    }
+    const tol = 0.1 * Math.max(0.005, correct);
+    if(Math.abs(v - correct) <= tol){
+      closeModal();
+      showFB('fb6','ok',
+        `✅ Bravo ! x ≈ <b>${correct.toFixed(3)} mmol</b> (tolérance ±10%). La conductimétrie donne directement l'avancement à chaque instant.`);
+    } else {
+      inp.style.borderColor = '#e63946';
+      showFB('fb6','wrn',
+        `💡 La réponse attendue est <b>${correct.toFixed(3)} mmol</b>. Vérifie ton calcul : x = C·V × (G − G₀) / (G_∞ − G₀).`);
+    }
+  },
+
+  _initChart(){
+    const cv = document.getElementById('chartCond');
+    if(!cv) return;
+    if(Chart.getChart){
+      const ex = Chart.getChart(cv);
+      if(ex) try{ ex.destroy(); }catch(e){}
+    }
+    if(this.chart){ try{this.chart.destroy();}catch(e){} this.chart = null; }
+    this.chart = new Chart(cv, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'G(t) (µS)',
+          data: [],
+          borderColor: '#16a085',
+          backgroundColor: 'rgba(22,160,133,0.15)',
+          pointBackgroundColor: '#16a085',
+          pointRadius: 2,
+          showLine: true,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { labels: { color: '#e6edf3', font: { size: 10 } } } },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: 'Temps t (min)', color: '#8b949e' },
+            min: 0, max: 60, ticks: { color: '#8b949e', font:{size:10} }, grid: { color: 'rgba(48,54,61,0.5)' } },
+          y: { title: { display: true, text: 'G (µS)', color: '#8b949e' },
+            min: 0, max: 250, ticks: { color: '#8b949e', font:{size:10} }, grid: { color: 'rgba(48,54,61,0.5)' } }
+        }
+      }
+    });
+  },
+
+  _pushChartPoint(t_min, G){
+    if(!this.chart) return;
+    this.chart.data.datasets[0].data.push({ x: t_min, y: G });
+    this.chart.update('none');
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 6 — Conductimétrie
+        <span class="sub">Hydrolyse du 2-chloro-2-méthylpropane</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚗️</span>Réaction étudiée</h3>
+        <p class="eq">(CH₃)₃CCl + H₂O → (CH₃)₃COH + H⁺ + Cl⁻</p>
+        <p>Hydrolyse <b>totale</b> et <b>lente</b> (t₁/₂ ≈ 23 min à 25 °C).</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚡</span>Principe</h3>
+        <p>La réaction <b>PRODUIT</b> des ions H⁺ et Cl⁻ → la conductivité <b style="color:var(--teal)">AUGMENTE</b>.</p>
+        <p class="eq">σ(t) = σ(0) + (λ_H⁺ + λ_Cl⁻) · x(t)/V</p>
+        <p class="eq">x(t) = C·V × (G(t) − G(0)) / (G(∞) − G(0))</p>
+      </div>
+      <div class="bx" style="border-left:3px solid var(--orange)">
+        <h3 style="color:var(--orange)"><span class="ic">⚠️</span>Astuce</h3>
+        <p>Le 2-chloro-2-méthylpropane est <b>insoluble</b> dans l'eau pure. On ajoute de l'<b>éthanol</b> pour homogénéiser le mélange.</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">↔</span>Saponification vs hydrolyse RCl</h3>
+        <p style="font-size:11px"><b>Ici (RCl + H₂O)</b> : σ augmente (création d'ions).</p>
+        <p style="font-size:11px"><b>Saponification</b> : σ diminue (HO⁻ très conducteur remplacé par CH₃CO₂⁻ moins conducteur).</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚡</span>Vitesse de simulation</h3>
+        <div class="slider-row">
+          <div class="sh"><span class="lbl">Accélération</span><span class="val" id="cSpeedLbl">1×</span></div>
+          <input type="range" min="1" max="100" step="1" value="50" oninput="Scene6.onSpeedChange(this.value)">
+        </div>
+      </div>
+      <div class="bg-row" style="flex-direction:column;gap:6px">
+        <button id="btn-c-start" class="btn bp" onclick="Scene6.onStart()">▶ Démarrer</button>
+        <button id="btn-c-pause" class="btn bo" onclick="Scene6.onPause()" disabled>⏸ Pause</button>
+        <button id="btn-c-reset" class="btn bo" onclick="Scene6.onReset()">↺ Reset</button>
+        <button id="btn-c-calc" class="btn bp" onclick="Scene6.onCalcX()" disabled>🧮 Calculer x à partir de G</button>
+      </div>
+      <div id="fb6" class="fb"></div>
+      <div class="bx">
+        <h3><span class="ic">📈</span>Courbe G(t)</h3>
+        <div class="cc" style="height:220px"><canvas id="chartCond"></canvas></div>
+      </div>
+      <button id="btnNext6" class="btn bo" onclick="goToScene(6)" disabled>Suivant ⏭ — Scène 7 (Vitesse)</button>
+    `);
+    // Default speed to 50× to make 60 min simulate in ~72 s
+    this.simSpeed = 50;
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 7 — La Vitesse Volumique (tangente + tableur Excel)
+   ============================================================
+   ============================================================ */
+const Scene7 = {
+  active: false,
+  group: null,
+  panelMesh: null,
+  panelCanvas: null,
+  panelCtx: null,
+  panelTex: null,
+  miniChart: null,
+  method: 'tangent', // 'tangent' | 'excel'
+  t0: 0, // current position on curve (min)
+  TAU: 11.1, // min — gives v(0)=4.5, v(15)=1.2
+  ASYMPT: 50, // mmol/L
+  // data sampled for excel mode (every 3 min)
+  excelT: [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30],
+
+  conc(t){ return this.ASYMPT * (1 - Math.exp(-t/this.TAU)); },
+  vel(t){ return (this.ASYMPT/this.TAU) * Math.exp(-t/this.TAU); },
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.method = 'tangent';
+    this.t0 = 0;
+
+    STATE.camera.position.set(0, 0.3, 5);
+    STATE.controls.target.set(0, 0.3, 0);
+    STATE.controls.update();
+
+    // Graph panel
+    this.panelCanvas = document.createElement('canvas');
+    this.panelCanvas.width = 1000;
+    this.panelCanvas.height = 700;
+    this.panelCtx = this.panelCanvas.getContext('2d');
+    this.panelTex = new THREE.CanvasTexture(this.panelCanvas);
+    const panelMat = new THREE.MeshBasicMaterial({ map: this.panelTex });
+    this.panelMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 3.08), panelMat);
+    this.panelMesh.position.set(0, 0.5, 0);
+    this.group.add(this.panelMesh);
+    // frame
+    const frame = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.6, 3.28),
+      new THREE.MeshBasicMaterial({ color: 0x30363d })
+    );
+    frame.position.set(0, 0.5, -0.02);
+    this.group.add(frame);
+
+    STATE.scene.add(this.group);
+    this._renderPanel();
+    this._redraw();
+  },
+
+  _mapX(t, area){ return area.x + (t/45)*area.w; },
+  _mapY(c, area){ return area.y + area.h - (c/55)*area.h; },
+
+  _redraw(){
+    if(this.method === 'tangent') this._drawTangentView();
+    else this._drawExcelView();
+    if(this.panelTex) this.panelTex.needsUpdate = true;
+  },
+
+  _drawTangentView(){
+    const ctx = this.panelCtx;
+    const W = this.panelCanvas.width, H = this.panelCanvas.height;
+    ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
+    const area = { x: 90, y: 50, w: W-150, h: H-130 };
+    // grid
+    ctx.strokeStyle = 'rgba(48,54,61,0.7)'; ctx.lineWidth = 1;
+    ctx.fillStyle = '#8b949e'; ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    for(let t=0;t<=45;t+=5){
+      const px = this._mapX(t, area);
+      ctx.beginPath(); ctx.moveTo(px, area.y); ctx.lineTo(px, area.y+area.h); ctx.stroke();
+      ctx.fillText(t, px, area.y+area.h+28);
+    }
+    ctx.textAlign = 'right';
+    for(let c=0;c<=55;c+=10){
+      const py = this._mapY(c, area);
+      ctx.beginPath(); ctx.moveTo(area.x, py); ctx.lineTo(area.x+area.w, py); ctx.stroke();
+      ctx.fillText(c, area.x-12, py+6);
+    }
+    // axis titles
+    ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 22px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Temps t (min)', area.x+area.w/2, H-20);
+    ctx.save();
+    ctx.translate(28, area.y+area.h/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('[I₂] (mmol/L)', 0, 0);
+    ctx.restore();
+    // title
+    ctx.fillStyle = '#16a085'; ctx.font = 'bold 24px Arial';
+    ctx.fillText('2I⁻ + S₂O₈²⁻ → I₂ + 2SO₄²⁻', area.x+area.w/2, 32);
+
+    // curve [I2](t)
+    ctx.strokeStyle = '#16a085'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    for(let t=0;t<=45;t+=0.3){
+      const px = this._mapX(t, area), py = this._mapY(this.conc(t), area);
+      if(t===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+
+    // current point
+    const c0 = this.conc(this.t0);
+    const slope = this.vel(this.t0); // mmol/L per min
+    const px0 = this._mapX(this.t0, area), py0 = this._mapY(c0, area);
+
+    // tangent line (extended)
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2.5;
+    ctx.setLineDash([]);
+    const tA = Math.max(0, this.t0-12), tB = Math.min(45, this.t0+12);
+    const cA = c0 + slope*(tA-this.t0), cB = c0 + slope*(tB-this.t0);
+    ctx.beginPath();
+    ctx.moveTo(this._mapX(tA,area), this._mapY(cA,area));
+    ctx.lineTo(this._mapX(tB,area), this._mapY(cB,area));
+    ctx.stroke();
+
+    // triangle construction: horizontal 'a', vertical 'b'
+    const a = 10; // min
+    const b = slope*a; // mmol/L
+    const triT0 = this.t0;
+    const triT1 = Math.min(45, this.t0 + a);
+    const aClamped = triT1 - triT0;
+    const bClamped = slope * aClamped;
+    const cAt0 = c0 + slope*(triT0-this.t0);
+    const cAt1 = c0 + slope*(triT1-this.t0);
+    // horizontal side (cyan dashed)
+    ctx.setLineDash([8,5]); ctx.lineWidth = 2;
+    ctx.strokeStyle = '#00b4d8';
+    ctx.beginPath();
+    ctx.moveTo(this._mapX(triT0,area), this._mapY(cAt0,area));
+    ctx.lineTo(this._mapX(triT1,area), this._mapY(cAt0,area));
+    ctx.stroke();
+    // vertical side (orange dashed)
+    ctx.strokeStyle = '#f77f00';
+    ctx.beginPath();
+    ctx.moveTo(this._mapX(triT1,area), this._mapY(cAt0,area));
+    ctx.lineTo(this._mapX(triT1,area), this._mapY(cAt1,area));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // labels a, b
+    ctx.font = 'bold 20px Arial';
+    ctx.fillStyle = '#00b4d8'; ctx.textAlign = 'center';
+    ctx.fillText('a = '+aClamped.toFixed(1)+' min', this._mapX((triT0+triT1)/2,area), this._mapY(cAt0,area)+26);
+    ctx.fillStyle = '#f77f00'; ctx.textAlign = 'left';
+    ctx.fillText('b = '+bClamped.toFixed(1), this._mapX(triT1,area)+10, this._mapY((cAt0+cAt1)/2,area));
+
+    // point marker
+    ctx.fillStyle = '#00b8a9';
+    ctx.beginPath(); ctx.arc(px0, py0, 8, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+
+    // readout box
+    ctx.fillStyle = 'rgba(22,160,133,0.12)';
+    ctx.fillRect(area.x+area.w-280, area.y+10, 270, 110);
+    ctx.strokeStyle = '#16a085'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(area.x+area.w-280, area.y+10, 270, 110);
+    ctx.fillStyle = '#e6edf3'; ctx.font = '20px Arial'; ctx.textAlign = 'left';
+    ctx.fillText('t = '+this.t0.toFixed(1)+' min', area.x+area.w-265, area.y+40);
+    ctx.fillText('[I₂] = '+c0.toFixed(1)+' mmol/L', area.x+area.w-265, area.y+68);
+    ctx.fillStyle = '#3aff6e'; ctx.font = 'bold 22px Arial';
+    ctx.fillText('v = b/a = '+slope.toFixed(2), area.x+area.w-265, area.y+100);
+  },
+
+  _drawExcelView(){
+    const ctx = this.panelCtx;
+    const W = this.panelCanvas.width, H = this.panelCanvas.height;
+    // Excel-like light theme
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,W,H);
+    // title bar
+    ctx.fillStyle = '#217346'; ctx.fillRect(0,0,W,46);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'left';
+    ctx.fillText('📊  Calcul de v(t) par dérivée numérique — tableur', 18, 31);
+
+    // Left: table
+    const cols = ['t (min)', '[I₂] (mmol/L)', 'v (mmol/L/min)'];
+    const colW = [110, 150, 170];
+    const tableX = 20, tableY = 70, rowH = 48;
+    // header
+    let cx = tableX;
+    for(let i=0;i<cols.length;i++){
+      ctx.fillStyle = '#217346';
+      ctx.fillRect(cx, tableY, colW[i], rowH);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Arial'; ctx.textAlign = 'center';
+      ctx.fillText(cols[i], cx+colW[i]/2, tableY+30);
+      cx += colW[i];
+    }
+    // rows (central difference)
+    const T = this.excelT;
+    for(let r=0;r<T.length;r++){
+      const t = T[r];
+      const conc = this.conc(t);
+      let v;
+      if(r===0) v = (this.conc(T[1]) - this.conc(T[0]))/(T[1]-T[0]);
+      else if(r===T.length-1) v = (this.conc(T[r]) - this.conc(T[r-1]))/(T[r]-T[r-1]);
+      else v = (this.conc(T[r+1]) - this.conc(T[r-1]))/(T[r+1]-T[r-1]);
+      const ry = tableY + rowH*(r+1);
+      cx = tableX;
+      const vals = [t.toFixed(0), conc.toFixed(1), v.toFixed(2)];
+      for(let i=0;i<cols.length;i++){
+        ctx.fillStyle = (r%2===0) ? '#f2f8f4' : '#ffffff';
+        ctx.fillRect(cx, ry, colW[i], rowH);
+        ctx.strokeStyle = '#c8d6cf'; ctx.lineWidth = 1;
+        ctx.strokeRect(cx, ry, colW[i], rowH);
+        ctx.fillStyle = '#1a1a1a'; ctx.font = '17px Arial'; ctx.textAlign = 'center';
+        ctx.fillText(vals[i], cx+colW[i]/2, ry+30);
+        cx += colW[i];
+      }
+    }
+
+    // Right: dual-axis chart
+    const chX = 480, chY = 90, chW = 480, chH = 540;
+    ctx.fillStyle = '#fafafa'; ctx.fillRect(chX, chY, chW, chH);
+    ctx.strokeStyle = '#cccccc'; ctx.strokeRect(chX, chY, chW, chH);
+    // gridlines
+    ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 1;
+    for(let i=0;i<=5;i++){
+      const gy = chY + (chH-40)*i/5 + 20;
+      ctx.beginPath(); ctx.moveTo(chX+10, gy); ctx.lineTo(chX+chW-10, gy); ctx.stroke();
+    }
+    const mapCX = t => chX+30 + (t/30)*(chW-60);
+    const mapCY_conc = c => chY+chH-30 - (c/55)*(chH-60);
+    const mapCY_v = v => chY+chH-30 - (v/5)*(chH-60);
+    // [I2](t) blue rising
+    ctx.strokeStyle = '#2266dd'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    for(let t=0;t<=30;t+=0.5){
+      const px=mapCX(t), py=mapCY_conc(this.conc(t));
+      if(t===0)ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    // v(t) red decreasing
+    ctx.strokeStyle = '#dd2222'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    for(let t=0;t<=30;t+=0.5){
+      const px=mapCX(t), py=mapCY_v(this.vel(t));
+      if(t===0)ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    // legend
+    ctx.font = 'bold 17px Arial'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#2266dd'; ctx.fillRect(chX+30, chY+10, 24, 6);
+    ctx.fillText('[I₂](t) — croissant', chX+62, chY+20);
+    ctx.fillStyle = '#dd2222'; ctx.fillRect(chX+30, chY+34, 24, 6);
+    ctx.fillText('v(t) — décroissant', chX+62, chY+44);
+    // x axis label
+    ctx.fillStyle = '#555555'; ctx.font = '16px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('t (min)', chX+chW/2, chY+chH-6);
+  },
+
+  onMethodChange(m){
+    this.method = m;
+    document.querySelectorAll('.method-btn').forEach(b=>{
+      b.classList.toggle('act', b.dataset.method === m);
+    });
+    document.getElementById('tangentControls').style.display = (m==='tangent') ? 'block' : 'none';
+    document.getElementById('excelControls').style.display = (m==='excel') ? 'block' : 'none';
+    this._redraw();
+  },
+
+  onPosChange(v){
+    this.t0 = parseFloat(v);
+    const lbl = document.getElementById('posLbl');
+    if(lbl) lbl.textContent = this.t0.toFixed(1) + ' min';
+    // update readouts
+    const slope = this.vel(this.t0);
+    document.getElementById('readConc').textContent = this.conc(this.t0).toFixed(1) + ' mmol/L';
+    document.getElementById('readV').textContent = slope.toFixed(2) + ' mmol·L⁻¹·min⁻¹';
+    // mini chart marker
+    if(this.miniChart){
+      this.miniChart.data.datasets[1].data = [{ x: this.t0, y: slope }];
+      this.miniChart.update('none');
+    }
+    this._redraw();
+  },
+
+  onWhy(){
+    openModal(`
+      <h2>🔍 Pourquoi la vitesse décroît-elle ?</h2>
+      <p class="eq">v(0) = 4.5 mmol·L⁻¹·min⁻¹ &nbsp;(vitesse MAXIMALE au départ)</p>
+      <p class="eq">v(15 min) = 1.2 mmol·L⁻¹·min⁻¹ &nbsp;(≈ 4× plus faible)</p>
+      <p class="hl">→ La vitesse DÉCROÎT car les concentrations des réactifs DIMINUENT au cours du temps.</p>
+      <p>Microscopiquement : moins de réactifs en solution = <b>moins de chocs efficaces</b> par seconde (cf. Scène 9).</p>
+      <div class="md-actions">
+        <button class="btn bp" onclick="Scene7.confirmWhy()">J'ai compris</button>
+      </div>
+    `);
+  },
+
+  confirmWhy(){
+    closeModal();
+    showFB('fb7','ok',
+      `<b>v décroît avec le temps</b> (cas le plus fréquent). v est maximale à t=0, tend vers 0 à l'état final.<br>
+       <span style="color:var(--text2)">Deux méthodes pour la mesurer : tangente graphique (b/a) ou dérivée numérique (tableur).</span>`);
+    document.getElementById('btnNext7').disabled = false;
+    unlockScene(6);
+  },
+
+  _initMiniChart(){
+    const cv = document.getElementById('chartV');
+    if(!cv) return;
+    if(Chart.getChart){ const ex=Chart.getChart(cv); if(ex) try{ex.destroy();}catch(e){} }
+    if(this.miniChart){ try{this.miniChart.destroy();}catch(e){} this.miniChart=null; }
+    const vData = [];
+    for(let t=0;t<=45;t+=1.5) vData.push({ x: t, y: this.vel(t) });
+    this.miniChart = new Chart(cv, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          { label: 'v(t)', data: vData, borderColor:'#e74c3c', backgroundColor:'rgba(231,76,60,0.1)',
+            pointRadius:0, showLine:true, tension:0.3, fill:true },
+          { label: 'point courant', data: [{x:0,y:this.vel(0)}], borderColor:'#00b8a9',
+            backgroundColor:'#00b8a9', pointRadius:6, showLine:false }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{ labels:{ color:'#e6edf3', font:{size:9} } } },
+        scales:{
+          x:{ type:'linear', title:{display:true,text:'t (min)',color:'#8b949e'}, min:0,max:45,
+            ticks:{color:'#8b949e',font:{size:9}}, grid:{color:'rgba(48,54,61,0.5)'} },
+          y:{ title:{display:true,text:'v (mmol·L⁻¹·min⁻¹)',color:'#8b949e'}, min:0,max:5,
+            ticks:{color:'#8b949e',font:{size:9}}, grid:{color:'rgba(48,54,61,0.5)'} }
+        }
+      }
+    });
+  },
+
+  update(dt){ if(!this.active) return; },
+
+  destroy(){
+    this.active = false;
+    Util.clearAllTimers();
+    if(this.miniChart){ try{this.miniChart.destroy();}catch(e){} this.miniChart=null; }
+    const cv=document.getElementById('chartV');
+    if(cv && Chart.getChart){ const ex=Chart.getChart(cv); if(ex) try{ex.destroy();}catch(e){} }
+    if(this.panelTex){ try{this.panelTex.dispose();}catch(e){} this.panelTex=null; }
+    Util.disposeNode(this.group);
+    this.group=null; this.panelMesh=null; this.panelCanvas=null; this.panelCtx=null;
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 7 — La vitesse volumique
+        <span class="sub">v(t) = (1/V)·dx/dt = d[I₂]/dt</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">📐</span>Définition</h3>
+        <p class="eq">v(t) = (1/V)·(dx/dt)</p>
+        <p>Comme x(t)/V = [I₂](t) et V constant : v(t) = d[I₂]/dt.</p>
+        <p>Géométriquement : v = <b>pente de la tangente</b> à [I₂](t).</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">📏</span>Unités</h3>
+        <p style="font-size:11px"><b>SI</b> : mol·m⁻³·s⁻¹ (x en mol, t en s, V en m³)</p>
+        <p style="font-size:11px"><b>Usuel</b> : mol·L⁻¹·s⁻¹</p>
+        <p style="font-size:11px"><b>Réactions lentes</b> : mol·L⁻¹·min⁻¹ ou mol·L⁻¹·h⁻¹</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">🛠️</span>Méthode de détermination</h3>
+        <div class="bg-row">
+          <button class="btn bo method-btn act" data-method="tangent" onclick="Scene7.onMethodChange('tangent')">📐 Tangente graphique</button>
+          <button class="btn bo method-btn" data-method="excel" onclick="Scene7.onMethodChange('excel')">💻 Tableur (Excel)</button>
+        </div>
+      </div>
+      <div id="tangentControls">
+        <div class="bx">
+          <h3><span class="ic">↔</span>Position sur la courbe</h3>
+          <div class="slider-row">
+            <div class="sh"><span class="lbl">t (min)</span><span class="val" id="posLbl">0.0 min</span></div>
+            <input type="range" min="0" max="45" step="0.5" value="0" oninput="Scene7.onPosChange(this.value)">
+          </div>
+          <table class="dtbl" style="margin-top:8px">
+            <tr><td class="lbl">[I₂](t)</td><td id="readConc">0.0 mmol/L</td></tr>
+            <tr><td class="lbl">v(t) = b/a</td><td id="readV">4.50 mmol·L⁻¹·min⁻¹</td></tr>
+          </table>
+        </div>
+        <div class="bx">
+          <h3><span class="ic">📈</span>Courbe v(t) (décroissante)</h3>
+          <div class="cc" style="height:180px"><canvas id="chartV"></canvas></div>
+        </div>
+      </div>
+      <div id="excelControls" style="display:none">
+        <div class="bx">
+          <h3><span class="ic">💻</span>Méthode tableur</h3>
+          <p>La dérivée numérique : v_i = ([I₂]_{i+1} − [I₂]_{i−1}) / (2·Δt).</p>
+          <p style="color:var(--text2);font-size:11px">Utilisable quand la dérivation graphique manuelle est imprécise. Le graphe Excel superpose [I₂](t) croissant (bleu) et v(t) décroissant (rouge).</p>
+        </div>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">📖</span>Calcul du manuel (page 35)</h3>
+        <p class="eq">v(0) = AB/OA = 50/11 = 4.5 mmol·L⁻¹·min⁻¹</p>
+        <p class="eq">v(15) = QR/PQ = (50−15.8)/28 = 1.2 mmol·L⁻¹·min⁻¹</p>
+      </div>
+      <button id="btnWhy7" class="btn bp" onclick="Scene7.onWhy()">🔍 Pourquoi la vitesse décroît-elle ?</button>
+      <div id="fb7" class="fb"></div>
+      <button id="btnNext7" class="btn bo" onclick="goToScene(7)" disabled>Suivant ⏭ — Scène 8 (t₁/₂)</button>
+    `);
+    this._initMiniChart();
+    this.onPosChange(0);
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 8 — Le Temps de Demi-Réaction t₁/₂
+   ============================================================
+   ============================================================ */
+const Scene8 = {
+  active: false,
+  group: null,
+  panelCanvas: null,
+  panelCtx: null,
+  panelTex: null,
+  panelMesh: null,
+  X_F: 20,           // mmol (asymptote)
+  T_DEMI: 60,        // s
+  TAU: 60/Math.log(2), // s
+  showSteps: 0,      // how many construction steps drawn (0..6)
+  show2t: false,
+  animating: false,
+
+  x(t){ return this.X_F * (1 - Math.exp(-t/this.TAU)); },
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.showSteps = 0;
+    this.show2t = false;
+
+    STATE.camera.position.set(0, 0.3, 5);
+    STATE.controls.target.set(0, 0.3, 0);
+    STATE.controls.update();
+
+    this.panelCanvas = document.createElement('canvas');
+    this.panelCanvas.width = 1000;
+    this.panelCanvas.height = 700;
+    this.panelCtx = this.panelCanvas.getContext('2d');
+    this.panelTex = new THREE.CanvasTexture(this.panelCanvas);
+    this.panelMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.4, 3.08),
+      new THREE.MeshBasicMaterial({ map: this.panelTex })
+    );
+    this.panelMesh.position.set(0, 0.5, 0);
+    this.group.add(this.panelMesh);
+    const frame = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.6, 3.28),
+      new THREE.MeshBasicMaterial({ color: 0x30363d })
+    );
+    frame.position.set(0, 0.5, -0.02);
+    this.group.add(frame);
+
+    STATE.scene.add(this.group);
+    this._renderPanel();
+    this._redraw();
+  },
+
+  _mapX(t, area){ return area.x + (t/300)*area.w; },
+  _mapY(x, area){ return area.y + area.h - (x/(this.X_F*1.1))*area.h; },
+
+  _redraw(){
+    const ctx = this.panelCtx;
+    const W=this.panelCanvas.width, H=this.panelCanvas.height;
+    ctx.fillStyle='#0d1117'; ctx.fillRect(0,0,W,H);
+    const area={x:90,y:50,w:W-150,h:H-160};
+    // grid
+    ctx.strokeStyle='rgba(48,54,61,0.7)'; ctx.lineWidth=1;
+    ctx.fillStyle='#8b949e'; ctx.font='20px Arial'; ctx.textAlign='center';
+    for(let t=0;t<=300;t+=30){
+      const px=this._mapX(t,area);
+      ctx.beginPath(); ctx.moveTo(px,area.y); ctx.lineTo(px,area.y+area.h); ctx.stroke();
+      ctx.fillText(t, px, area.y+area.h+28);
+    }
+    ctx.textAlign='right';
+    for(let x=0;x<=this.X_F;x+=5){
+      const py=this._mapY(x,area);
+      ctx.beginPath(); ctx.moveTo(area.x,py); ctx.lineTo(area.x+area.w,py); ctx.stroke();
+      ctx.fillText(x, area.x-12, py+6);
+    }
+    ctx.fillStyle='#e6edf3'; ctx.font='bold 22px Arial'; ctx.textAlign='center';
+    ctx.fillText('Temps t (s)', area.x+area.w/2, H-16);
+    ctx.save(); ctx.translate(28, area.y+area.h/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('x(t) (mmol)', 0, 0); ctx.restore();
+    ctx.fillStyle='#58a6ff'; ctx.font='bold 24px Arial';
+    ctx.fillText('CH₃CO₂H + HCO₃⁻ → CO₂ + ...  (Activité 2)', area.x+area.w/2, 32);
+
+    // curve x(t)
+    ctx.strokeStyle='#58a6ff'; ctx.lineWidth=3;
+    ctx.beginPath();
+    for(let t=0;t<=300;t+=2){
+      const px=this._mapX(t,area), py=this._mapY(this.x(t),area);
+      if(t===0)ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+
+    const S = this.showSteps;
+    // Step 1: asymptote x_f
+    if(S>=1){
+      ctx.strokeStyle='rgba(45,198,83,0.6)'; ctx.lineWidth=2; ctx.setLineDash([10,6]);
+      ctx.beginPath(); ctx.moveTo(area.x, this._mapY(this.X_F,area)); ctx.lineTo(area.x+area.w, this._mapY(this.X_F,area)); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#2dc653'; ctx.font='bold 20px Arial'; ctx.textAlign='left';
+      ctx.fillText('x_f = '+this.X_F+' mmol', area.x+area.w-220, this._mapY(this.X_F,area)-10);
+    }
+    // Step 2-3: x_f/2 horizontal
+    if(S>=3){
+      ctx.strokeStyle='#00b4d8'; ctx.lineWidth=2; ctx.setLineDash([8,5]);
+      ctx.beginPath(); ctx.moveTo(area.x, this._mapY(this.X_F/2,area)); ctx.lineTo(this._mapX(this.T_DEMI,area), this._mapY(this.X_F/2,area)); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#00b4d8'; ctx.font='bold 20px Arial'; ctx.textAlign='left';
+      ctx.fillText('x_f/2 = '+(this.X_F/2)+' mmol', area.x+10, this._mapY(this.X_F/2,area)-10);
+    }
+    // Step 4: intersection point
+    if(S>=4){
+      const px=this._mapX(this.T_DEMI,area), py=this._mapY(this.X_F/2,area);
+      ctx.fillStyle='#f77f00';
+      ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#ffffff'; ctx.lineWidth=2; ctx.stroke();
+    }
+    // Step 5: vertical down to t-axis
+    if(S>=5){
+      ctx.strokeStyle='#f77f00'; ctx.lineWidth=2; ctx.setLineDash([8,5]);
+      ctx.beginPath(); ctx.moveTo(this._mapX(this.T_DEMI,area), this._mapY(this.X_F/2,area)); ctx.lineTo(this._mapX(this.T_DEMI,area), area.y+area.h); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // Step 6: t1/2 label
+    if(S>=6){
+      ctx.fillStyle='#f77f00'; ctx.font='bold 22px Arial'; ctx.textAlign='center';
+      ctx.fillText('t₁/₂ = 60 s', this._mapX(this.T_DEMI,area), area.y+area.h+54);
+    }
+
+    // 2·t1/2 test
+    if(this.show2t){
+      const t2 = 2*this.T_DEMI;
+      const x2 = this.x(t2);
+      ctx.strokeStyle='#e74c3c'; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.moveTo(this._mapX(t2,area), area.y+area.h); ctx.lineTo(this._mapX(t2,area), this._mapY(x2,area)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(area.x, this._mapY(x2,area)); ctx.lineTo(this._mapX(t2,area), this._mapY(x2,area)); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#e74c3c';
+      ctx.beginPath(); ctx.arc(this._mapX(t2,area), this._mapY(x2,area), 9, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#ffffff'; ctx.lineWidth=2; ctx.stroke();
+      ctx.font='bold 20px Arial'; ctx.textAlign='center';
+      ctx.fillText('2·t₁/₂ = 120 s', this._mapX(t2,area), area.y+area.h+54);
+      ctx.textAlign='left';
+      ctx.fillText('x(120) ≈ '+x2.toFixed(1)+' mmol = 75% de x_f', this._mapX(t2,area)+15, this._mapY(x2,area));
+    }
+
+    if(this.panelTex) this.panelTex.needsUpdate=true;
+  },
+
+  async onExercise(){
+    if(this.animating) return;
+    await runAnimation(async()=>{
+      this.animating = true;
+      for(let s=1;s<=6;s++){
+        this.showSteps = s;
+        this._redraw();
+        await sleep(700);
+      }
+      this.animating = false;
+      showFB('fb8','ok','<b>t₁/₂ ≈ 60 s</b> · lecture graphique en 6 étapes : asymptote → x_f/2 → horizontale → intersection → verticale → lecture.');
+      document.getElementById('btnTest8').disabled = false;
+    }, 'btnEx8');
+  },
+
+  onTest(){
+    this.show2t = true;
+    this._redraw();
+    openModal(`
+      <h2>🔬 La réaction est-elle finie à 2·t₁/₂ ?</h2>
+      <p>À t = 2·t₁/₂ = <b>120 s</b>, l'avancement vaut :</p>
+      <p class="eq">x(120) ≈ 15 mmol ≈ <b>75 %</b> de x_f &nbsp;(PAS 100 % !)</p>
+      <p class="hl">→ La réaction n'est PAS terminée à 2·t₁/₂.</p>
+      <p>Une réaction d'ordre 1 atteint :</p>
+      <p style="font-size:12px">• 50 % à 1·t₁/₂ &nbsp;• 75 % à 2·t₁/₂ &nbsp;• 87,5 % à 3·t₁/₂ &nbsp;• ~97 % à 5·t₁/₂</p>
+      <div class="md-actions">
+        <button class="btn bp" onclick="Scene8.confirmTest()">J'ai compris</button>
+      </div>
+    `);
+  },
+
+  confirmTest(){
+    closeModal();
+    showFB('fb8','ok',
+      `<b>t₁/₂ n'est PAS la moitié de la durée totale.</b> Il dépend de [réactifs], T et pression.<br>
+       <span style="color:var(--text2)">Règle de suivi : la durée d'une mesure doit être << t₁/₂.</span>`);
+    document.getElementById('btnNext8').disabled = false;
+    unlockScene(7);
+  },
+
+  update(dt){ if(!this.active) return; },
+
+  destroy(){
+    this.active = false;
+    this.animating = false;
+    Util.clearAllTimers();
+    if(this.panelTex){ try{this.panelTex.dispose();}catch(e){} this.panelTex=null; }
+    Util.disposeNode(this.group);
+    this.group=null; this.panelMesh=null; this.panelCanvas=null; this.panelCtx=null;
+    this.showSteps=0; this.show2t=false;
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 8 — Le temps de demi-réaction
+        <span class="sub">x(t₁/₂) = x_f / 2</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⏱️</span>Définition</h3>
+        <p>t₁/₂ : durée pour que x atteigne la <b>moitié</b> de sa valeur finale.</p>
+        <p class="eq">x(t₁/₂) = x_f / 2</p>
+        <p>Si transformation totale : x(t₁/₂) = x_max / 2.</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">📖</span>Lecture graphique (6 étapes)</h3>
+        <p style="font-size:12px">1. Repérer x_f (asymptote)<br>2. Calculer x_f/2<br>3. Tracer l'horizontale à x_f/2<br>4. Repérer l'intersection avec la courbe<br>5. Descendre verticalement vers l'axe des temps<br>6. Lire t₁/₂</p>
+      </div>
+      <div class="bx" style="border-left:3px solid var(--orange)">
+        <h3 style="color:var(--orange)"><span class="ic">⚠️</span>Propriétés essentielles</h3>
+        <p style="font-size:12px">• t₁/₂ n'est <b>PAS constant</b> : dépend de [réactifs], T, pression.</p>
+        <p style="font-size:12px">• La réaction ne se termine <b>PAS</b> à 2·t₁/₂.</p>
+        <p style="font-size:12px">• Pour un suivi fiable : durée d'une mesure << t₁/₂.</p>
+      </div>
+      <button id="btnEx8" class="btn bp" onclick="Scene8.onExercise()">🧪 Exercice : lis t₁/₂</button>
+      <button id="btnTest8" class="btn bp" onclick="Scene8.onTest()" disabled>🔬 Tester : finie à 2·t₁/₂ ?</button>
+      <div id="fb8" class="fb"></div>
+      <button id="btnNext8" class="btn bo" onclick="goToScene(8)" disabled>Suivant ⏭ — Scène 9 (Chocs)</button>
+    `);
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 9 — Interprétation Microscopique : Les Chocs Efficaces
+   ============================================================
+   ============================================================ */
+const Scene9 = {
+  active: false,
+  group: null,
+  molA: null, // A2 group
+  molB: null, // B2 group
+  products: [],
+  flash: null,
+  idleRotation: true,
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.products = [];
+    this.idleRotation = true;
+
+    STATE.camera.position.set(0, 0, 4.5);
+    STATE.controls.target.set(0, 0, 0);
+    STATE.controls.minDistance = 2;
+    STATE.controls.maxDistance = 10;
+    STATE.controls.update();
+
+    // Background gradient panel
+    const bg = new THREE.Mesh(
+      new THREE.PlaneGeometry(12, 8),
+      new THREE.MeshBasicMaterial({ color: 0x0c1420 })
+    );
+    bg.position.set(0,0,-2);
+    this.group.add(bg);
+
+    this._buildMolecules();
+
+    // ambient glow light
+    const glow = new THREE.PointLight(0x88aaff, 0.5, 20);
+    glow.position.set(0, 2, 3);
+    this.group.add(glow);
+
+    STATE.scene.add(this.group);
+    this._renderPanel();
+  },
+
+  _makeDiatomic(color){
+    const g = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color, roughness:0.35, metalness:0.2, emissive:color, emissiveIntensity:0.2 });
+    const a1 = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 20), mat);
+    a1.position.set(-0.22, 0, 0);
+    const a2 = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 20), mat);
+    a2.position.set(0.22, 0, 0);
+    const bond = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, 0.44, 12),
+      new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness:0.4 })
+    );
+    bond.rotation.z = Math.PI/2;
+    g.add(a1); g.add(a2); g.add(bond);
+    g.userData.atoms = [a1, a2];
+    g.userData.bond = bond;
+    return g;
+  },
+
+  _buildMolecules(){
+    // remove existing
+    if(this.molA){ Util.disposeNode(this.molA); }
+    if(this.molB){ Util.disposeNode(this.molB); }
+    for(const p of this.products) Util.disposeNode(p);
+    this.products = [];
+
+    this.molA = this._makeDiatomic(0x27ae60); // green A2
+    this.molA.position.set(-2.2, 0, 0);
+    this.group.add(this.molA);
+
+    this.molB = this._makeDiatomic(0xe67e22); // orange B2
+    this.molB.position.set(2.2, 0, 0);
+    this.group.add(this.molB);
+
+    // labels
+    if(!this._labelsAdded){
+      const lblA = Util.makeTextSprite('A₂', { fontSize:64, color:'#5fd98a', scale:0.4 });
+      lblA.position.set(-2.2, 0.6, 0);
+      lblA.userData.isLabel = true;
+      this.molA.userData.label = lblA;
+      this.group.add(lblA);
+      const lblB = Util.makeTextSprite('B₂', { fontSize:64, color:'#f0a050', scale:0.4 });
+      lblB.position.set(2.2, 0.6, 0);
+      this.molB.userData.label = lblB;
+      this.group.add(lblB);
+    }
+  },
+
+  _reset(){
+    this.idleRotation = true;
+    // re-position molecules
+    if(this.molA){ this.molA.position.set(-2.2,0,0); this.molA.rotation.set(0,0,0); this.molA.visible=true; }
+    if(this.molB){ this.molB.position.set(2.2,0,0); this.molB.rotation.set(0,0,0); this.molB.visible=true; }
+    if(this.molA && this.molA.userData.label) this.molA.userData.label.position.set(-2.2,0.6,0);
+    if(this.molB && this.molB.userData.label) this.molB.userData.label.position.set(2.2,0.6,0);
+    for(const p of this.products) Util.disposeNode(p);
+    this.products = [];
+  },
+
+  async _flashAt(pos, intense){
+    const flash = new THREE.Mesh(
+      new THREE.SphereGeometry(intense?0.5:0.2, 16, 16),
+      new THREE.MeshBasicMaterial({ color: intense?0xffffff:0x888888, transparent:true, opacity:0.9 })
+    );
+    flash.position.copy(pos);
+    this.group.add(flash);
+    await animateValue(0,1, intense?500:350, (t)=>{
+      flash.material.opacity = 0.9*(1-t);
+      flash.scale.setScalar(1 + t*(intense?2:1));
+    });
+    flash.geometry.dispose(); flash.material.dispose();
+    this.group.remove(flash);
+  },
+
+  // ---- Choc efficace ----
+  async onEfficace(){
+    await runAnimation(async()=>{
+      this._reset();
+      this.idleRotation = false;
+      hideFB('fb9');
+      // align both horizontally (good orientation), approach fast
+      await animateValue(0,1, 700, (t)=>{
+        this.molA.position.x = Util.lerp(-2.2, -0.5, t);
+        this.molB.position.x = Util.lerp(2.2, 0.5, t);
+        if(this.molA.userData.label) this.molA.userData.label.position.x = this.molA.position.x;
+        if(this.molB.userData.label) this.molB.userData.label.position.x = this.molB.position.x;
+      });
+      // contact flash + break bonds
+      await this._flashAt(new THREE.Vector3(0,0,0), true);
+      // hide original molecules
+      this.molA.visible = false; this.molB.visible = false;
+      if(this.molA.userData.label) this.molA.userData.label.visible = false;
+      if(this.molB.userData.label) this.molB.userData.label.visible = false;
+      // create 2 AB products
+      for(let i=0;i<2;i++){
+        const ab = new THREE.Group();
+        const green = new THREE.Mesh(new THREE.SphereGeometry(0.22,20,20),
+          new THREE.MeshStandardMaterial({ color:0x27ae60, roughness:0.35, emissive:0x27ae60, emissiveIntensity:0.2 }));
+        green.position.set(-0.22,0,0);
+        const orange = new THREE.Mesh(new THREE.SphereGeometry(0.22,20,20),
+          new THREE.MeshStandardMaterial({ color:0xe67e22, roughness:0.35, emissive:0xe67e22, emissiveIntensity:0.2 }));
+        orange.position.set(0.22,0,0);
+        const bond = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.44,12),
+          new THREE.MeshStandardMaterial({ color:0xcccccc }));
+        bond.rotation.z = Math.PI/2;
+        ab.add(green); ab.add(orange); ab.add(bond);
+        ab.position.set(0, 0, 0);
+        this.group.add(ab);
+        this.products.push(ab);
+      }
+      // products move apart
+      await animateValue(0,1, 800, (t)=>{
+        this.products[0].position.set(Util.lerp(0,-1.8,t), Util.lerp(0,0.5,t), 0);
+        this.products[0].rotation.z = t*Math.PI;
+        this.products[1].position.set(Util.lerp(0,1.8,t), Util.lerp(0,-0.5,t), 0);
+        this.products[1].rotation.z = -t*Math.PI;
+      });
+      showFB('fb9','ok','✓ <b>Énergie OK + orientation OK</b> → réaction ! Les liaisons A-A et B-B se rompent, <b>2 molécules AB</b> se forment.');
+      this._maybeUnlock();
+    }, 'btnEff');
+  },
+
+  // ---- Choc inefficace (orientation) ----
+  async onIneffOrient(){
+    await runAnimation(async()=>{
+      this._reset();
+      this.idleRotation = false;
+      hideFB('fb9');
+      // rotate B2 perpendicular (bad orientation)
+      this.molB.rotation.z = Math.PI/2;
+      await animateValue(0,1, 700, (t)=>{
+        this.molA.position.x = Util.lerp(-2.2, -0.55, t);
+        this.molB.position.x = Util.lerp(2.2, 0.55, t);
+        if(this.molA.userData.label) this.molA.userData.label.position.x = this.molA.position.x;
+        if(this.molB.userData.label) this.molB.userData.label.position.x = this.molB.position.x;
+      });
+      await this._flashAt(new THREE.Vector3(0,0,0), false);
+      // bounce back
+      await animateValue(0,1, 700, (t)=>{
+        this.molA.position.x = Util.lerp(-0.55, -2.2, t);
+        this.molB.position.x = Util.lerp(0.55, 2.2, t);
+        if(this.molA.userData.label) this.molA.userData.label.position.x = this.molA.position.x;
+        if(this.molB.userData.label) this.molB.userData.label.position.x = this.molB.position.x;
+      });
+      this.molB.rotation.z = 0;
+      showFB('fb9','wrn','✗ <b>Énergie OK mais MAUVAISE orientation</b> → les molécules rebondissent sans réagir.');
+      this._maybeUnlock();
+    }, 'btnIneffO');
+  },
+
+  // ---- Choc inefficace (énergie) ----
+  async onIneffEnergy(){
+    await runAnimation(async()=>{
+      this._reset();
+      this.idleRotation = false;
+      hideFB('fb9');
+      // slow approach (low energy), good orientation, gentle bounce before contact
+      await animateValue(0,1, 1400, (t)=>{
+        this.molA.position.x = Util.lerp(-2.2, -0.7, t);
+        this.molB.position.x = Util.lerp(2.2, 0.7, t);
+        if(this.molA.userData.label) this.molA.userData.label.position.x = this.molA.position.x;
+        if(this.molB.userData.label) this.molB.userData.label.position.x = this.molB.position.x;
+      });
+      await this._flashAt(new THREE.Vector3(0,0,0), false);
+      // gentle bounce back
+      await animateValue(0,1, 1400, (t)=>{
+        this.molA.position.x = Util.lerp(-0.7, -2.2, t);
+        this.molB.position.x = Util.lerp(0.7, 2.2, t);
+        if(this.molA.userData.label) this.molA.userData.label.position.x = this.molA.position.x;
+        if(this.molB.userData.label) this.molB.userData.label.position.x = this.molB.position.x;
+      });
+      showFB('fb9','wrn','✗ <b>Bonne orientation mais ÉNERGIE insuffisante</b> → les molécules se repoussent doucement sans réagir.');
+      this._maybeUnlock();
+    }, 'btnIneffE');
+  },
+
+  _maybeUnlock(){
+    if(!this._seen) this._seen = new Set();
+    document.getElementById('btnNext9').disabled = false;
+    unlockScene(8);
+  },
+
+  update(dt){
+    if(!this.active) return;
+    if(this.idleRotation){
+      if(this.molA) this.molA.rotation.y += dt*0.8;
+      if(this.molB) this.molB.rotation.y += dt*0.8;
+    }
+  },
+
+  destroy(){
+    this.active = false;
+    Util.clearAllTimers();
+    for(const p of this.products) Util.disposeNode(p);
+    this.products = [];
+    Util.disposeNode(this.group);
+    this.group=null; this.molA=null; this.molB=null;
+    this._labelsAdded = false;
+    if(STATE.controls){ STATE.controls.minDistance=2; STATE.controls.maxDistance=20; }
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 9 — Interprétation microscopique
+        <span class="sub">Le modèle des chocs efficaces</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚛️</span>Le modèle</h3>
+        <p class="eq">A₂ + B₂ → 2 AB</p>
+        <p>Les espèces sont en mouvement désordonné permanent → elles se heurtent. La fréquence des chocs = nombre de chocs par seconde.</p>
+      </div>
+      <div class="bx" style="border-left:3px solid var(--green)">
+        <h3 style="color:var(--green)"><span class="ic">✓</span>Choc EFFICACE — 2 conditions</h3>
+        <p style="font-size:12px">1. <b>ÉNERGIE</b> suffisante pour rompre les liaisons A-A et B-B.</p>
+        <p style="font-size:12px">2. <b>ORIENTATION</b> correcte au moment du choc.</p>
+        <p style="font-size:12px;color:var(--green)">→ Les deux réunies : les produits AB se forment.</p>
+      </div>
+      <div class="bx" style="border-left:3px solid var(--red)">
+        <h3 style="color:var(--red)"><span class="ic">✗</span>Choc INEFFICACE</h3>
+        <p style="font-size:12px">Mauvaise orientation OU énergie insuffisante → les molécules rebondissent.</p>
+      </div>
+      <div class="bg-row" style="flex-direction:column;gap:6px">
+        <button id="btnEff" class="btn bp" onclick="Scene9.onEfficace()">▶ Choc efficace</button>
+        <button id="btnIneffO" class="btn bo" onclick="Scene9.onIneffOrient()">▶ Choc inefficace (orientation)</button>
+        <button id="btnIneffE" class="btn bo" onclick="Scene9.onIneffEnergy()">▶ Choc inefficace (énergie)</button>
+      </div>
+      <div id="fb9" class="fb"></div>
+      <div class="bx" style="border:1px solid var(--accent);background:rgba(88,166,255,0.08)">
+        <h3 style="color:var(--accent)"><span class="ic">★</span>Loi centrale</h3>
+        <p style="color:var(--text)">La <b>VITESSE</b> d'une transformation dépend de la fréquence des <b>CHOCS EFFICACES</b>.</p>
+        <p style="font-size:11px;color:var(--text2)">Exemple concret : NH₃ + HCl → NH₄Cl</p>
+      </div>
+      <button id="btnNext9" class="btn bo" onclick="goToScene(9)" disabled>Suivant ⏭ — Scène 10 (Facteurs)</button>
+    `);
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 10 — Facteurs Cinétiques
+   ============================================================
+   ============================================================ */
+const Scene10 = {
+  active: false,
+  group: null,
+  beakerA: null, beakerB: null,
+  liquidA: null, liquidB: null,
+  moleculesA: [], moleculesB: [],
+  thermoA: null, thermoB: null, // red columns
+  concB: 1.0, tempB: 25,
+  simRunning: false,
+  xA: 0, xB: 0,
+  chart: null,
+  exoChart: null,
+  exoThermoLevel: 0,
+  exoRunning: false,
+  exoT: 0,
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.concB = 1.0; this.tempB = 25;
+    this.simRunning = false; this.xA = 0; this.xB = 0;
+    this.moleculesA = []; this.moleculesB = [];
+    this.exoRunning = false; this.exoT = 0;
+
+    STATE.camera.position.set(0, 1.6, 5.5);
+    STATE.controls.target.set(0, 0.7, 0);
+    STATE.controls.update();
+
+    const bench = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 0.1, 4),
+      new THREE.MeshStandardMaterial({ color: 0x1a2030, roughness: 0.7 })
+    );
+    bench.position.set(0, -0.05, 0);
+    this.group.add(bench);
+
+    // Build two beakers
+    const built = this._buildBeaker(-1.6, 'A');
+    this.beakerA = built.wall; this.liquidA = built.liquidMat; this.moleculesA = built.molecules; this.thermoA = built.thermo;
+    const builtB = this._buildBeaker(1.6, 'B');
+    this.beakerB = builtB.wall; this.liquidB = builtB.liquidMat; this.moleculesB = builtB.molecules; this.thermoB = builtB.thermo;
+
+    // labels
+    const lblA = Util.makeTextSprite('Bécher A (référence)', { fontSize:42, color:'#7dc4ff', scale:0.34 });
+    lblA.position.set(-1.6, 1.9, 0);
+    this.group.add(lblA);
+    const lblB = Util.makeTextSprite('Bécher B (variable)', { fontSize:42, color:'#ffa86b', scale:0.34 });
+    lblB.position.set(1.6, 1.9, 0);
+    this.group.add(lblB);
+
+    STATE.scene.add(this.group);
+    this._renderPanel();
+    this._updateMoleculeCounts();
+    this._updateThermo();
+  },
+
+  _buildBeaker(cx, tag){
+    const glass = new THREE.MeshPhysicalMaterial({
+      color: 0xddeeff, roughness:0.05, transmission:0.9, transparent:true, opacity:0.4, depthWrite:false
+    });
+    const wall = new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,1.2,40,1,true), glass);
+    wall.position.set(cx, 0.75, 0); wall.renderOrder = 2;
+    this.group.add(wall);
+    const bottom = new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.03,40), glass);
+    bottom.position.set(cx, 0.16, 0); bottom.renderOrder = 2;
+    this.group.add(bottom);
+    const liquidMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf0f4ff, roughness:0.1, transmission:0.65, transparent:true, opacity:0.5, depthWrite:false
+    });
+    const liquid = new THREE.Mesh(new THREE.CylinderGeometry(0.53,0.53,1.0,40), liquidMat);
+    liquid.position.set(cx, 0.66, 0); liquid.renderOrder = 1;
+    this.group.add(liquid);
+
+    // molecules (pool of 60, visibility controlled)
+    const molecules = [];
+    const geo = new THREE.SphereGeometry(0.05, 8, 8);
+    const mat = new THREE.MeshStandardMaterial({ color:0x9b59b6, roughness:0.4, emissive:0x9b59b6, emissiveIntensity:0.15 });
+    for(let i=0;i<60;i++){
+      const m = new THREE.Mesh(geo, mat);
+      const theta=Math.random()*Math.PI*2, r=Math.sqrt(Math.random())*0.48;
+      m.position.set(cx+Math.cos(theta)*r, 0.25+Math.random()*0.8, Math.sin(theta)*r);
+      m.userData.vel = new THREE.Vector3((Math.random()-0.5),(Math.random()-0.5),(Math.random()-0.5)).multiplyScalar(0.3);
+      m.userData.cx = cx;
+      this.group.add(m);
+      molecules.push(m);
+    }
+
+    // thermometer
+    const thermoBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05,0.05,1.0,12),
+      new THREE.MeshPhysicalMaterial({ color:0xffffff, transmission:0.6, transparent:true, opacity:0.4, depthWrite:false })
+    );
+    thermoBody.position.set(cx+0.85, 0.9, 0);
+    this.group.add(thermoBody);
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.09, 12, 12),
+      new THREE.MeshStandardMaterial({ color:0xe63946, roughness:0.3 })
+    );
+    bulb.position.set(cx+0.85, 0.4, 0);
+    this.group.add(bulb);
+    // red column (height adjustable)
+    const thermo = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.025,0.025,0.6,8),
+      new THREE.MeshStandardMaterial({ color:0xe63946, roughness:0.3, emissive:0xe63946, emissiveIntensity:0.2 })
+    );
+    thermo.position.set(cx+0.85, 0.65, 0.01);
+    this.group.add(thermo);
+
+    return { wall, liquidMat, molecules, thermo };
+  },
+
+  _updateMoleculeCounts(){
+    // A: reference, 30 molecules. B: scales with concB (15..90 → cap 60)
+    const nA = 30;
+    const nB = Math.min(60, Math.round(30 * this.concB));
+    for(let i=0;i<this.moleculesA.length;i++) this.moleculesA[i].visible = i < nA;
+    for(let i=0;i<this.moleculesB.length;i++) this.moleculesB[i].visible = i < nB;
+  },
+
+  _updateThermo(){
+    // thermo column height ~ temperature. A=25°C fixed. B variable.
+    if(this.thermoA){
+      const hA = 0.2 + (25/80)*0.5;
+      this.thermoA.scale.y = hA/0.6;
+      this.thermoA.position.y = 0.4 + hA/2;
+    }
+    if(this.thermoB){
+      const hB = 0.2 + (this.tempB/80)*0.5;
+      this.thermoB.scale.y = hB/0.6;
+      this.thermoB.position.y = 0.4 + hB/2;
+    }
+  },
+
+  onConcChange(v){
+    this.concB = parseFloat(v);
+    document.getElementById('concBLbl').textContent = this.concB.toFixed(1)+'×';
+    this._updateMoleculeCounts();
+  },
+  onTempChange(v){
+    this.tempB = parseInt(v);
+    document.getElementById('tempBLbl').textContent = this.tempB+' °C';
+    this._updateThermo();
+  },
+
+  async onLaunch(){
+    await runAnimation(async()=>{
+      this.xA = 0; this.xB = 0;
+      this._initChart();
+      // rate factors: A reference rate=1. B: conc factor × temp factor
+      const tempFactorB = Math.pow(2, (this.tempB-25)/10); // ×2 per +10°C
+      const rateA = 1.0;
+      const rateB = this.concB * tempFactorB;
+      // simulate 100 ticks
+      const totalTicks = 60;
+      for(let i=0;i<=totalTicks;i++){
+        const t = i; // arbitrary time units (s)
+        this.xA = 1 - Math.exp(-0.05*rateA*t);
+        this.xB = 1 - Math.exp(-0.05*rateB*t);
+        // update liquid color (product forming → tinge)
+        const cA = this.xA, cB = this.xB;
+        this.liquidA.color.setRGB(Util.lerp(0.94,0.8,cA), Util.lerp(0.96,0.5,cA), Util.lerp(1,0.12,cA));
+        this.liquidB.color.setRGB(Util.lerp(0.94,0.8,cB), Util.lerp(0.96,0.5,cB), Util.lerp(1,0.12,cB));
+        if(this.chart){
+          this.chart.data.datasets[0].data.push({x:t, y:this.xA});
+          this.chart.data.datasets[1].data.push({x:t, y:this.xB});
+          this.chart.update('none');
+        }
+        await sleep(30);
+      }
+      // compute t1/2
+      const thalfA = Math.log(2)/(0.05*rateA);
+      const thalfB = Math.log(2)/(0.05*rateB);
+      const chocsA = 10;
+      const chocsB = (10 * rateB).toFixed(0);
+      document.getElementById('chocsAB').innerHTML =
+        `Chocs A : ~10/s · Chocs B : ~${chocsB}/s<br>t₁/₂(A) = ${thalfA.toFixed(0)} u · t₁/₂(B) = ${thalfB.toFixed(0)} u`;
+      let msg;
+      if(rateB > rateA*1.1) msg = `Bécher B réagit <b>PLUS VITE</b> ([B] ou T plus élevés → plus de chocs).`;
+      else if(rateB < rateA*0.9) msg = `Bécher B réagit <b>PLUS LENTEMENT</b> ([B] ou T plus faibles → moins de chocs).`;
+      else msg = `Béchers A et B réagissent à <b>vitesse comparable</b>.`;
+      showFB('fb10','inf', msg + ' Augmenter [réactifs] ou T augmente la fréquence des chocs → vitesse ↑.');
+      document.getElementById('btnExo').disabled = false;
+    }, 'btnLaunch');
+  },
+
+  async onExo(){
+    await runAnimation(async()=>{
+      this._initExoChart();
+      this.exoT = 0;
+      // exothermic: v increases first (heat raises T) then decreases (reactants deplete)
+      const totalTicks = 80;
+      for(let i=0;i<=totalTicks;i++){
+        const t = i;
+        // x(t): S-shaped (sigmoid-ish): slow start, acceleration, then plateau
+        const x = 1/(1+Math.exp(-(t-30)/8));
+        // v = dx/dt approximated
+        const v = (1/(1+Math.exp(-(t+0.5-30)/8))) - (1/(1+Math.exp(-(t-0.5-30)/8)));
+        if(this.exoChart){
+          this.exoChart.data.datasets[0].data.push({x:t, y:x});
+          this.exoChart.data.datasets[1].data.push({x:t, y:v*15}); // scaled for visibility
+          this.exoChart.update('none');
+        }
+        // thermometer B rises during reaction
+        const heatRise = x * 30; // up to +30°C
+        if(this.thermoB){
+          const hB = 0.2 + ((25+heatRise)/80)*0.5;
+          this.thermoB.scale.y = hB/0.6;
+          this.thermoB.position.y = 0.4 + hB/2;
+        }
+        await sleep(25);
+      }
+      showFB('fb10','wrn',
+        `🔥 <b>Réaction exothermique auto-accélérée</b> · la vitesse AUGMENTE d'abord : la chaleur libérée élève T, et le facteur température l'emporte sur le facteur concentration. Puis v décroît quand les réactifs s'épuisent.`);
+      document.getElementById('btnNext10').disabled = false;
+      unlockScene(9);
+    }, 'btnExo');
+  },
+
+  _initChart(){
+    const cv = document.getElementById('chart10');
+    if(!cv) return;
+    if(Chart.getChart){ const ex=Chart.getChart(cv); if(ex) try{ex.destroy();}catch(e){} }
+    if(this.chart){ try{this.chart.destroy();}catch(e){} this.chart=null; }
+    this.chart = new Chart(cv, {
+      type:'scatter',
+      data:{ datasets:[
+        {label:'x(t) Bécher A', data:[], borderColor:'#58a6ff', pointRadius:0, showLine:true, tension:0.3},
+        {label:'x(t) Bécher B', data:[], borderColor:'#f77f00', pointRadius:0, showLine:true, tension:0.3}
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{legend:{labels:{color:'#e6edf3',font:{size:9}}}},
+        scales:{ x:{type:'linear',title:{display:true,text:'temps (u)',color:'#8b949e'},min:0,max:60,ticks:{color:'#8b949e',font:{size:9}},grid:{color:'rgba(48,54,61,0.5)'}},
+          y:{title:{display:true,text:'avancement (norm.)',color:'#8b949e'},min:0,max:1.05,ticks:{color:'#8b949e',font:{size:9}},grid:{color:'rgba(48,54,61,0.5)'}}}}
+    });
+  },
+
+  _initExoChart(){
+    const cv = document.getElementById('chartExo');
+    if(!cv) return;
+    if(Chart.getChart){ const ex=Chart.getChart(cv); if(ex) try{ex.destroy();}catch(e){} }
+    if(this.exoChart){ try{this.exoChart.destroy();}catch(e){} this.exoChart=null; }
+    this.exoChart = new Chart(cv, {
+      type:'scatter',
+      data:{ datasets:[
+        {label:'x(t)', data:[], borderColor:'#2dc653', pointRadius:0, showLine:true, tension:0.3},
+        {label:'v(t) — monte puis descend !', data:[], borderColor:'#e74c3c', pointRadius:0, showLine:true, tension:0.3}
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{legend:{labels:{color:'#e6edf3',font:{size:9}}}},
+        scales:{ x:{type:'linear',title:{display:true,text:'temps (u)',color:'#8b949e'},min:0,max:80,ticks:{color:'#8b949e',font:{size:9}},grid:{color:'rgba(48,54,61,0.5)'}},
+          y:{title:{display:true,text:'x / v (norm.)',color:'#8b949e'},min:0,max:1.1,ticks:{color:'#8b949e',font:{size:9}},grid:{color:'rgba(48,54,61,0.5)'}}}}
+    });
+  },
+
+  update(dt){
+    if(!this.active) return;
+    // gentle molecule motion (speed ~ temperature for visual)
+    const tA = 1.0, tB = Math.pow(2,(this.tempB-25)/10);
+    for(const m of this.moleculesA){
+      if(!m.visible) continue;
+      m.position.addScaledVector(m.userData.vel, dt*tA*0.5);
+      this._bounce(m, 0.5, 0.45);
+    }
+    for(const m of this.moleculesB){
+      if(!m.visible) continue;
+      m.position.addScaledVector(m.userData.vel, dt*tB*0.5);
+      this._bounce(m, 0.5, 0.45);
+    }
+  },
+  _bounce(m, halfR, halfH){
+    const dx = m.position.x - m.userData.cx;
+    if(Math.abs(dx) > halfR){ m.userData.vel.x *= -1; m.position.x = m.userData.cx + Math.sign(dx)*halfR; }
+    if(m.position.y < 0.25 || m.position.y > 0.25+2*halfH){ m.userData.vel.y *= -1; }
+    if(Math.abs(m.position.z) > halfR){ m.userData.vel.z *= -1; m.position.z = Math.sign(m.position.z)*halfR; }
+  },
+
+  destroy(){
+    this.active = false;
+    this.simRunning = false; this.exoRunning = false;
+    Util.clearAllTimers();
+    for(const cvId of ['chart10','chartExo']){
+      const cv=document.getElementById(cvId);
+      if(cv && Chart.getChart){ const ex=Chart.getChart(cv); if(ex) try{ex.destroy();}catch(e){} }
+    }
+    if(this.chart){ try{this.chart.destroy();}catch(e){} this.chart=null; }
+    if(this.exoChart){ try{this.exoChart.destroy();}catch(e){} this.exoChart=null; }
+    Util.disposeNode(this.group);
+    this.group=null; this.beakerA=null; this.beakerB=null;
+    this.moleculesA=[]; this.moleculesB=[]; this.thermoA=null; this.thermoB=null;
+  },
+
+  _renderPanel(){
+    setSidePanel(`
+      <div class="pt">Scène 10 — Facteurs cinétiques
+        <span class="sub">Concentration · Température · cas particuliers</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">🧪</span>Bécher A (référence)</h3>
+        <p>Concentration et température fixes : [A] = 1.0× · T = 25 °C.</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">🎛️</span>Bécher B (variable)</h3>
+        <div class="slider-row" style="margin-bottom:8px">
+          <div class="sh"><span class="lbl">[réactif]_B</span><span class="val" id="concBLbl">1.0×</span></div>
+          <input type="range" min="0.5" max="3" step="0.1" value="1" oninput="Scene10.onConcChange(this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="sh"><span class="lbl">Température_B</span><span class="val" id="tempBLbl">25 °C</span></div>
+          <input type="range" min="0" max="80" step="1" value="25" oninput="Scene10.onTempChange(this.value)">
+        </div>
+      </div>
+      <button id="btnLaunch" class="btn bp" onclick="Scene10.onLaunch()">▶ Lancer les 2 réactions en parallèle</button>
+      <div class="bx">
+        <h3><span class="ic">📊</span>Comparaison</h3>
+        <p id="chocsAB" style="font-size:11px">Lance la simulation pour comparer.</p>
+        <div class="cc" style="height:170px"><canvas id="chart10"></canvas></div>
+      </div>
+      <div id="fb10" class="fb"></div>
+      <div class="bx" style="border-left:3px solid var(--orange)">
+        <h3 style="color:var(--orange)"><span class="ic">⚠️</span>Cas où v ne décroît PAS</h3>
+        <p style="font-size:12px">• <b>Exothermique</b> : la chaleur libérée élève T → peut accélérer.</p>
+        <p style="font-size:12px">• <b>Autocatalyse</b> : un produit catalyse la réaction → l'accélère.</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚗️</span>Catalyseur</h3>
+        <p style="font-size:12px">Espèce qui accélère sans être consommée. On la retrouve intacte à la fin.</p>
+      </div>
+      <button id="btnExo" class="btn bp" onclick="Scene10.onExo()" disabled>🔥 Voir une réaction exothermique auto-accélérée</button>
+      <div class="bx">
+        <h3><span class="ic">📈</span>Cas exothermique : v monte puis descend</h3>
+        <div class="cc" style="height:170px"><canvas id="chartExo"></canvas></div>
+      </div>
+      <button id="btnNext10" class="btn bo" onclick="goToScene(10)" disabled>Suivant ⏭ — Scène 11 (Synthèse)</button>
+    `);
+  }
+};
+
+/* ============================================================
+   ============================================================
+   SCENE 11 — Synthèse, Laboratoire Libre & Quiz Final
+   ============================================================
+   ============================================================ */
+const Scene11 = {
+  active: false,
+  group: null,
+  beaker: null, liquidMat: null,
+  reactionIdx: 0,
+  hasCatalyst: false,
+  conc: 1.0, temp: 25,
+  chart: null,
+  quizScore: 0,
+  REACTIONS: [
+    { eq:'H₂O₂ + 2I⁻ + 2H⁺ → I₂ + 2H₂O', methode:'titrage', color:0x7d4f1e },
+    { eq:'CH₃CO₂H + HCO₃⁻ → CO₂ + ...', methode:'pression', color:0xcccccc },
+    { eq:'2I⁻ + S₂O₈²⁻ → I₂ + 2SO₄²⁻', methode:'spectrophotométrie', color:0x16a085 }
+  ],
+  QUIZ: [
+    { q:'La vitesse volumique de réaction est définie par :',
+      opts:['v = x/t','v = (1/V)·dx/dt','v = V·dx/dt','v = dt/dx'], correct:1 },
+    { q:'Dans l\'Activité 1, pourquoi verse-t-on l\'échantillon dans l\'eau glacée avant de titrer ?',
+      opts:['Pour le diluer et le rendre incolore','Pour figer la réaction (blocage cinétique) le temps de titrer','Pour accélérer le titrage','Pour réchauffer le mélange'], correct:1 },
+    { q:'Le temps de demi-réaction t₁/₂ :',
+      opts:['Est une constante caractéristique de chaque réaction','Dépend des concentrations, de la température et de la pression','Est toujours égal à la moitié de la durée totale','Marque la fin de la réaction'], correct:1 },
+    { q:'Un choc entre deux molécules est EFFICACE si :',
+      opts:['Les molécules vont très lentement','L\'énergie est suffisante ET l\'orientation est correcte','Les molécules sont de même nature','La température est basse'], correct:1 },
+    { q:'Pour la majorité des réactions, la vitesse au cours du temps :',
+      opts:['Augmente continuellement','Reste constante','Décroît car les réactifs se raréfient','Est nulle dès le début'], correct:2 }
+  ],
+
+  init(){
+    this.active = true;
+    this.group = new THREE.Group();
+    this.reactionIdx = 0; this.hasCatalyst = false; this.conc = 1.0; this.temp = 25;
+
+    STATE.camera.position.set(0, 1.5, 5);
+    STATE.controls.target.set(0, 0.7, 0);
+    STATE.controls.update();
+
+    const bench = new THREE.Mesh(
+      new THREE.BoxGeometry(7, 0.1, 4),
+      new THREE.MeshStandardMaterial({ color: 0x1a2030, roughness: 0.7 })
+    );
+    bench.position.set(0, -0.05, 0);
+    this.group.add(bench);
+
+    // Central beaker
+    const glass = new THREE.MeshPhysicalMaterial({
+      color:0xddeeff, roughness:0.05, transmission:0.9, transparent:true, opacity:0.4, depthWrite:false
+    });
+    const wall = new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.7,1.4,48,1,true), glass);
+    wall.position.set(0, 0.85, 0); wall.renderOrder = 2;
+    this.group.add(wall);
+    const bottom = new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.7,0.03,48), glass);
+    bottom.position.set(0, 0.17, 0); bottom.renderOrder = 2;
+    this.group.add(bottom);
+    this.beaker = wall;
+    this.liquidMat = new THREE.MeshPhysicalMaterial({
+      color:0xf0f4ff, roughness:0.1, transmission:0.65, transparent:true, opacity:0.55, depthWrite:false
+    });
+    const liquid = new THREE.Mesh(new THREE.CylinderGeometry(0.68,0.68,1.15,48), this.liquidMat);
+    liquid.position.set(0, 0.75, 0); liquid.renderOrder = 1;
+    this.group.add(liquid);
+
+    const lbl = Util.makeTextSprite('Laboratoire virtuel', { fontSize:48, color:'#58a6ff', scale:0.42 });
+    lbl.position.set(0, 2.0, 0);
+    this.group.add(lbl);
+
+    STATE.scene.add(this.group);
+    this._renderPanel();
+  },
+
+  onReactionChange(idx){
+    this.reactionIdx = parseInt(idx);
+    const r = this.REACTIONS[this.reactionIdx];
+    document.getElementById('methodeLbl').textContent = 'Méthode : ' + r.methode;
+  },
+  onConcChange(v){ this.conc = parseFloat(v); document.getElementById('s11concLbl').textContent = this.conc.toFixed(1)+'×'; },
+  onTempChange(v){ this.temp = parseInt(v); document.getElementById('s11tempLbl').textContent = this.temp+' °C'; },
+  onCatalyst(c){ this.hasCatalyst = c; },
+
+  async onLaunch(){
+    await runAnimation(async()=>{
+      this._initChart();
+      const r = this.REACTIONS[this.reactionIdx];
+      const tempFactor = Math.pow(2,(this.temp-25)/10);
+      const catFactor = this.hasCatalyst ? 3 : 1;
+      const rate = 0.04 * this.conc * tempFactor * catFactor;
+      const totalTicks = 60;
+      const targetColor = new THREE.Color(r.color);
+      for(let i=0;i<=totalTicks;i++){
+        const t=i;
+        const x = 1 - Math.exp(-rate*t);
+        this.liquidMat.color.setRGB(
+          Util.lerp(0.94, targetColor.r, x),
+          Util.lerp(0.96, targetColor.g, x),
+          Util.lerp(1.0, targetColor.b, x)
+        );
+        if(this.chart){ this.chart.data.datasets[0].data.push({x:t,y:x}); this.chart.update('none'); }
+        await sleep(25);
+      }
+      const thalf = Math.log(2)/rate;
+      document.getElementById('thalfLbl').innerHTML =
+        `t₁/₂ estimé ≈ <b>${thalf.toFixed(0)} u</b>` + (this.hasCatalyst ? ' (catalyseur actif ×3)' : '');
+      showFB('fb11','inf','Réaction simulée. Modifie concentration, température ou catalyseur et relance pour comparer les vitesses.');
+    }, 'btnLaunch11');
+  },
+
+  _initChart(){
+    const cv = document.getElementById('chart11');
+    if(!cv) return;
+    if(Chart.getChart){ const ex=Chart.getChart(cv); if(ex) try{ex.destroy();}catch(e){} }
+    if(this.chart){ try{this.chart.destroy();}catch(e){} this.chart=null; }
+    this.chart = new Chart(cv,{
+      type:'scatter',
+      data:{datasets:[{label:'x(t) (norm.)',data:[],borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,0.12)',pointRadius:0,showLine:true,tension:0.3,fill:true}]},
+      options:{responsive:true,maintainAspectRatio:false,animation:false,
+        plugins:{legend:{labels:{color:'#e6edf3',font:{size:9}}}},
+        scales:{x:{type:'linear',title:{display:true,text:'temps (u)',color:'#8b949e'},min:0,max:60,ticks:{color:'#8b949e',font:{size:9}},grid:{color:'rgba(48,54,61,0.5)'}},
+          y:{title:{display:true,text:'avancement',color:'#8b949e'},min:0,max:1.05,ticks:{color:'#8b949e',font:{size:9}},grid:{color:'rgba(48,54,61,0.5)'}}}}
+    });
+  },
+
+  // ---- QUIZ ----
+  startQuiz(){
+    this.quizScore = 0;
+    this._showQuestion(0);
+  },
+  _showQuestion(idx){
+    if(idx >= this.QUIZ.length){ this._showScore(); return; }
+    const Q = this.QUIZ[idx];
+    const optHtml = Q.opts.map((o,i)=>
+      `<button class="btn bo" style="width:100%;text-align:left;margin-bottom:6px;justify-content:flex-start"
+        onclick="Scene11.answerQuiz(${idx},${i})">${String.fromCharCode(65+i)}. ${o}</button>`
+    ).join('');
+    openModal(`
+      <h2>🎓 Quiz final — ${idx+1}/${this.QUIZ.length}</h2>
+      <p class="hl">${Q.q}</p>
+      <div style="margin-top:12px">${optHtml}</div>
+      <p style="text-align:right;color:var(--text2);font-size:11px;margin-top:8px">Score : ${this.quizScore}/${idx}</p>
+    `);
+  },
+  answerQuiz(qIdx, choice){
+    const Q = this.QUIZ[qIdx];
+    const correct = choice === Q.correct;
+    if(correct) this.quizScore++;
+    // brief feedback then next
+    const correctLetter = String.fromCharCode(65+Q.correct);
+    openModal(`
+      <h2>${correct ? '✅ Correct !' : '❌ Incorrect'}</h2>
+      <p>${correct ? 'Bonne réponse.' : 'La bonne réponse était : <b>'+correctLetter+'. '+Q.opts[Q.correct]+'</b>'}</p>
+      <div class="md-actions">
+        <button class="btn bp" onclick="Scene11._showQuestion(${qIdx+1})">${qIdx+1 < Scene11.QUIZ.length ? 'Question suivante →' : 'Voir le score'}</button>
+      </div>
+    `);
+  },
+  _showScore(){
+    const s = this.quizScore, total = this.QUIZ.length;
+    let color = s===total ? 'var(--gold)' : (s>=4 ? 'var(--green)' : 'var(--orange)');
+    let emoji = s===total ? '🏆' : (s>=4 ? '🎉' : '💪');
+    openModal(`
+      <h2>${emoji} Quiz terminé</h2>
+      <p style="text-align:center;font-size:42px;font-weight:700;color:${color};font-family:'JetBrains Mono',monospace">${s} / ${total}</p>
+      <p style="text-align:center">${s===total ? 'Score parfait ! Tu maîtrises la cinétique.' : (s>=4 ? 'Très bon score !' : 'Revois les scènes pour consolider.')}</p>
+      <div class="md-actions">
+        <button class="btn bo" onclick="Scene11.startQuiz()">↺ Recommencer</button>
+        <button class="btn bp" onclick="closeModal()">Fermer</button>
+      </div>
+    `);
+    if(s >= 4){
+      showFB('fb11','ok',`<b>Quiz réussi : ${s}/${total}</b> 🎉 · Tu as terminé l'Unité 2 — Cinétique chimique !`);
+    }
+  },
+
+  onReturn(){
+    openModal(`
+      <h2>↺ Retour à la scène 1</h2>
+      <p>Veux-tu revenir au début de la simulation (scène 1) ?</p>
+      <div class="md-actions">
+        <button class="btn bo" onclick="closeModal()">Annuler</button>
+        <button class="btn bp" onclick="closeModal(); goToScene(0)">Oui, revenir au début</button>
+      </div>
+    `);
+  },
+
+  update(dt){ if(!this.active) return; },
+
+  destroy(){
+    this.active = false;
+    Util.clearAllTimers();
+    const cv=document.getElementById('chart11');
+    if(cv && Chart.getChart){ const ex=Chart.getChart(cv); if(ex) try{ex.destroy();}catch(e){} }
+    if(this.chart){ try{this.chart.destroy();}catch(e){} this.chart=null; }
+    Util.disposeNode(this.group);
+    this.group=null; this.beaker=null; this.liquidMat=null;
+  },
+
+  _renderPanel(){
+    const opts = this.REACTIONS.map((r,i)=>`<option value="${i}">${r.eq}</option>`).join('');
+    setSidePanel(`
+      <div class="pt">Scène 11 — Synthèse & Quiz
+        <span class="sub">Laboratoire libre — explore la cinétique</span>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">⚗️</span>Réaction</h3>
+        <select id="reactionSel" onchange="Scene11.onReactionChange(this.value)"
+          style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:'JetBrains Mono',monospace">
+          ${opts}
+        </select>
+        <p id="methodeLbl" style="font-size:11px;color:var(--text2);margin-top:6px">Méthode : titrage</p>
+      </div>
+      <div class="bx">
+        <h3><span class="ic">🎛️</span>Conditions</h3>
+        <div class="slider-row" style="margin-bottom:8px">
+          <div class="sh"><span class="lbl">Concentration</span><span class="val" id="s11concLbl">1.0×</span></div>
+          <input type="range" min="0.5" max="3" step="0.1" value="1" oninput="Scene11.onConcChange(this.value)">
+        </div>
+        <div class="slider-row" style="margin-bottom:8px">
+          <div class="sh"><span class="lbl">Température</span><span class="val" id="s11tempLbl">25 °C</span></div>
+          <input type="range" min="0" max="80" step="1" value="25" oninput="Scene11.onTempChange(this.value)">
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;color:var(--text)">
+          <input type="checkbox" onchange="Scene11.onCatalyst(this.checked)" style="width:16px;height:16px;accent-color:var(--accent)">
+          Catalyseur (×3 la vitesse)
+        </label>
+      </div>
+      <button id="btnLaunch11" class="btn bp" onclick="Scene11.onLaunch()">▶ Lancer</button>
+      <div class="bx">
+        <h3><span class="ic">📈</span>Courbe x(t)</h3>
+        <p id="thalfLbl" style="font-size:12px;color:var(--accent)">t₁/₂ estimé : lance la simulation</p>
+        <div class="cc" style="height:180px"><canvas id="chart11"></canvas></div>
+      </div>
+      <div id="fb11" class="fb"></div>
+      <button class="btn bp" onclick="Scene11.startQuiz()" style="background:var(--gold);color:#1a1a1a">🎓 Lancer le Quiz final</button>
+      <button class="btn bo" onclick="Scene11.onReturn()">↺ Retour scène 1</button>
+    `);
+  }
+};
+
+/* ============================================================
+   REGISTER SCENES & BOOT
+   ============================================================ */
+STATE.scenes[0] = Scene1;
+STATE.scenes[1] = Scene2;
+STATE.scenes[2] = Scene3;
+STATE.scenes[3] = Scene4;
+STATE.scenes[4] = Scene5;
+STATE.scenes[5] = Scene6;
+STATE.scenes[6] = Scene7;
+STATE.scenes[7] = Scene8;
+STATE.scenes[8] = Scene9;
+STATE.scenes[9] = Scene10;
+STATE.scenes[10] = Scene11;
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  // Loader animation
+  let p = 0;
+  const fill = document.getElementById('loFill');
+  const li = setInterval(()=>{
+    p = Math.min(100, p + 8);
+    if(fill) fill.style.width = p + '%';
+    if(p >= 100){
+      clearInterval(li);
+      setTimeout(()=>{
+        document.getElementById('loader').classList.add('hide');
+      }, 200);
+    }
+  }, 40);
+
+  try{
+    initThree();
+    Scene1.init();
+    animateRAF();
+  } catch(e){
+    console.error('Boot error:', e);
+    alert('Erreur de chargement : ' + e.message);
+  }
+});
+
+// Expose for inline handlers
+window.Scene1 = Scene1;
+window.Scene2 = Scene2;
+window.Scene3 = Scene3;
+window.Scene4 = Scene4;
+window.Scene5 = Scene5;
+window.Scene6 = Scene6;
+window.Scene7 = Scene7;
+window.Scene8 = Scene8;
+window.Scene9 = Scene9;
+window.Scene10 = Scene10;
+window.Scene11 = Scene11;
+window.goToScene = goToScene;
+window.closeModal = closeModal;
+window.unlockScene = unlockScene;
+</script>
+
+<div class="pc3d-cf-ov" id="pc3d-cf-ov" aria-hidden="true"><div class="pc3d-cf" role="dialog" aria-modal="true" aria-label="Contact PC3D"><button class="pc3d-cf-x" id="pc3d-cf-x" aria-label="Fermer">&times;</button><div class="pc3d-cf-head"><span class="pc3d-cf-logo"><svg viewBox="0 0 120 120" width="42" height="42" xmlns="http://www.w3.org/2000/svg"><path d="M60 16 L100 92 L20 92 Z" fill="none" stroke="#4ECDC4" stroke-width="6" stroke-linejoin="round"/><circle cx="60" cy="72" r="11" fill="#00B8A9"/></svg></span><span><span class="pc3d-cf-t">Contact PC3D</span><span class="pc3d-cf-s">Partage tes idées, remarques et questions &middot; شاركنا أفكارك وملاحظاتك وكل ما تريد قوله لنا</span></span></div><input class="pc3d-cf-in" id="pc3d-cf-name" type="text" placeholder="Nom (optionnel) &middot; الاسم (اختياري)"><input class="pc3d-cf-in" id="pc3d-cf-email" type="email" placeholder="Ton email pour te répondre &middot; بريدك للرد عليك"><input type="text" id="pc3d-cf-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><textarea class="pc3d-cf-ta" id="pc3d-cf-msg" rows="5" placeholder="Écris ici tout ce que tu veux nous dire… &middot; اكتب هنا كل ما تريد قوله لنا…"></textarea><div class="pc3d-cf-note" id="pc3d-cf-note"></div><div class="pc3d-cf-fb" id="pc3d-cf-fb" style="display:none;font-size:12.5px;margin:-4px 2px 12px;line-height:1.55;color:#8fa0bd"></div><button class="pc3d-cf-send" id="pc3d-cf-send">Envoyer &middot; إرسال</button></div></div>
+<style>
+.pc3d-cf-ov{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,20,.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s;font-family:'Outfit',system-ui,-apple-system,sans-serif;}
+.pc3d-cf-ov.show{opacity:1;visibility:visible;}
+.pc3d-cf{width:100%;max-width:440px;box-sizing:border-box;background:linear-gradient(180deg,#0c1730,#070e1f);border:1px solid rgba(78,205,196,.32);border-radius:18px;padding:26px 24px 24px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative;transform:translateY(14px) scale(.98);transition:transform .28s cubic-bezier(.2,.9,.3,1.15);}
+.pc3d-cf-ov.show .pc3d-cf{transform:translateY(0) scale(1);}
+.pc3d-cf-x{position:absolute;top:12px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(255,255,255,.06);color:#aeb8cc;font-size:20px;line-height:1;cursor:pointer;transition:background .2s,color .2s;}
+.pc3d-cf-x:hover{background:rgba(255,255,255,.14);color:#fff;}
+.pc3d-cf-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.pc3d-cf-logo{flex:none;line-height:0;}
+.pc3d-cf-t{display:block;font-size:19px;font-weight:700;color:#eaf2ff;letter-spacing:.2px;}
+.pc3d-cf-s{display:block;font-size:11.5px;color:#8fa0bd;margin-top:4px;line-height:1.45;}
+.pc3d-cf-in,.pc3d-cf-ta{width:100%;box-sizing:border-box;margin-bottom:11px;padding:11px 13px;font-family:inherit;font-size:14px;color:#eaf2ff;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;outline:none;transition:border-color .2s,background .2s;}
+.pc3d-cf-in:focus,.pc3d-cf-ta:focus{border-color:#4ECDC4;background:rgba(78,205,196,.06);}
+.pc3d-cf-in::placeholder,.pc3d-cf-ta::placeholder{color:#6b7c99;}
+.pc3d-cf-ta{resize:vertical;min-height:112px;line-height:1.5;}
+.pc3d-cf-note{min-height:15px;font-size:12px;margin:1px 2px 12px;line-height:1.45;}
+.pc3d-cf-send{width:100%;padding:13px;border:none;border-radius:11px;font-family:inherit;font-size:15px;font-weight:700;color:#04121f;cursor:pointer;background:linear-gradient(180deg,#4ECDC4,#00B8A9);box-shadow:0 8px 22px rgba(0,184,169,.4);transition:transform .15s ease,box-shadow .2s,opacity .2s;}
+.pc3d-cf-send:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(0,184,169,.55);}
+.pc3d-cf-send:disabled{opacity:.6;cursor:default;transform:none;}
+</style>
+<script>(function(){
+var EMAIL='professeurkoudiaelmehdi@gmail.com';var W3KEY='';
+var ov=document.getElementById('pc3d-cf-ov');
+if(!ov)return;
+var msg=document.getElementById('pc3d-cf-msg'),nm=document.getElementById('pc3d-cf-name'),em=document.getElementById('pc3d-cf-email'),note=document.getElementById('pc3d-cf-note'),send=document.getElementById('pc3d-cf-send');
+function openM(e){if(e)e.preventDefault();ov.classList.add('show');ov.setAttribute('aria-hidden','false');setTimeout(function(){try{msg.focus();}catch(_){}}, 140);}
+function closeM(){ov.classList.remove('show');ov.setAttribute('aria-hidden','true');}
+var _trg=document.querySelectorAll('#pc3d-contact-btn,[data-pc3d-contact]');for(var _i=0;_i<_trg.length;_i++)_trg[_i].addEventListener('click',openM);
+document.getElementById('pc3d-cf-x').addEventListener('click',closeM);
+ov.addEventListener('click',function(e){if(e.target===ov)closeM();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ov.classList.contains('show'))closeM();});
+function setNote(t,ok){note.textContent=t;note.style.color=ok?'#4ECDC4':'#ff9a9a';}
+var fb=document.getElementById('pc3d-cf-fb'),hp=document.getElementById('pc3d-cf-hp');
+function showFB(){if(!fb)return;var nl=String.fromCharCode(10),p=[];if(nm.value)p.push('Nom: '+nm.value);if(em.value)p.push('Email: '+em.value);p.push('');p.push(msg.value);var href='mailto:'+EMAIL+'?subject='+encodeURIComponent('Message · PC3D')+'&body='+encodeURIComponent(p.join(nl));fb.innerHTML='Tu peux aussi écrire directement à <a href="'+href+'" style="color:#4ECDC4;font-weight:600">'+EMAIL+'</a>';fb.style.display='block';}
+send.addEventListener('click',function(){
+ if(hp&&hp.value){setNote('Merci ! · شكراً',true);setTimeout(closeM,1100);return;}
+ if(!msg.value.trim()){setNote("Merci d'écrire ton message · اكتب رسالتك من فضلك",false);try{msg.focus();}catch(_){}return;}
+ setNote('Envoi en cours… · جارٍ الإرسال…',true);send.disabled=true;if(fb)fb.style.display='none';
+ var url,payload;
+ if(W3KEY){url='https://api.web3forms.com/submit';payload={access_key:W3KEY,name:nm.value||'—',email:em.value||'—',message:msg.value,subject:'Nouveau message · PC3D',from_name:'PC3D — Contact'};}
+ else{url='https://formsubmit.co/ajax/'+EMAIL;payload={nom:nm.value||'—',email:em.value||'—',message:msg.value,_subject:'Nouveau message · PC3D',_template:'table',_captcha:'false'};}
+ fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)})
+ .then(function(r){return r.json();})
+ .then(function(d){
+   if(d&&(d.success===true||d.success==='true')){setNote('Merci ! Ton message a été envoyé ✓ · تم إرسال رسالتك، شكراً',true);msg.value='';nm.value='';em.value='';if(fb)fb.style.display='none';setTimeout(closeM,2000);}
+   else{setNote("Activation requise une seule fois — vérifie l'email · يلزم تفعيل لمرّة واحدة عبر الإيميل",false);showFB();}
+   send.disabled=false;
+ })
+ .catch(function(){setNote("Connexion impossible pour l'instant · تعذّر الإرسال الآن",false);showFB();send.disabled=false;});
+});
+})();</script>
+</body>
+</html>

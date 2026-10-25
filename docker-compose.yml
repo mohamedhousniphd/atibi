@@ -1,6 +1,0 @@
-services:
-  esalaire:
-    image: ghcr.io/mohamedhousniphd/esalaire:latest
-    ports:
-      - "18789:80"
-    restart: always

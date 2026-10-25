@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synthèse d'Esters — Anhydrides, Aspirine, Saponification et Catalyse</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0a0e14;--bg2:#131920;--bg3:#1a2230;--bg4:#243040;
+  --text:#e6edf3;--text2:#8b949e;--accent:#4dabf7;
+  --green:#2dc653;--red:#e63946;--orange:#f77f00;
+  --cyan:#00b4d8;--violet:#9b5de5;--pink:#ff69b4;
+  --yellow:#ffd60a;--gold:#deb887;
+  --panel:#111820;--border:#2a3545;--radius:10px;
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);}
+
+/* ===== NAV ===== */
+#topNav{position:fixed;top:0;left:0;right:0;height:52px;background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;z-index:1000;gap:3px;overflow-x:auto;}
+.nb{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:3px;}
+.nb:hover:not(.lk){background:var(--bg4);color:var(--text);}
+.nb.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.nb.lk{opacity:.4;cursor:not-allowed;}
+
+/* ===== LAYOUT ===== */
+#main{position:fixed;top:52px;left:0;right:0;bottom:0;display:flex;}
+#cv{flex:1;position:relative;min-width:0;background:var(--bg);}
+#sp{width:380px;min-width:360px;background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;}
+
+/* ===== COMPONENTS ===== */
+.pt{font-size:15px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;}
+.bx{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.bx h3{font-size:11px;font-weight:600;margin-bottom:8px;color:var(--text);text-transform:uppercase;letter-spacing:1px;}
+.ms{background:linear-gradient(135deg,#14202e,#182840);border:1px solid var(--accent);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden;}
+.ms::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--cyan));}
+.ms .ml{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:4px;}
+
+.btn{padding:10px 16px;border:none;border-radius:var(--radius);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.bp{background:var(--accent);color:#fff;}.bp:hover{background:#3a8fd4;}
+.bo{background:transparent;border:1px solid var(--border);color:var(--text2);}.bo:hover{border-color:var(--accent);color:var(--text);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.bg{display:flex;gap:6px;flex-wrap:wrap;}
+
+.fb{padding:12px;border-radius:var(--radius);font-size:13px;line-height:1.6;display:none;animation:fi .3s;}
+.fb.show{display:block;}
+.fb.ok{background:rgba(45,198,83,.12);border:1px solid var(--green);color:#6ee89a;}
+.fb.err{background:rgba(230,57,70,.12);border:1px solid var(--red);color:#ff6b7a;}
+.fb.inf{background:rgba(77,171,247,.12);border:1px solid var(--accent);color:#7dc4ff;}
+.fb.wrn{background:rgba(247,127,0,.12);border:1px solid var(--orange);color:#ffaa44;}
+
+.qc{padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);cursor:pointer;transition:all .2s;font-size:12px;line-height:1.5;}
+.qc:hover{border-color:var(--accent);background:var(--bg3);}
+
+.sc{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;text-align:center;padding:10px;color:var(--accent);}
+
+.tg{display:flex;gap:3px;background:var(--bg);border-radius:var(--radius);padding:3px;}
+.to{flex:1;padding:7px 8px;border:none;border-radius:7px;background:transparent;color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;font-size:11px;transition:all .2s;text-align:center;}
+.to.on{background:var(--accent);color:#fff;}
+
+.pb{width:100%;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;}
+.pf{height:100%;background:var(--accent);border-radius:3px;transition:width .5s;}
+
+.ac{display:flex;align-items:center;gap:5px;padding:8px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);}
+.ab{width:34px;height:34px;border:1px solid var(--border);border-radius:7px;background:var(--bg3);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;}
+.ab:hover{background:var(--accent);border-color:var(--accent);}
+
+.lb{display:flex;flex-direction:column;gap:5px;padding:8px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);}
+.li{display:flex;align-items:center;gap:6px;font-size:12px;}
+.lc{width:14px;height:3px;border-radius:2px;}
+
+.cc{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px;}
+
+.dtbl{width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace;}
+.dtbl th,.dtbl td{padding:6px 4px;border:1px solid var(--border);text-align:center;}
+.dtbl th{background:var(--bg3);color:var(--accent);font-weight:600;font-size:10px;}
+.dtbl td{background:var(--bg);}
+
+.key-box{background:linear-gradient(135deg,rgba(230,57,70,.08),rgba(230,57,70,.15));border:2px solid var(--red);border-radius:var(--radius);padding:14px;font-size:13px;line-height:1.6;color:#ff8a94;margin:8px 0;}
+
+.mo{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.75);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.mo.show{display:flex;}
+.md{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:520px;width:90%;}
+.md h2{font-size:18px;margin-bottom:14px;color:var(--accent);}
+.md p{font-size:13px;line-height:1.6;color:var(--text2);margin-bottom:10px;}
+.md label{display:flex;align-items:center;gap:8px;margin:14px 0;font-size:13px;cursor:pointer;}
+.md input[type="checkbox"]{width:16px;height:16px;accent-color:var(--accent);}
+
+@keyframes fi{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+@media(max-width:850px){#main{flex-direction:column;}#sp{width:100%;min-width:0;max-height:45vh;border-left:none;border-top:1px solid var(--border);}#cv{min-height:40vh;}}
+#sp::-webkit-scrollbar{width:5px;}#sp::-webkit-scrollbar-track{background:var(--bg);}#sp::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+<a href="index.html" id="pc3d-home-btn" title="Retour à l'accueil · العودة للرئيسية" style="position:fixed;bottom:18px;left:18px;z-index:2147483647;display:inline-flex;align-items:center;gap:7px;padding:9px 15px 9px 12px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#e8f0ff;text-decoration:none;background:linear-gradient(180deg,rgba(10,21,48,.94),rgba(5,10,24,.9));border:1px solid rgba(0,184,169,.45);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 0 1px rgba(0,184,169,.08);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00b8a9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+<span>PC3D · Accueil</span>
+</a>
+<style>#pc3d-home-btn:hover{transform:translateY(-2px);border-color:rgba(0,184,169,.85);box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 18px rgba(0,184,169,.35);}</style>
+<a href="#" id="pc3d-contact-btn" title="Contact · تواصل معنا" style="position:fixed;right:18px;bottom:18px;z-index:9000;display:inline-flex;align-items:center;gap:8px;padding:11px 16px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#04121f;text-decoration:none;background:linear-gradient(180deg,#4ECDC4,#00B8A9);border:1px solid rgba(255,255,255,.28);border-radius:999px;box-shadow:0 8px 26px rgba(0,184,169,.45),0 2px 8px rgba(0,0,0,.4);transition:transform .18s ease,box-shadow .18s ease;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#04121f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>Contact</span></a><style>#pc3d-contact-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,184,169,.6),0 2px 8px rgba(0,0,0,.5);}@media(max-width:600px){#pc3d-contact-btn span{display:none;}#pc3d-contact-btn{padding:13px;}}</style>
+<div class="pc3d-uload" id="pc3d-uload"><div class="pc3d-uload-logo"><svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="uldc" cx="50%" cy="45%" r="55%"><stop offset="0%" stop-color="#F5F7FA"/><stop offset="45%" stop-color="#4ECDC4"/><stop offset="100%" stop-color="#00B8A9" stop-opacity="0"/></radialGradient><linearGradient id="uldp" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4ECDC4"/><stop offset="50%" stop-color="#00B8A9"/><stop offset="100%" stop-color="#9B59B6"/></linearGradient></defs><ellipse class="ulorbit" cx="60" cy="66" rx="54" ry="18" fill="none" stroke="#4ECDC4" stroke-opacity=".4" stroke-width="1.5"/><circle class="ulorbit" cx="6" cy="66" r="3" fill="#FF9A3C"/><path class="ulpyr" d="M60 14 L102 94 L18 94 Z" fill="url(#uldp)" fill-opacity=".14" stroke="url(#uldp)" stroke-width="3" stroke-linejoin="round"/><circle class="ulcore" cx="60" cy="70" r="13" fill="url(#uldc)"/></svg></div><div class="pc3d-uload-txt"><span>P</span><span>C</span><span>3</span><span>D</span></div></div><style>.pc3d-uload{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:#050a18;transition:opacity .6s ease,visibility .6s;font-family:'Outfit',system-ui,sans-serif;}.pc3d-uload.done{opacity:0;visibility:hidden;pointer-events:none;}.pc3d-uload-logo{width:120px;height:120px;}.pc3d-uload-logo svg{width:100%;height:100%;overflow:visible;}.pc3d-uload .ulorbit{transform-origin:60px 64px;animation:ulspin 1.4s linear infinite;}@keyframes ulspin{to{transform:rotate(360deg);}}.pc3d-uload .ulpyr{transform-origin:60px 60px;animation:ulpyr 1.6s ease-in-out infinite;}@keyframes ulpyr{0%,100%{transform:scale(.86) rotate(-4deg);}50%{transform:scale(1.06) rotate(4deg);}}.pc3d-uload .ulcore{transform-origin:60px 66px;animation:ulcore 1.1s ease-in-out infinite;}@keyframes ulcore{0%,100%{opacity:.5;transform:scale(.7);}50%{opacity:1;transform:scale(1.25);}}.pc3d-uload-txt{display:flex;gap:3px;font-size:12px;letter-spacing:.32em;color:#7fe9e0;text-transform:uppercase;}.pc3d-uload-txt span{animation:ultxt 1.4s ease-in-out infinite;}.pc3d-uload-txt span:nth-child(2){animation-delay:.1s;}.pc3d-uload-txt span:nth-child(3){animation-delay:.2s;}.pc3d-uload-txt span:nth-child(4){animation-delay:.3s;}@keyframes ultxt{0%,100%{opacity:.3;transform:translateY(0);}50%{opacity:1;transform:translateY(-3px);}}</style><script>(function(){function h(){var l=document.getElementById("pc3d-uload");if(l){l.classList.add("done");setTimeout(function(){l&&l.remove();},700);}}window.addEventListener("load",function(){setTimeout(h,1100);});setTimeout(h,3000);})();</script>
+
+<!-- NAVIGATION -->
+<div id="topNav">
+  <div class="nb on" data-p="10" onclick="go(10)">10. Isoamyle</div>
+  <div class="nb lk" data-p="11" onclick="go(11)"><span class="lk-i">🔒</span>11. Mécanisme</div>
+  <div class="nb lk" data-p="12" onclick="go(12)"><span class="lk-i">🔒</span>12. Aspirine</div>
+  <div class="nb lk" data-p="13" onclick="go(13)"><span class="lk-i">🔒</span>13. Saponif.</div>
+  <div class="nb lk" data-p="14" onclick="go(14)"><span class="lk-i">🔒</span>14. Mécan. Sap.</div>
+  <div class="nb lk" data-p="15" onclick="go(15)"><span class="lk-i">🔒</span>15. Corps Gras</div>
+  <div class="nb lk" data-p="16" onclick="go(16)"><span class="lk-i">🔒</span>16. Micelles</div>
+  <div class="nb lk" data-p="17" onclick="go(17)"><span class="lk-i">🔒</span>17. Catalyse</div>
+  <div class="nb lk" data-p="18" onclick="go(18)"><span class="lk-i">🔒</span>18. Synthèse</div>
+</div>
+
+<!-- SAFETY MODAL -->
+<div class="mo" id="sfM"><div class="md">
+  <h2>⚠️ Sécurité au Laboratoire</h2>
+  <p>Cette simulation met en jeu des substances <b>corrosives et irritantes</b> :</p>
+  <p>• <b>Anhydride éthanoïque</b> : corrosif, réagit violemment avec l'eau. Manipuler avec des outils <b>SECS</b> sous hotte.<br>
+  • <b>NaOH concentré</b> : corrosif, provoque des brûlures graves.<br>
+  • <b>HCl concentré</b> : corrosif, vapeurs irritantes.<br>
+  • <b>H₂SO₄ concentré</b> : corrosif.</p>
+  <p>En laboratoire : <b>blouse, lunettes, gants</b> obligatoires. Hotte aspirante pour l'anhydride.</p>
+  <label><input type="checkbox" id="sfC" onchange="document.getElementById('sfB').disabled=!this.checked"> J'ai lu et compris les consignes de sécurité</label>
+  <button class="btn bp" id="sfB" disabled onclick="document.getElementById('sfM').classList.remove('show')">Continuer</button>
+</div></div>
+
+<div id="main"><div id="cv"></div><div id="sp"></div></div>
+
+<script>
+/* ================================================================
+   CONFIGURATION
+   ================================================================ */
+// Réactions anhydride + alcool (Phase 11)
+var RXA=[
+  {anh:'Anhydride éthanoïque',alc:'Méthanol',est:'Éthanoate de méthyle',acid:'Acide éthanoïque',
+   eq:'(CH₃CO)₂O + CH₃OH → CH₃COOCH₃ + CH₃COOH'},
+  {anh:'Anhydride éthanoïque',alc:'Éthanol',est:'Éthanoate d\'éthyle',acid:'Acide éthanoïque',
+   eq:'(CH₃CO)₂O + C₂H₅OH → CH₃COOC₂H₅ + CH₃COOH'},
+  {anh:'Anhydride éthanoïque',alc:'3-méthylbutan-1-ol',est:'Acétate d\'isoamyle',acid:'Acide éthanoïque',
+   eq:'(CH₃CO)₂O + C₅H₁₁OH → CH₃COOC₅H₁₁ + CH₃COOH'},
+  {anh:'Anhydride éthanoïque',alc:'Butan-1-ol',est:'Éthanoate de butyle',acid:'Acide éthanoïque',
+   eq:'(CH₃CO)₂O + C₄H₉OH → CH₃COOC₄H₉ + CH₃COOH'}
+];
+
+// Tableau comparatif central
+var CMP=[
+  {r:'Estérification (acide+alcool)',v:'Lente',tau:'Limitée (67%)',rev:'⇌ OUI',prod:'Ester + H₂O'},
+  {r:'Hydrolyse (ester+H₂O)',v:'Lente',tau:'Limitée (33%)',rev:'⇌ OUI',prod:'Acide + Alcool'},
+  {r:'Anhydride + Alcool',v:'Rapide',tau:'Totale (100%)',rev:'→ NON',prod:'Ester + Acide'},
+  {r:'Saponification (ester+HO⁻)',v:'Rapide',tau:'Totale (100%)',rev:'→ NON',prod:'R−COO⁻ + Alcool'},
+  {r:'Saponification corps gras',v:'Rapide',tau:'Totale (100%)',rev:'→ NON',prod:'Savon + Glycérol'}
+];
+
+/* ================================================================
+   ÉTAT GLOBAL
+   ================================================================ */
+var S={lv:10,ul:[10],sc:null,ca:null,re:null,ct:null,rc:null,ms:null,la:null,ch:null,
+  // P10
+  p10step:0,p10timer:0,p10heating:false,p10grp:null,p10m:{},
+  // P11
+  p11ri:0,p11step:0,p11play:false,p11grp:null,p11m:{},
+  // P12
+  p12step:0,p12grp:null,p12m:{},
+  // P13
+  p13step:0,p13timer:0,p13heating:false,p13grp:null,p13m:{},
+  // P14
+  p14step:0,p14play:false,p14grp:null,p14m:{},
+  // P15
+  p15grp:null,
+  // P16
+  p16grp:null,p16view:'schematic',
+  // P17
+  p17tab:'homo',p17grp:null,
+  // P18
+  p18grp:null
+};
+
+/* ================================================================
+   THREE.JS INIT
+   ================================================================ */
+function initT(){
+  var w=document.getElementById('cv');
+  S.sc=new THREE.Scene();
+  S.sc.background=new THREE.Color(0x0a0e14);
+  S.ca=new THREE.PerspectiveCamera(50,w.clientWidth/w.clientHeight,.1,100);
+  S.ca.position.set(0,2,8);
+  S.re=new THREE.WebGLRenderer({antialias:true});
+  S.re.setSize(w.clientWidth,w.clientHeight);
+  S.re.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  w.appendChild(S.re.domElement);
+  S.ct=new THREE.OrbitControls(S.ca,S.re.domElement);
+  S.ct.enableDamping=true;S.ct.dampingFactor=.08;S.ct.minDistance=2;S.ct.maxDistance=30;S.ct.enablePan=true;
+  // Éclairage cinématique
+  S.sc.add(new THREE.HemisphereLight(0xfff5e6,0x080820,.85));
+  var d1=new THREE.DirectionalLight(0x4dabf7,.5);d1.position.set(-5,5,3);S.sc.add(d1);
+  var d2=new THREE.DirectionalLight(0xffaa00,.3);d2.position.set(5,3,-2);S.sc.add(d2);
+  S.sc.add(new THREE.AmbientLight(0x222244,.3));
+  S.rc=new THREE.Raycaster();S.ms=new THREE.Vector2();
+  window.addEventListener('resize',function(){S.ca.aspect=w.clientWidth/w.clientHeight;S.ca.updateProjectionMatrix();S.re.setSize(w.clientWidth,w.clientHeight);});
+  S.re.domElement.addEventListener('click',onCl);
+  (function lp(){requestAnimationFrame(lp);S.ct.update();
+    S.sc.traverse(function(c){if(c.userData&&c.userData.bb)c.quaternion.copy(S.ca.quaternion);});
+    if(S.la)S.la();S.re.render(S.sc,S.ca);})();
+}
+
+/* ================================================================
+   UTILITAIRES 3D
+   ================================================================ */
+function clr(){
+  var rm=[];S.sc.traverse(function(c){if(!c.isLight&&c!==S.sc)rm.push(c);});
+  for(var i=rm.length-1;i>=0;i--){var o=rm[i];if(o.parent)o.parent.remove(o);if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();if(Array.isArray(o.material))o.material.forEach(function(m){if(m.map)m.map.dispose();m.dispose();});else o.material.dispose();}}
+  S.la=null;S.p10grp=null;S.p11grp=null;S.p12grp=null;S.p13grp=null;S.p14grp=null;S.p15grp=null;S.p16grp=null;S.p17grp=null;S.p18grp=null;
+  S.p10m={};S.p11m={};S.p12m={};S.p13m={};S.p14m={};
+}
+function mL(t,sz,cl){
+  cl=cl||'#fff';var cv=document.createElement('canvas');cv.width=256;cv.height=64;
+  var cx=cv.getContext('2d');cx.clearRect(0,0,256,64);
+  var fs=Math.min(42,Math.floor(220/(t.length||1)*1.8));
+  cx.font='bold '+fs+'px Outfit,Arial,sans-serif';
+  cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle=cl;cx.fillText(t,128,32);
+  var tx=new THREE.CanvasTexture(cv);tx.minFilter=THREE.LinearFilter;
+  var sm=new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false});
+  var sp=new THREE.Sprite(sm);sp.scale.set(sz*4,sz,1);sp.userData={bb:true};return sp;
+}
+function mkSphere(r,col,opts){
+  opts=opts||{};var hasOpa=opts.opa!==undefined;
+  var g=new THREE.SphereGeometry(r,opts.seg||24,opts.seg||24);
+  var m=new THREE.MeshStandardMaterial({color:col,metalness:opts.met||.1,roughness:opts.rou||.3,
+    transparent:hasOpa,opacity:hasOpa?opts.opa:1,side:opts.ds?THREE.DoubleSide:THREE.FrontSide,
+    depthWrite:hasOpa?false:true,emissive:opts.em||0,emissiveIntensity:opts.emi||0});
+  var ms=new THREE.Mesh(g,m);if(opts.pos)ms.position.copy(opts.pos);
+  if(opts.ro)ms.renderOrder=opts.ro;return ms;
+}
+function mkCyl(rT,rB,h,col,opts){
+  opts=opts||{};var hasOpa=opts.opa!==undefined;
+  var g=new THREE.CylinderGeometry(rT,rB,h,opts.seg||16,1,!!opts.open);
+  var m=new THREE.MeshStandardMaterial({color:col,metalness:opts.met||.1,roughness:opts.rou||.4,
+    transparent:hasOpa,opacity:hasOpa?opts.opa:1,side:opts.ds?THREE.DoubleSide:THREE.FrontSide,
+    depthWrite:hasOpa?false:true});
+  return new THREE.Mesh(g,m);
+}
+function mkBox(w,h,d,col,opts){
+  opts=opts||{};var hasOpa=opts.opa!==undefined;
+  var g=new THREE.BoxGeometry(w,h,d);
+  var m=new THREE.MeshStandardMaterial({color:col,metalness:opts.met||.1,roughness:opts.rou||.4,
+    transparent:hasOpa,opacity:hasOpa?opts.opa:1,side:opts.ds?THREE.DoubleSide:THREE.FrontSide,
+    depthWrite:hasOpa?false:true});
+  return new THREE.Mesh(g,m);
+}
+function sFB(id,tp,mg){var f=document.getElementById(id);if(!f)return;f.className='fb show '+tp;f.innerHTML=mg;}
+function addL(parent,t,sz,cl,x,y,z){var l=mL(t,sz,cl);l.position.set(x,y,z);parent.add(l);return l;}
+
+/* Dessine une liaison chimique (cylindre) entre deux Vector3 */
+function mkBond(parent,p1,p2,col,type){
+  col=col||0x888888;type=type||'s';
+  var dir=new THREE.Vector3().subVectors(p2,p1);var len=dir.length();
+  var mid=new THREE.Vector3().addVectors(p1,p2).multiplyScalar(.5);
+  var dn=dir.clone().normalize();var up=new THREE.Vector3(0,1,0);
+  function mk(off){
+    var g=new THREE.CylinderGeometry(.045,.045,len,6);
+    var m=new THREE.MeshStandardMaterial({color:col,roughness:.5});
+    var cy=new THREE.Mesh(g,m);cy.position.copy(mid);
+    if(off){var pp=new THREE.Vector3(1,0,0);if(Math.abs(dn.dot(pp))>.9)pp.set(0,0,1);
+      var cr=new THREE.Vector3().crossVectors(dn,pp).normalize().multiplyScalar(off);cy.position.add(cr);}
+    cy.quaternion.setFromUnitVectors(up,dn);cy.userData.isBond=true;parent.add(cy);return cy;
+  }
+  if(type==='d'){mk(.07);return mk(-.07);}
+  return mk(0);
+}
+
+/* Crée un atome (sphère + label) et l'ajoute au parent */
+function mkAtom(parent,el,x,y,z){
+  var cols={C:0x333333,O:0xdd2200,H:0xeeeeee,N:0x3344ff,Na:0x9933ff,Cl:0x33cc33};
+  var rads={C:.3,O:.28,H:.18,N:.28,Na:.3,Cl:.3};
+  var r=rads[el]||.25,c=cols[el]||0x888888;
+  var em=el==='O'?0x330000:0;
+  var s=mkSphere(r,c,{em:em,emi:em?.12:0});
+  s.position.set(x,y,z);s.userData={el:el,isAtom:true};parent.add(s);
+  var lbl=mL(el,r>.25?.18:.14,el==='O'?'#ff8888':el==='H'?'#cccccc':'#aaaaaa');
+  lbl.position.set(0,r+.18,0);s.add(lbl);
+  return s;
+}
+
+/* Ajoute des graduations sur un récipient cylindrique */
+function addGrad(parent,radius,baseY,height,nMarks,maxVol){
+  for(var i=0;i<=nMarks;i++){
+    var y=baseY+height*(i/nMarks);var vol=Math.round(maxVol*i/nMarks);
+    var ring=new THREE.Mesh(new THREE.RingGeometry(radius-.01,radius+.01,.01),
+      new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.4,side:THREE.DoubleSide}));
+    ring.rotation.x=Math.PI/2;ring.position.set(0,y,0);parent.add(ring);
+    if(i%2===0&&vol>0){addL(parent,vol+'',0.12,'#aaaaaa',radius+.2,y,0);}
+  }
+}
+
+/* Anime le versement d'un récipient source vers un cible */
+function animPour(srcGrp,srcLiquid,tgtLiquid,pourColor,dur,cb){
+  var t=0;var startY=srcLiquid.scale.y;var startTgtY=tgtLiquid.scale.y;
+  // Filet de liquide
+  var stream=mkCyl(.03,.02,2,pourColor,{opa:.7});
+  stream.visible=false;srcGrp.parent.add(stream);
+  var srcW=srcGrp.position.clone();var tgtW=tgtLiquid.position.clone();
+  (function step(){
+    if(t>=1){stream.visible=false;if(stream.parent)stream.parent.remove(stream);if(cb)cb();return;}
+    t+=dur;
+    // Tilt source
+    srcGrp.rotation.z=t*1.8;
+    // Show stream
+    if(t>.15&&t<.85){
+      stream.visible=true;
+      var sp=new THREE.Vector3().copy(srcW).add(new THREE.Vector3(Math.sin(srcGrp.rotation.z)*1.5,1-t,0));
+      var ep=new THREE.Vector3().copy(tgtW).add(new THREE.Vector3(0,.5,0));
+      var mp=new THREE.Vector3().addVectors(sp,ep).multiplyScalar(.5);
+      stream.position.copy(mp);
+      var d=sp.distanceTo(ep);stream.scale.y=d/2;
+      var dir=new THREE.Vector3().subVectors(ep,sp).normalize();
+      stream.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+    }else{stream.visible=false;}
+    // Animate levels
+    srcLiquid.scale.y=Math.max(.01,startY*(1-t));
+    tgtLiquid.scale.y=startTgtY+t*.4;
+    requestAnimationFrame(step);
+  })();
+}
+
+function onCl(e){
+  if(S.lv===12)handleP12Click(e);
+}
+
+/* ================================================================
+   NAVIGATION
+   ================================================================ */
+function go(p){
+  if(S.ul.indexOf(p)<0)return;
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});
+  document.querySelector('.nb[data-p="'+p+'"]').classList.add('on');
+  S.lv=p;clr();if(S.ch){try{S.ch.destroy();}catch(e){}S.ch=null;}
+  switch(p){
+    case 10:iP10();break;case 11:iP11();break;case 12:iP12();break;
+    case 13:iP13();break;case 14:iP14();break;case 15:iP15();break;
+    case 16:iP16();break;case 17:iP17();break;case 18:iP18();break;
+  }
+}
+function ul(n){
+  if(S.ul.indexOf(n)<0){S.ul.push(n);var b=document.querySelector('.nb[data-p="'+n+'"]');
+  if(b){b.classList.remove('lk');var lk=b.querySelector('.lk-i');if(lk)lk.textContent='✓ ';}}
+}
+
+/* ================================================================
+   PHASE 10 — Acétate d'Isoamyle (expérience)
+   ================================================================ */
+function iP10(){
+  S.p10step=0;S.p10timer=0;S.p10heating=false;
+  S.ca.position.set(0,3,9);S.ct.target.set(0,1.5,0);
+  buildP10();rP10();
+}
+function buildP10(){
+  S.p10grp=new THREE.Group();
+  // Bain-marie : bécher large
+  var bm=mkCyl(1.2,1.1,2,0xaaddee,{opa:.2,ds:true,seg:32});
+  bm.position.set(0,1,0);S.p10grp.add(bm);
+  var bmW=mkCyl(1.1,1.1,1.6,0x4488cc,{opa:.15});
+  bmW.position.set(0,.9,0);bmW.renderOrder=1;S.p10grp.add(bmW);
+  // Plaque chauffante
+  var plate=mkBox(2.8,.15,2.8,0x333333,{met:.5});
+  plate.position.set(0,-.1,0);S.p10grp.add(plate);S.p10m.plate=plate;
+  // Tube à essai avec graduations
+  var tubeGrp=new THREE.Group();tubeGrp.position.set(0,0,0);
+  var tube=mkCyl(.15,.15,2.5,0xccddee,{opa:.25,ds:true,open:true});
+  tube.position.set(0,1.8,0);tubeGrp.add(tube);
+  var tubBot=mkSphere(.15,0xccddee,{opa:.25,ds:true});
+  tubBot.position.set(0,.55,0);tubeGrp.add(tubBot);
+  addGrad(tubeGrp,.16,.6,2,10,20); // 0-20mL graduations
+  // Liquide dans tube (invisible au départ)
+  var liq=mkCyl(.13,.13,.01,0xf0f0f0,{opa:0});
+  liq.position.set(0,.6,0);liq.renderOrder=1;tubeGrp.add(liq);
+  S.p10m.liq=liq;S.p10m.liqMat=liq.material;
+  S.p10grp.add(tubeGrp);S.p10m.tubeGrp=tubeGrp;
+  // Support / pince
+  var supV=mkCyl(.02,.02,5,0x444444,{met:.6});supV.position.set(-1.8,2,0);S.p10grp.add(supV);
+  var supH=mkCyl(.015,.015,1.5,0x444444,{met:.6});supH.rotation.z=Math.PI/2;supH.position.set(-1,2.5,0);S.p10grp.add(supH);
+  // Labels
+  addL(S.p10grp,'Tube à essai',.2,'#88aacc',1.2,2.5,0);
+  addL(S.p10grp,'Bain-marie 50°C',.2,'#88aacc',1.8,1,0);
+  addL(S.p10grp,'Plaque chauffante',.18,'#88aacc',1.8,-.1,0);
+  // Bécher de réception avec graduations
+  var bech=mkCyl(.8,.7,1.5,0xaaddee,{opa:.2,ds:true,seg:32});
+  bech.position.set(3.5,.75,0);S.p10grp.add(bech);
+  addGrad(S.p10grp,.82,.1,1.4,5,250); // 0-250mL
+  addL(S.p10grp,'Eau salée',.2,'#88aacc',3.5,1.8,0);
+  // Eau salée
+  var bechW=mkCyl(.7,.65,1,0xf0f0f0,{opa:.5});
+  bechW.position.set(3.5,.55,0);bechW.renderOrder=1;S.p10grp.add(bechW);S.p10m.bechW=bechW;
+  // Phase ester (hidden)
+  var esterPhase=mkCyl(.7,.7,.4,0xfff3cd,{opa:0});
+  esterPhase.position.set(3.5,1.1,0);esterPhase.renderOrder=2;S.p10grp.add(esterPhase);
+  S.p10m.ester=esterPhase;S.p10m.esterMat=esterPhase.material;
+  // Thermomètre
+  var therm=mkCyl(.02,.02,2.5,0xcc3333);therm.position.set(.5,1.8,.3);S.p10grp.add(therm);
+  addL(S.p10grp,'50°C',.15,'#cc3333',.9,2.8,.3);
+  // Flacons de réactifs (gauche)
+  var fl1=mkCyl(.2,.2,.8,0x88aa88,{opa:.6});fl1.position.set(-3,0.4,0);S.p10grp.add(fl1);
+  addL(S.p10grp,'Alcool isoamylique',.15,'#aaddaa',-3,1,0);
+  addL(S.p10grp,'8 mL',.12,'#88aa88',-3,.1,0);
+  var fl2=mkCyl(.2,.2,.8,0xaa8888,{opa:.6});fl2.position.set(-3,0.4,1);S.p10grp.add(fl2);
+  addL(S.p10grp,'Anhydride éthanoïque ⚠️',.13,'#ff8888',-3,1,1);
+  addL(S.p10grp,'7 mL',.12,'#aa8888',-3,.1,1);
+  S.p10m.fl1=fl1;S.p10m.fl2=fl2;
+  // Vapeurs (hidden)
+  S.p10m.vapors=[];
+  for(var i=0;i<8;i++){
+    var v=mkSphere(.03,0xffffff,{opa:0});
+    v.position.set(Math.random()*.06-.03,2+Math.random()*1,Math.random()*.06-.03);
+    v.userData.sp=.004+Math.random()*.008;v.userData.ph=Math.random()*Math.PI*2;
+    S.p10grp.add(v);S.p10m.vapors.push(v);
+  }
+  S.sc.add(S.p10grp);
+}
+function rP10(){
+  var steps=['Versement des réactifs','Chauffage au bain-marie','Versement dans l\'eau salée','Séparation de phases','Test olfactif','Observations'];
+  var stepDesc=[
+    'Versez 8 mL d\'alcool isoamylique puis 7 mL d\'anhydride éthanoïque dans le tube.',
+    'Chauffez au bain-marie à 50°C pendant 5 minutes. La réaction est exothermique.',
+    'Versez le contenu du tube dans le bécher d\'eau salée. Agitez puis laissez reposer.',
+    'Deux phases apparaissent : l\'ester (jaune pâle) flotte sur l\'eau salée.',
+    'Trempez un papier filtre dans la phase supérieure. Sentez l\'odeur.',
+    'L\'acétate d\'isoamyle a une odeur caractéristique de 🍌 banane.'
+  ];
+  document.getElementById('sp').innerHTML=
+    '<div class="pt">🧪 Phase 10 — Acétate d\'Isoamyle</div>'+
+    '<div class="ms"><div class="ml">Expérience</div><div style="font-size:14px">Synthèse de l\'acétate d\'isoamyle<br><small style="color:var(--text2)">(odeur de banane)</small></div></div>'+
+    '<div class="bx"><h3>Équation</h3><p style="font-size:11px;color:var(--accent);font-family:\'JetBrains Mono\',monospace;line-height:1.6">(CH₃CO)₂O + C₅H₁₁OH → CH₃COOC₅H₁₁ + CH₃COOH<br><span style="color:var(--text2)">anhydride + 3-méthylbutan-1-ol → acétate d\'isoamyle + acide éthanoïque</span></p></div>'+
+    '<div class="bx"><h3>Étape '+(S.p10step+1)+'/6 — '+steps[S.p10step]+'</h3>'+
+    '<p style="font-size:12px;color:var(--text2);line-height:1.5">'+stepDesc[S.p10step]+'</p></div>'+
+    '<div class="key-box">⚠️ <b>Réaction rapide et totale</b> (τ = 100%).<br>Pas d\'eau produite → pas d\'hydrolyse → <b>irréversible</b>.<br>Sous-produit : acide éthanoïque (pas H₂O).</div>'+
+    (S.p10step<5?'<button class="btn bp" onclick="nextP10()" style="width:100%">▶ Étape suivante</button>':
+    '<div class="fb show ok">🍌 Expérience terminée ! L\'ester est identifié par son odeur fruitée.</div>')+
+    '<div id="f10" class="fb"></div>'+
+    '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+    '<div class="qc" onclick="a10(1)">Q1 : Pourquoi deux phases ?</div>'+
+    '<div class="qc" onclick="a10(2)">Q2 : Nature du produit ?</div>'+
+    '<div class="qc" onclick="a10(3)">Q3 : Différence avec l\'estérification classique ?</div>'+
+    '<div class="qc" onclick="a10(4)">Q4 : Pourquoi pas d\'hydrolyse inverse ?</div></div></div>'+
+    '<button class="btn bp" onclick="ul(11);go(11)" style="width:100%"'+(S.p10step<4?' disabled':'')+'>→ Phase 11</button>';
+}
+function nextP10(){
+  if(S.p10step>=5)return;
+  S.p10step++;
+  if(S.p10step===1){
+    // Remplir le tube — liquide monte
+    S.p10m.liqMat.transparent=true;S.p10m.liqMat.opacity=.7;S.p10m.liqMat.needsUpdate=true;
+    var t=0;S.la=function(){t+=.02;if(t>=1){S.la=null;return;}
+      S.p10m.liq.scale.y=t*80;S.p10m.liq.position.y=.6+t*.5;};
+  }else if(S.p10step===2){
+    // Chauffage - vapeurs
+    S.p10m.plate.material.emissive=new THREE.Color(0xff6600);
+    S.p10m.plate.material.emissiveIntensity=.4;
+    S.la=function(){
+      S.p10m.vapors.forEach(function(v){
+        v.material.transparent=true;v.material.depthWrite=false;
+        v.material.opacity=.25;v.position.y+=v.userData.sp;
+        if(v.position.y>3.2)v.position.y=2;
+        var t=Date.now()*.001+v.userData.ph;
+        v.position.x=Math.sin(t)*.03;v.position.z=Math.cos(t*.7)*.03;
+      });
+    };
+  }else if(S.p10step===3){
+    // Arrêter chauffage
+    S.p10m.plate.material.emissive=new THREE.Color(0);
+    S.p10m.plate.material.emissiveIntensity=0;
+    S.p10m.vapors.forEach(function(v){v.material.opacity=0;v.visible=false;});
+    // Animated pour : tube tilts and liquid streams into beaker
+    var tub=S.p10m.tubeGrp,t=0;
+    var stream=mkCyl(.03,.02,2.5,0xf0f0f0,{opa:0});
+    S.p10grp.add(stream);S.p10m.stream=stream;
+    S.la=function(){
+      t+=.008;
+      if(t<.3){// Move tube up and toward beaker
+        tub.position.x=t*8;tub.position.y=t*4;
+      }else if(t<.4){// Tilt
+        tub.rotation.z=-(t-.3)*12;
+      }else if(t<.8){// Pour — show stream
+        stream.material.transparent=true;stream.material.opacity=.6;stream.material.needsUpdate=true;
+        stream.visible=true;
+        var pourT=(t-.4)/.4;
+        stream.position.set(tub.position.x+.5,tub.position.y-.5,0);
+        stream.rotation.z=-.3;
+        S.p10m.liq.scale.y=Math.max(.01,80*(1-pourT));
+        S.p10m.bechW.scale.y=1+pourT*.3;
+      }else if(t<1){// Reset tube
+        stream.visible=false;
+        tub.rotation.z*=1-(t-.8)*5;
+        tub.position.x*=1-(t-.8)*5;tub.position.y*=1-(t-.8)*5;
+      }else{
+        tub.rotation.z=0;tub.position.set(0,0,0);
+        S.p10m.liq.scale.y=.01;stream.visible=false;S.la=null;
+      }
+    };
+  }else if(S.p10step===4){
+    // Phase separation
+    S.p10m.esterMat.transparent=true;S.p10m.esterMat.depthWrite=false;
+    S.p10m.esterMat.opacity=.65;S.p10m.esterMat.needsUpdate=true;
+    addL(S.p10grp,'Phase organique (ester)',.18,'#ffd60a',3.5,1.5,0);
+    addL(S.p10grp,'Phase aqueuse',.18,'#88aacc',3.5,.3,0);
+    // Separation line
+    var sepLine=new THREE.Mesh(new THREE.RingGeometry(.65,.7,32),
+      new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.3,side:THREE.DoubleSide}));
+    sepLine.rotation.x=Math.PI/2;sepLine.position.set(3.5,.95,0);S.p10grp.add(sepLine);
+  }else if(S.p10step===5){
+    // Smell test - visual waves
+    var waveGrp=new THREE.Group();waveGrp.position.set(3.5,2,0);
+    for(var i=0;i<4;i++){
+      var ring=new THREE.Mesh(new THREE.RingGeometry(.1+i*.3,.15+i*.3,32),
+        new THREE.MeshStandardMaterial({color:0xffe066,transparent:true,opacity:.3-i*.06,side:THREE.DoubleSide}));
+      ring.userData.baseScale=1+i*.5;ring.scale.set(1+i*.5,1+i*.5,1);
+      waveGrp.add(ring);
+    }
+    S.p10grp.add(waveGrp);
+    addL(S.p10grp,'🍌 Banane !',.3,'#ffe066',3.5,2.8,0);
+    S.la=function(){
+      waveGrp.children.forEach(function(r,i){
+        var s=r.userData.baseScale+Math.sin(Date.now()*.003+i)*.2;
+        r.scale.set(s,s,1);r.material.opacity=.3-i*.06+Math.sin(Date.now()*.004)*.05;
+      });
+    };
+  }
+  rP10();
+}
+function a10(q){
+  var a={
+    1:'Deux phases se forment car l\'ester (acétate d\'isoamyle) est non miscible avec l\'eau et moins dense → il flotte au-dessus de la phase aqueuse.',
+    2:'L\'odeur de banane/poire est caractéristique d\'un ester. Les esters ont souvent des odeurs fruitées agréables. Celui-ci est utilisé comme arôme dans l\'industrie alimentaire.',
+    3:'Cette réaction est RAPIDE et TOTALE (τ = 100%), alors que l\'estérification classique est lente et limitée (τ = 67%). Le sous-produit est un acide carboxylique (pas de l\'eau), donc pas d\'hydrolyse inverse possible.',
+    4:'L\'hydrolyse inverse nécessite de l\'eau comme réactif. Or, cette réaction ne produit PAS d\'eau — elle produit de l\'acide éthanoïque. Sans eau dans le milieu, l\'ester ne peut pas être hydrolysé → la réaction est irréversible et totale.'
+  };
+  sFB('f10','inf',a[q]);
+}
+
+/* ================================================================
+   PHASE 11 — Mécanisme Anhydride + Alcool
+   ================================================================ */
+function iP11(){
+  S.p11ri=0;S.p11step=0;S.p11play=false;
+  S.ca.position.set(0,1,10);S.ct.target.set(0,0,0);
+  buildP11();rP11();
+}
+function buildP11(){
+  if(S.p11grp){S.p11grp.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material){if(c.material.map)c.material.map.dispose();c.material.dispose();}});S.sc.remove(S.p11grp);}
+  S.p11grp=new THREE.Group();
+  // === ANHYDRIDE ÉTHANOÏQUE: CH₃-C(=O)-O-C(=O)-CH₃ ===
+  var anhG=new THREE.Group();
+  // Atomes (positions relatives)
+  var ch3L=mkAtom(anhG,'C',-1.8,.3,0);  // CH₃ gauche
+  var c1=mkAtom(anhG,'C',-.6,.3,0);      // C fonctionnel gauche
+  var o1=mkAtom(anhG,'O',-.6,1.3,0);     // =O gauche (double)
+  var oC=mkAtom(anhG,'O',.5,-.3,0);      // O central (pont)
+  var c2=mkAtom(anhG,'C',1.6,.3,0);      // C fonctionnel droit
+  var o2=mkAtom(anhG,'O',1.6,1.3,0);     // =O droit (double)
+  var ch3R=mkAtom(anhG,'C',2.8,.3,0);    // CH₃ droit
+  // 3H sur chaque CH3
+  mkAtom(anhG,'H',-2.4,.9,.3);mkAtom(anhG,'H',-2.4,-.3,.3);mkAtom(anhG,'H',-2,.3,-.7);
+  mkAtom(anhG,'H',3.4,.9,.3);mkAtom(anhG,'H',3.4,-.3,.3);mkAtom(anhG,'H',3,.3,-.7);
+  // Liaisons
+  mkBond(anhG,ch3L.position,c1.position);
+  mkBond(anhG,c1.position,o1.position,0x888888,'d');
+  mkBond(anhG,c1.position,oC.position);
+  var pontBondR=mkBond(anhG,oC.position,c2.position); // store for visual break
+  S.p11m.pontBondR=pontBondR;
+  mkBond(anhG,c2.position,o2.position,0x888888,'d');
+  mkBond(anhG,c2.position,ch3R.position);
+  // Pont highlight (yellow glow)
+  var pontHL=mkSphere(.12,0xffd60a,{opa:.35,em:0xffd60a,emi:.8});
+  pontHL.position.copy(oC.position);anhG.add(pontHL);S.p11m.pontHL=pontHL;
+  // Label
+  addL(anhG,'Anhydride éthanoïque',.22,'#ffd60a',.5,2.2,0);
+  addL(anhG,'pont −O−',.15,'#ffd60a',.5,-.9,0);
+  anhG.position.set(-3.5,0,0);S.p11grp.add(anhG);S.p11m.anh=anhG;
+
+  // === ALCOOL: R'-OH ===
+  var alcG=new THREE.Group();
+  var cAlc=mkAtom(alcG,'C',-.6,0,0);
+  var oAlc=mkAtom(alcG,'O',.5,0,0);
+  var hAlc=mkAtom(alcG,'H',1.2,.4,0);
+  mkAtom(alcG,'H',-.6,.8,.4);mkAtom(alcG,'H',-.6,-.8,.4);mkAtom(alcG,'H',-1.3,0,-.3);
+  mkBond(alcG,cAlc.position,oAlc.position);
+  var bondOH=mkBond(alcG,oAlc.position,hAlc.position);
+  S.p11m.bondOH=bondOH;
+  addL(alcG,'Alcool (R\'−OH)',.22,'#00b4d8',0,1.3,0);
+  alcG.position.set(3.5,0,0);S.p11grp.add(alcG);S.p11m.alc=alcG;
+
+  addL(S.p11grp,'+',.5,'#666666',0,0,0);
+  S.sc.add(S.p11grp);
+  S.p11m.oC=oC;S.p11m.hAlc=hAlc;
+}
+function rP11(){
+  var rx=RXA[S.p11ri];
+  var steps=['Approche','Rupture et formation','Produits'];
+  document.getElementById('sp').innerHTML=
+    '<div class="pt">⚗️ Phase 11 — Mécanisme</div>'+
+    '<div class="bx"><h3>Réaction</h3><select style="width:100%;padding:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:12px" onchange="S.p11ri=+this.value;S.p11step=0;S.p11play=false;buildP11();rP11()">'+
+    RXA.map(function(r,i){return '<option value="'+i+'"'+(i===S.p11ri?' selected':'')+'>'+r.anh+' + '+r.alc+'</option>';}).join('')+'</select>'+
+    '<p style="font-size:11px;color:var(--accent);margin-top:6px;font-family:\'JetBrains Mono\',monospace">'+rx.eq+'</p></div>'+
+    '<div class="bx"><h3>Étape '+(S.p11step+1)+'/3 — '+steps[S.p11step]+'</h3>'+
+    '<p style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:6px">'+(
+      S.p11step===0?'Le −OH de l\'alcool attaque le C fonctionnel de l\'anhydride. Le pont C−O−C central (jaune) va se rompre.':
+      S.p11step===1?'La liaison O−H de l\'alcool se rompt. Le pont C−O de l\'anhydride se rompt. Nouvelle liaison C−O−R\' formée.':
+      'L\'ester et l\'acide carboxylique sont formés. Aucune molécule d\'eau produite !')+'</p></div>'+
+    '<div class="key-box">❌ <b>Pas de H₂O produite !</b><br>Le sous-produit est un acide carboxylique.<br>Sans eau → pas d\'hydrolyse → <b>réaction TOTALE et IRRÉVERSIBLE</b>.</div>'+
+    '<div class="ac"><button class="ab" onclick="p11Prev()">⏮</button><button class="ab" onclick="p11Play()">'+(!S.p11play?'▶':'⏸')+'</button><button class="ab" onclick="p11Next()">⏭</button></div>'+
+    '<div class="lb"><div class="li"><div class="lc" style="background:#e63946"></div>Rupture de liaison</div>'+
+    '<div class="li"><div class="lc" style="background:#2dc653"></div>Formation de liaison</div>'+
+    '<div class="li"><div class="lc" style="background:#ffd60a"></div>Pont −O− de l\'anhydride</div></div>'+
+    '<div class="bx"><h3>Tableau comparatif</h3>'+
+    '<table class="dtbl"><tr><th></th><th>Estérification</th><th>Anhydride+Alcool</th></tr>'+
+    '<tr><td>Vitesse</td><td>Lente</td><td style="color:var(--green)">Rapide</td></tr>'+
+    '<tr><td>τ</td><td>67%</td><td style="color:var(--green)">100%</td></tr>'+
+    '<tr><td>Réversible</td><td>⇌ Oui</td><td style="color:var(--green)">→ Non</td></tr>'+
+    '<tr><td>Sous-produit</td><td>H₂O</td><td style="color:var(--green)">R−COOH</td></tr>'+
+    '<tr><td>Hydrolyse ?</td><td>Oui</td><td style="color:var(--green)">Non</td></tr></table></div>'+
+    '<div id="f11" class="fb"></div>'+
+    '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+    '<div class="qc" onclick="a11(6)">Q6 : Produit secondaire ?</div>'+
+    '<div class="qc" onclick="a11(7)">Q7 : Pourquoi totale ?</div>'+
+    '<div class="qc" onclick="a11(8)">Q8 : Écrire l\'équation butanol</div></div></div>'+
+    '<button class="btn bp" onclick="ul(12);go(12)" style="width:100%">→ Phase 12 (Aspirine)</button>';
+}
+function p11Play(){S.p11play=!S.p11play;rP11();if(S.p11play)animP11();}
+function p11Prev(){if(S.p11step>0){S.p11step--;S.p11play=false;buildP11();rP11();}}
+function p11Next(){if(S.p11step<2){S.p11step++;rP11();}}
+function animP11(){
+  if(!S.p11play||S.lv!==11)return;
+  if(S.p11step===0){
+    var t=0,sa=S.p11m.anh.position.clone(),sb=S.p11m.alc.position.clone();
+    var ta=new THREE.Vector3(-1.5,0,0),tb=new THREE.Vector3(1.5,0,0);
+    // Flash pont and O-H bonds red (bonds that will break)
+    S.p11m.pontHL.material.color.setHex(0xe63946);S.p11m.pontHL.material.emissive.setHex(0xe63946);
+    if(S.p11m.bondOH)S.p11m.bondOH.material.color.setHex(0xe63946);
+    if(S.p11m.pontBondR)S.p11m.pontBondR.material.color.setHex(0xe63946);
+    (function mv(){if(!S.p11play||S.lv!==11)return;t+=.012;
+      // Flash blinking effect on bonds
+      var blink=Math.sin(t*30)>.2;
+      if(S.p11m.bondOH)S.p11m.bondOH.material.emissive.setHex(blink?0xe63946:0);
+      if(S.p11m.pontBondR)S.p11m.pontBondR.material.emissive.setHex(blink?0xe63946:0);
+      if(t>=1){S.p11m.anh.position.copy(ta);S.p11m.alc.position.copy(tb);S.p11step=1;rP11();setTimeout(function(){if(S.p11play)animP11();},400);return;}
+    S.p11m.anh.position.lerpVectors(sa,ta,t);S.p11m.alc.position.lerpVectors(sb,tb,t);requestAnimationFrame(mv);})();
+  }else if(S.p11step===1){
+    sFB('f11','inf','Liaison O−H et pont C−O se rompent (rouge)...');
+    // Visual bond break: hide broken bonds after flash
+    setTimeout(function(){if(!S.p11play)return;
+      if(S.p11m.bondOH)S.p11m.bondOH.visible=false; // O-H breaks
+      if(S.p11m.pontBondR)S.p11m.pontBondR.visible=false; // Pont breaks
+      sFB('f11','inf','⚡ Liaisons rompues ! Nouvelle liaison ester se forme (vert)...');
+      setTimeout(function(){if(!S.p11play)return;
+        // Formation visual: green bond appears
+        var greenBond=mL('━━━ nouvelle liaison C−O ━━━',.18,'#2dc653');greenBond.position.set(0,1.5,0);S.p11grp.add(greenBond);
+        addL(S.p11grp,'❌ Pas de H₂O',.3,'#e63946',0,-2.2,0);
+        addL(S.p11grp,'ESTER formé',.25,'#2dc653',-1.5,2.5,0);
+        addL(S.p11grp,'Acide carboxylique',.22,'#f77f00',1.5,-1.8,0);
+        sFB('f11','ok','🟢 Ester formé. Sous-produit : acide carboxylique. ❌ Pas de H₂O !');
+        setTimeout(function(){S.p11step=2;rP11();if(S.p11play)animP11();},2500);
+      },1000);
+    },600);
+  }else{
+    var t2=0;(function mv2(){if(!S.p11play||S.lv!==11)return;t2+=.015;if(t2>=1){S.p11play=false;rP11();return;}
+    S.p11m.anh.position.x=-1.5-t2*2;S.p11m.alc.position.x=1.5+t2*2;requestAnimationFrame(mv2);})();
+  }
+}
+function a11(q){var a={
+  6:'Le produit secondaire est un acide carboxylique (CH₃COOH), PAS de l\'eau. C\'est la clé : sans eau, pas d\'hydrolyse inverse possible.',
+  7:'L\'absence d\'eau empêche l\'hydrolyse inverse de l\'ester. Le système ne peut pas atteindre un équilibre → la réaction est totale (τ = 100%) et irréversible.',
+  8:'(CH₃CO)₂O + CH₃CH₂CH₂CH₂OH → CH₃COOCH₂CH₂CH₂CH₃ + CH₃COOH\nAnhydride éthanoïque + butan-1-ol → éthanoate de butyle + acide éthanoïque.'
+};sFB('f11','inf',a[q]);}
+
+/* ================================================================
+   PHASE 12 — Aspirine
+   ================================================================ */
+function iP12(){
+  S.p12step=0;S.ca.position.set(0,1,8);S.ct.target.set(0,0,0);
+  buildP12();rP12();
+}
+function buildP12(){
+  S.p12grp=new THREE.Group();
+  var salG=new THREE.Group();
+  // Hexagone benzénique avec liaisons
+  var hexC=[];
+  for(var i=0;i<6;i++){
+    var angle=Math.PI/3*i-Math.PI/2;
+    var x=Math.cos(angle)*1.1,y=Math.sin(angle)*1.1;
+    var c=mkAtom(salG,'C',x,y,0);hexC.push(c);
+  }
+  // Liaisons C-C alternées simple/double
+  for(var j=0;j<6;j++){
+    var p1=hexC[j].position,p2=hexC[(j+1)%6].position;
+    mkBond(salG,p1,p2,0x666666,j%2===0?'d':'s');
+  }
+  // Position 1 (haut): −COOH
+  var coohG=new THREE.Group();
+  var cCooh=mkAtom(coohG,'C',0,2,0);
+  var oD=mkAtom(coohG,'O',.7,2.6,0);
+  var oH=mkAtom(coohG,'O',-.5,2.7,0);
+  var hCooh=mkAtom(coohG,'H',-1.1,3,0);
+  mkBond(coohG,hexC[0].position,cCooh.position);
+  mkBond(coohG,cCooh.position,oD.position,0x888888,'d');
+  mkBond(coohG,cCooh.position,oH.position);
+  mkBond(coohG,oH.position,hCooh.position);
+  // Orange halo for COOH
+  oD.material.emissive.setHex(0xf77f00);oD.material.emissiveIntensity=.35;
+  oH.material.emissive.setHex(0xf77f00);oH.material.emissiveIntensity=.35;
+  addL(coohG,'−COOH',.2,'#f77f00',.3,3.5,0);
+  salG.add(coohG);S.p12m.coohG=coohG;
+
+  // Position 2 (droite): −OH
+  var ohG=new THREE.Group();
+  var oOh=mkAtom(ohG,'O',1.8,.5,0);
+  var hOh=mkAtom(ohG,'H',2.5,.8,0);
+  mkBond(ohG,hexC[1].position,oOh.position);
+  mkBond(ohG,oOh.position,hOh.position);
+  // Cyan halo for OH
+  oOh.material.emissive.setHex(0x00b4d8);oOh.material.emissiveIntensity=.45;
+  addL(ohG,'−OH',.22,'#00b4d8',2.3,1.4,0);
+  addL(ohG,'← Cliquez ici',.16,'#00ffff',3,.5,0);
+  salG.add(ohG);S.p12m.ohG=ohG;S.p12m.oOh=oOh;
+
+  addL(salG,'Acide salicylique',.22,'#ffffff',0,-1.8,0);
+  salG.position.set(-2.5,0,0);S.p12grp.add(salG);S.p12m.sal=salG;
+
+  // Anhydride éthanoïque (droite, with atoms+bonds)
+  var anhG=new THREE.Group();
+  var a1c=mkAtom(anhG,'C',-.5,.3,0);var a1o=mkAtom(anhG,'O',-.5,1.2,0);
+  var aOc=mkAtom(anhG,'O',.4,-.2,0);var a2c=mkAtom(anhG,'C',1.3,.3,0);var a2o=mkAtom(anhG,'O',1.3,1.2,0);
+  mkBond(anhG,a1c.position,a1o.position,0x888888,'d');mkBond(anhG,a1c.position,aOc.position);
+  mkBond(anhG,aOc.position,a2c.position);mkBond(anhG,a2c.position,a2o.position,0x888888,'d');
+  aOc.material.emissive.setHex(0xffd60a);aOc.material.emissiveIntensity=.4;
+  addL(anhG,'Anhydride éthanoïque',.18,'#ffd60a',.4,1.9,0);
+  anhG.position.set(3,0,0);S.p12grp.add(anhG);S.p12m.anhG=anhG;
+
+  if(S.p12step===0){
+    addL(S.p12grp,'Quel groupe réagit avec l\'anhydride ?',.22,'#ffffff',0,3.8,0);
+  }
+  S.sc.add(S.p12grp);
+  S.la=function(){if(S.lv===12&&S.p12grp)S.p12grp.rotation.y+=.002;};
+}
+function rP12(){
+  var stepLabels=['Identifiez le site réactif','Réaction en cours','L\'aspirine est formée !'];
+  document.getElementById('sp').innerHTML=
+    '<div class="pt">💊 Phase 12 — Synthèse de l\'Aspirine</div>'+
+    '<div class="ms"><div class="ml">'+stepLabels[Math.min(S.p12step,2)]+'</div>'+
+    '<div style="font-size:13px">'+(S.p12step===0?
+      'L\'acide salicylique possède −COOH et −OH. <b>Cliquez sur le groupe qui réagit avec l\'anhydride.</b>':
+      S.p12step===1?'Le −OH phénolique réagit avec l\'anhydride éthanoïque...':
+      'L\'aspirine (acide acétylsalicylique) est synthétisée !')+'</div></div>'+
+    (S.p12step>=2?
+    '<div class="bx"><h3>💊 Fiche technique — Aspirine</h3>'+
+    '<div style="font-size:12px;color:var(--text2);line-height:1.7">'+
+    '<b style="color:var(--text)">Nom IUPAC :</b> acide 2-(acétyloxy)benzoïque<br>'+
+    '<b style="color:var(--text)">Nom courant :</b> acide acétylsalicylique<br>'+
+    '<b style="color:var(--text)">Formule :</b> C₉H₈O₄ — M = 180 g/mol<br>'+
+    '<b style="color:var(--text)">Groupes :</b> <span style="color:var(--green)">ester (−OCOCH₃)</span> + <span style="color:var(--orange)">acide (−COOH)</span><br>'+
+    '<b style="color:var(--text)">Propriétés :</b> analgésique, antipyrétique, anti-inflammatoire<br>'+
+    '<b style="color:var(--text)">Découverte :</b> 1897, Felix Hoffmann (Bayer)</div></div>':'')+ 
+    '<div class="key-box">L\'aspirine est un <b>ESTER</b>. Le −OH phénolique a réagi, le −COOH est resté <b>intact</b>.<br>Réaction rapide, totale, exothermique.</div>'+
+    '<div id="f12" class="fb"></div>'+
+    '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+    '<div class="qc" onclick="a12(9)">Q9 : Groupes fonctionnels de l\'aspirine ?</div>'+
+    '<div class="qc" onclick="a12(10)">Q10 : Équation de synthèse ?</div>'+
+    '<div class="qc" onclick="a12(11)">Q11 : Pourquoi pas l\'acide éthanoïque ?</div>'+
+    '<div class="qc" onclick="a12(12)">Q12 : Hydrolyse de l\'aspirine ?</div>'+
+    '<div class="qc" onclick="a12(13)">Q13 : Odeur de vinaigre ?</div></div></div>'+
+    '<button class="btn bp" onclick="ul(13);go(13)" style="width:100%"'+(S.p12step<2?' disabled':'')+'>→ Phase 13 (Saponification)</button>';
+}
+function handleP12Click(e){
+  if(S.p12step!==0)return;
+  var rect=S.re.domElement.getBoundingClientRect();
+  S.ms.x=((e.clientX-rect.left)/rect.width)*2-1;
+  S.ms.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  S.rc.setFromCamera(S.ms,S.ca);
+  // Check if clicked on OH group
+  var ohHits=S.rc.intersectObject(S.p12m.oOh,true);
+  var coohHits=S.rc.intersectObjects(S.p12m.coohG.children,true);
+  if(ohHits.length>0){
+    sFB('f12','ok','✅ Exactement ! C\'est le −OH phénolique qui réagit avec l\'anhydride. Le −COOH reste intact dans l\'aspirine.');
+    S.p12m.oOh.material.emissive.setHex(0x2dc653);S.p12m.oOh.material.emissiveIntensity=.8;
+    S.p12step=1;
+    setTimeout(function(){
+      S.p12step=2;
+      // Add aspirin labels
+      var estLbl=mL('Groupe ESTER (nouveau)',.2,'#2dc653');estLbl.position.set(2,1,0);S.p12grp.add(estLbl);
+      var acidLbl=mL('Groupe −COOH (inchangé)',.2,'#f77f00');acidLbl.position.set(-1,3.5,0);S.p12grp.add(acidLbl);
+      rP12();
+    },2000);
+  }else if(coohHits.length>0){
+    sFB('f12','err','❌ Non ! Le −COOH ne réagit pas avec l\'anhydride dans ces conditions. C\'est le −OH phénolique qui est le site réactif. Cliquez sur le −OH.');
+  }
+}
+function a12(q){var a={
+  9:'L\'aspirine possède deux groupes : un groupe ESTER (−O−CO−CH₃, nouveau, issu de la réaction) et un groupe ACIDE CARBOXYLIQUE (−COOH, déjà présent sur l\'acide salicylique, resté intact).',
+  10:'Acide salicylique + anhydride éthanoïque → acide acétylsalicylique (aspirine) + acide éthanoïque. C\'est une réaction rapide, totale et exothermique.',
+  11:'L\'anhydride donne une réaction rapide et totale (τ=100%), tandis que l\'acide éthanoïque donnerait une estérification lente et limitée (τ<100%). Le rendement est maximal avec l\'anhydride.',
+  12:'Oui ! L\'aspirine est un ester, elle peut s\'hydrolyser en présence d\'eau → acide salicylique + acide éthanoïque. C\'est pourquoi l\'aspirine doit être conservée au sec.',
+  13:'L\'odeur de vinaigre signifie que l\'aspirine s\'est hydrolysée. L\'acide éthanoïque (vinaigre) libéré est responsable de l\'odeur. Le comprimé est dégradé et ne doit plus être utilisé.'
+};sFB('f12','inf',a[q]);}
+
+/* ================================================================
+   PHASE 13 — Saponification (expérience)
+   ================================================================ */
+function iP13(){
+  S.p13step=0;S.p13timer=0;S.p13heating=false;
+  S.ca.position.set(0,4,12);S.ct.target.set(0,2,0);
+  buildP13();rP13();
+}
+function buildP13(){
+  S.p13grp=new THREE.Group();
+  // Montage reflux simplifié (ballon + réfrigérant)
+  var ballon=mkSphere(1,0xaaddff,{opa:.25,ds:true});
+  ballon.position.set(0,1.2,0);ballon.renderOrder=2;S.p13grp.add(ballon);
+  var liq=mkCyl(.85,.85,.8,0xf0f0f0,{opa:.7});
+  liq.position.set(0,.9,0);liq.renderOrder=1;S.p13grp.add(liq);
+  S.p13m.liqMat=liq.material;
+  // Col
+  var col=mkCyl(.15,.25,1.5,0xaaddff,{opa:.3,ds:true});
+  col.position.set(0,2.8,0);S.p13grp.add(col);
+  // Réfrigérant
+  var refT=mkCyl(.12,.12,3,0xccddee,{opa:.3,ds:true,open:true});
+  refT.position.set(0,5,0);S.p13grp.add(refT);
+  var env=mkCyl(.35,.35,2.5,0x88bbdd,{opa:.15,ds:true,open:true});
+  env.position.set(0,5,0);S.p13grp.add(env);
+  // Chauffe-ballon
+  var hGeo=new THREE.SphereGeometry(1.2,32,16,0,Math.PI*2,0,Math.PI/2);
+  var hMat=new THREE.MeshStandardMaterial({color:0x666666,metalness:.5,roughness:.4,side:THREE.DoubleSide});
+  var heater=new THREE.Mesh(hGeo,hMat);heater.rotation.x=Math.PI;heater.position.set(0,.3,0);
+  S.p13grp.add(heater);S.p13m.hMat=hMat;
+  // Labels
+  addL(S.p13grp,'Ballon 100 mL + NaOH',.2,'#88aacc',1.8,1.2,0);
+  addL(S.p13grp,'Réfrigérant',.2,'#88aacc',1.5,5,0);
+  // Bécher glace (à droite)
+  var bechIce=mkCyl(1,.9,1.8,0xaaddee,{opa:.2,ds:true,seg:32});
+  bechIce.position.set(4,.9,0);S.p13grp.add(bechIce);
+  addL(S.p13grp,'Bécher + glace',.2,'#88aacc',4,2.2,0);
+  // Glace
+  for(var i=0;i<5;i++){
+    var ice=mkBox(.15+Math.random()*.1,.15+Math.random()*.1,.15+Math.random()*.1,0xeeffff,{opa:.6});
+    ice.position.set(4+Math.random()*.6-.3,.3+Math.random()*.8,Math.random()*.4-.2);
+    ice.rotation.set(Math.random(),Math.random(),Math.random());
+    S.p13grp.add(ice);
+  }
+  // Eau dans bécher glace
+  var iceW=mkCyl(.85,.8,1,0xd0e8ff,{opa:.3});
+  iceW.position.set(4,.55,0);iceW.renderOrder=1;S.p13grp.add(iceW);
+  // Précipité (caché)
+  S.p13m.precips=[];
+  for(var j=0;j<20;j++){
+    var p=mkSphere(.04,0xf8f9fa,{opa:0,rou:.8});
+    p.position.set(4+Math.random()*.8-.4,.2+Math.random()*1,Math.random()*.6-.3);
+    S.p13grp.add(p);S.p13m.precips.push(p);
+  }
+  // Vapeurs
+  S.p13m.vapors=[];
+  for(var k=0;k<10;k++){
+    var v=mkSphere(.04,0xffffff,{opa:0});
+    v.position.set(Math.random()*.08-.04,3.5+Math.random()*3,Math.random()*.08-.04);
+    v.userData.sp=.005+Math.random()*.01;v.userData.ph=Math.random()*Math.PI*2;
+    S.p13grp.add(v);S.p13m.vapors.push(v);
+  }
+  S.sc.add(S.p13grp);
+}
+function rP13(){
+  var steps=['Préparation','Chauffage à reflux','Refroidissement','Versement eau glacée','Acidification (HCl)','Observation du précipité'];
+  var descs=[
+    '5 mL benzoate d\'éthyle + 25 mL NaOH (5,0 mol/L) + pierre ponce dans le ballon.',
+    'Chauffez à reflux pendant 10 minutes. La saponification se produit.',
+    'Arrêtez le chauffage. Laissez refroidir.',
+    'Versez dans le bécher contenant de la glace. Solution limpide (ion benzoate soluble).',
+    'Ajoutez HCl goutte à goutte. Un PRÉCIPITÉ BLANC apparaît progressivement.',
+    'Le précipité blanc est l\'acide benzoïque (C₆H₅COOH). La saponification est confirmée.'
+  ];
+  document.getElementById('sp').innerHTML=
+    '<div class="pt">🧪 Phase 13 — Saponification</div>'+
+    '<div class="bx"><h3>Équations</h3><div style="font-size:10px;color:var(--accent);font-family:\'JetBrains Mono\',monospace;line-height:1.8">'+
+    '<b>Saponification :</b><br>C₆H₅COOC₂H₅ + HO⁻ → C₆H₅COO⁻ + C₂H₅OH<br><br>'+
+    '<b>Acidification :</b><br>C₆H₅COO⁻ + H₃O⁺ → C₆H₅COOH↓ + H₂O</div></div>'+
+    '<div class="bx"><h3>Étape '+(S.p13step+1)+'/6 — '+steps[S.p13step]+'</h3>'+
+    '<p style="font-size:12px;color:var(--text2);line-height:1.5">'+descs[S.p13step]+'</p></div>'+
+    '<div class="key-box"><b>Saponification = réaction RAPIDE, TOTALE, IRRÉVERSIBLE.</b><br>Le produit est l\'ion carboxylate R−COO⁻ (pas l\'acide R−COOH).<br>R−COO⁻ ne réagit pas avec l\'alcool → pas de réaction inverse.</div>'+
+    (S.p13step<5?'<button class="btn bp" onclick="nextP13()" style="width:100%">▶ Étape suivante</button>':'')+
+    '<div id="f13" class="fb"></div>'+
+    '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+    '<div class="qc" onclick="a13(1)">Q1 : Qu\'observez-vous après HCl ?</div>'+
+    '<div class="qc" onclick="a13(2)">Q2 : Quelle espèce donne le précipité ?</div>'+
+    '<div class="qc" onclick="a13(3)">Q3 : Équation de saponification ?</div>'+
+    '<div class="qc" onclick="a13(4)">Q4 : Différence avec hydrolyse par l\'eau ?</div></div></div>'+
+    '<button class="btn bp" onclick="ul(14);go(14)" style="width:100%"'+(S.p13step<5?' disabled':'')+'>→ Phase 14</button>';
+}
+function nextP13(){
+  S.p13step++;
+  if(S.p13step===1){
+    // Chauffage
+    S.p13m.hMat.emissive=new THREE.Color(0xff6600);S.p13m.hMat.emissiveIntensity=.5;
+    S.la=function(){
+      S.p13m.vapors.forEach(function(v){v.material.transparent=true;v.material.depthWrite=false;v.material.opacity=.25;v.position.y+=v.userData.sp;if(v.position.y>6.5)v.position.y=3.5;
+        var t=Date.now()*.001+v.userData.ph;v.position.x=Math.sin(t)*.04;v.position.z=Math.cos(t*.7)*.04;});
+    };
+    S.p13m.liqMat.color.setHex(0xe8e8e8); // Légèrement trouble
+  }else if(S.p13step===2){
+    S.p13m.hMat.emissive=new THREE.Color(0);S.p13m.hMat.emissiveIntensity=0;
+    S.p13m.vapors.forEach(function(v){v.material.opacity=0;v.visible=false;});S.la=null;
+  }else if(S.p13step===3){
+    // Limpide
+  }else if(S.p13step===4){
+    // Précipité apparaît progressivement
+    var idx=0;
+    S.la=function(){
+      if(idx<S.p13m.precips.length){
+        var pp=S.p13m.precips[idx];
+        pp.material.transparent=true;pp.material.depthWrite=false;
+        pp.material.opacity=.85;pp.material.needsUpdate=true;
+        pp.position.y-=.001;
+        if(Math.random()>.7)idx++;
+      }else{S.la=null;} // Stop animation when all particles shown
+    };
+  }else if(S.p13step===5){
+    S.p13m.precips.forEach(function(p){p.material.transparent=true;p.material.depthWrite=false;p.material.opacity=.9;p.material.needsUpdate=true;});
+    S.la=null;
+    var pLbl=mL('Acide benzoïque (précipité)',.2,'#ffffff');pLbl.position.set(4,-.5,0);S.p13grp.add(pLbl);
+  }
+  rP13();
+}
+function a13(q){var a={
+  1:'Un précipité blanc apparaît : c\'est l\'acide benzoïque C₆H₅COOH, solide peu soluble dans l\'eau froide. Il se forme par réaction de l\'ion benzoate avec H₃O⁺.',
+  2:'L\'ion benzoate C₆H₅COO⁻ (produit de la saponification) réagit avec H₃O⁺ : C₆H₅COO⁻ + H₃O⁺ → C₆H₅COOH↓ + H₂O.',
+  3:'C₆H₅COOC₂H₅ + HO⁻ → C₆H₅COO⁻ + C₂H₅OH (benzoate d\'éthyle + hydroxyde → ion benzoate + éthanol). Réaction rapide et totale.',
+  4:'L\'hydrolyse par l\'eau est lente et limitée (τ=33%), produit R−COOH (neutre) qui peut re-estérifier. La saponification est rapide et totale (τ=100%), produit R−COO⁻ (chargé) qui NE réagit PAS avec l\'alcool.'
+};sFB('f13','inf',a[q]);}
+
+/* ================================================================
+   PHASE 14 — Mécanisme Saponification
+   ================================================================ */
+function iP14(){
+  S.p14step=0;S.p14play=false;
+  S.ca.position.set(0,1,10);S.ct.target.set(0,0,0);
+  buildP14();rP14();
+}
+function buildP14(){
+  if(S.p14grp){S.p14grp.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material){if(c.material.map)c.material.map.dispose();c.material.dispose();}});S.sc.remove(S.p14grp);}
+  S.p14grp=new THREE.Group();
+  // === ESTER: R-COO-R' (benzoate d'éthyle simplifié) ===
+  var estG=new THREE.Group();
+  var cR=mkAtom(estG,'C',-1.2,0,0);    // R group
+  var cF=mkAtom(estG,'C',0,0,0);       // C fonctionnel
+  var oD=mkAtom(estG,'O',.5,1,0);      // =O (double)
+  var oS=mkAtom(estG,'O',1,-.5,0);     // -O- (single, breaks)
+  var cR2=mkAtom(estG,'C',2.2,-.8,0);  // R' (ethyl)
+  var hR1=mkAtom(estG,'H',-1.8,.6,.3);
+  var hR2=mkAtom(estG,'H',-1.8,-.6,.3);
+  var hR3=mkAtom(estG,'H',-1.2,0,-.8);
+  mkBond(estG,cR.position,cF.position);
+  mkBond(estG,cF.position,oD.position,0x888888,'d');
+  var bondBreak=mkBond(estG,cF.position,oS.position,0xe63946); // THIS BOND BREAKS
+  mkBond(estG,oS.position,cR2.position);
+  addL(estG,'R−COO−R\'',.2,'#ffffff',0,1.8,0);
+  addL(estG,'Ester',.18,'#2dc653',0,-1.3,0);
+  // Highlight breaking bond
+  oS.material.emissive.setHex(0xe63946);oS.material.emissiveIntensity=.25;
+  estG.position.set(-3,0,0);S.p14grp.add(estG);
+  S.p14m.est=estG;S.p14m.oS=oS;S.p14m.bondBreak=bondBreak;
+
+  // === ION HO⁻ ===
+  var hoG=new THREE.Group();
+  var oHo=mkAtom(hoG,'O',0,0,0);
+  var hHo=mkAtom(hoG,'H',.7,.3,0);
+  mkBond(hoG,oHo.position,hHo.position);
+  // Halo bleu pulsant (charge -)
+  var halo=mkSphere(.55,0x4dabf7,{opa:.12,em:0x4dabf7,emi:.8});
+  halo.position.set(0,0,0);hoG.add(halo);
+  addL(hoG,'HO⁻',.25,'#4dabf7',0,1.2,0);
+  addL(hoG,'(nucléophile)',.15,'#4dabf7',0,-.8,0);
+  hoG.position.set(3.5,0,0);S.p14grp.add(hoG);
+  S.p14m.ho=hoG;S.p14m.halo=halo;
+
+  addL(S.p14grp,'+',.5,'#666666',0,0,0);
+  S.sc.add(S.p14grp);
+  // Pulse animation for HO⁻ halo
+  S.la=function(){if(S.lv!==14||!S.p14m.halo)return;var s=1+Math.sin(Date.now()*.005)*.15;S.p14m.halo.scale.set(s,s,s);};
+}
+function rP14(){
+  var steps=['Approche de HO⁻','Rupture C−O + formation','Produits : R−COO⁻ + R\'−OH'];
+  document.getElementById('sp').innerHTML=
+    '<div class="pt">⚗️ Phase 14 — Mécanisme Saponification</div>'+
+    '<div class="bx"><h3>Étape '+(S.p14step+1)+'/3 — '+steps[S.p14step]+'</h3>'+
+    '<p style="font-size:12px;color:var(--text2);line-height:1.5">'+(
+      S.p14step===0?'L\'ion HO⁻ (nucléophile puissant, halo bleu) attaque le carbone fonctionnel C=O de l\'ester. La liaison C−O−R\' va se rompre.':
+      S.p14step===1?'HO⁻ forme une liaison avec le C. La liaison C−O−R\' se rompt. Le fragment R\'−O⁻ capte un H → R\'−OH (alcool).':
+      'Le produit est l\'ion carboxylate R−COO⁻ (chargé −, halo bleu). Il NE réagit PAS avec l\'alcool → réaction TOTALE.')+'</p></div>'+
+    '<div class="key-box"><b>R−COO⁻ ≠ R−COOH</b><br>'+
+    '• Hydrolyse eau → R−COOH (neutre) → peut re-estérifier → <b>⇌ limitée</b><br>'+
+    '• Saponification → R−COO⁻ (chargé −) → ne réagit PAS → <b>→ totale</b></div>'+
+    '<div class="ac"><button class="ab" onclick="p14Prev()">⏮</button><button class="ab" onclick="p14Play()">'+(!S.p14play?'▶':'⏸')+'</button><button class="ab" onclick="p14Next()">⏭</button></div>'+
+    '<div class="bx"><h3>Application : le savon</h3><p style="font-size:12px;color:var(--text2);line-height:1.5">'+
+    'Corps gras + 3 NaOH → 3 R−COO⁻Na⁺ (savon) + glycérol<br><br>'+
+    '• NaOH → savon <b>solide</b> (savon de Marseille)<br>'+
+    '• KOH → savon <b>mou/liquide</b> (savon noir)</p></div>'+
+    '<div id="f14" class="fb"></div>'+
+    '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+    '<div class="qc" onclick="a14(5)">Q5 : Pourquoi R−COO⁻ rend la réaction totale ?</div>'+
+    '<div class="qc" onclick="a14(6)">Q6 : Équation générale ?</div>'+
+    '<div class="qc" onclick="a14(7)">Q7 : Pourquoi « saponification » ?</div></div></div>'+
+    '<button class="btn bp" onclick="ul(15);go(15)" style="width:100%">→ Phase 15 (Corps Gras)</button>';
+}
+function p14Play(){S.p14play=!S.p14play;rP14();if(S.p14play)animP14();}
+function p14Prev(){if(S.p14step>0){S.p14step--;S.p14play=false;buildP14();rP14();}}
+function p14Next(){if(S.p14step<2){S.p14step++;rP14();}}
+function animP14(){
+  if(!S.p14play||S.lv!==14)return;
+  if(S.p14step===0){
+    var t=0,sa=S.p14m.est.position.clone(),sb=S.p14m.ho.position.clone();
+    var ta=new THREE.Vector3(-1.5,0,0),tb=new THREE.Vector3(1.2,0,0);
+    // Flash breaking bond red with blinking
+    if(S.p14m.bondBreak)S.p14m.bondBreak.material.color.setHex(0xe63946);
+    S.p14m.oS.material.emissive.setHex(0xe63946);S.p14m.oS.material.emissiveIntensity=.5;
+    (function mv(){if(!S.p14play||S.lv!==14)return;t+=.012;
+      // Flash blinking on breaking bond
+      var blink=Math.sin(t*30)>.2;
+      if(S.p14m.bondBreak)S.p14m.bondBreak.material.emissive.setHex(blink?0xe63946:0);
+      if(t>=1){S.p14m.est.position.copy(ta);S.p14m.ho.position.copy(tb);S.p14step=1;rP14();setTimeout(function(){if(S.p14play)animP14();},400);return;}
+    S.p14m.est.position.lerpVectors(sa,ta,t);S.p14m.ho.position.lerpVectors(sb,tb,t);requestAnimationFrame(mv);})();
+  }else if(S.p14step===1){
+    sFB('f14','inf','⚡ Liaison C−O−R\' se rompt (rouge)...');
+    setTimeout(function(){if(!S.p14play)return;
+      // Visual: bond breaks (disappears)
+      if(S.p14m.bondBreak)S.p14m.bondBreak.visible=false;
+      sFB('f14','inf','L\'ion R−COO⁻ se forme (halo bleu = charge −)...');
+      setTimeout(function(){if(!S.p14play)return;
+        // Ion carboxylate halo (blue)
+        var ionHalo=mkSphere(.8,0x4dabf7,{opa:.1,em:0x4dabf7,emi:.6});
+        ionHalo.position.set(-1.5,0,0);S.p14grp.add(ionHalo);
+        addL(S.p14grp,'R−COO⁻ (chargé −)',.22,'#4dabf7',-1.5,2.2,0);
+        addL(S.p14grp,'R\'−OH (alcool)',.2,'#ffffff',2,2.2,0);
+        sFB('f14','ok','Le produit R−COO⁻ est chargé (−). Il ne peut PAS réagir avec l\'alcool → réaction TOTALE.');
+        setTimeout(function(){S.p14step=2;rP14();S.p14play=false;rP14();},2500);
+      },800);
+    },600);
+  }else if(S.p14step===2){
+    var t2=0;(function mv2(){if(!S.p14play||S.lv!==14)return;t2+=.015;if(t2>=1){S.p14play=false;rP14();return;}
+    S.p14m.est.position.x=-1.5-t2*2;S.p14m.ho.position.x=1.2+t2*2;requestAnimationFrame(mv2);})();
+  }
+}
+function a14(q){var a={
+  5:'L\'ion R−COO⁻ porte une charge négative. Cette charge empêche toute réaction avec l\'alcool (qui est neutre). L\'estérification inverse est impossible → la réaction est totale (τ=100%) et irréversible.',
+  6:'R−COO−R\' + HO⁻ → R−COO⁻ + R\'−OH (ester + hydroxyde → ion carboxylate + alcool).',
+  7:'Du latin « sapo » = savon. Cette réaction est utilisée pour fabriquer du savon à partir de corps gras (triesters de glycérol) et de soude (NaOH). Le savon = sel de sodium d\'un acide gras à longue chaîne.'
+};sFB('f14','inf',a[q]);}
+
+/* ================================================================
+   PHASE 15 — Corps Gras et Fabrication du Savon
+   ================================================================ */
+function iP15(){
+  S.ca.position.set(0,2,10);S.ct.target.set(0,0,0);
+  S.p15grp=new THREE.Group();
+  // Glycérol central with bonds + ester linkages + fatty acid chains
+  var glyc=new THREE.Group();
+  var glyC=[];
+  for(var i=0;i<3;i++){
+    var c=mkAtom(glyc,'C',0,i*1.2-1.2,0);glyC.push(c);
+    if(i>0)mkBond(glyc,glyC[i-1].position,c.position);
+    // Ester linkage: C-O-CO-R
+    var oEst=mkAtom(glyc,'O',.8,i*1.2-1.2,0);
+    mkBond(glyc,c.position,oEst.position);
+    var cCO=mkAtom(glyc,'C',1.6,i*1.2-1.2,0);
+    mkBond(glyc,oEst.position,cCO.position);
+    var oDB=mkAtom(glyc,'O',1.6,i*1.2-1.2+.7,0);
+    mkBond(glyc,cCO.position,oDB.position,0x888888,'d');
+    // Chaîne en zigzag (8 carbones)
+    var prevPos=cCO.position.clone();
+    for(var j=0;j<8;j++){
+      var nx=2.4+j*.45,ny=i*1.2-1.2+(j%2===0?.2:-.2);
+      var cc=mkSphere(.08,0x6b8e23);cc.position.set(nx,ny,0);glyc.add(cc);
+      mkBond(glyc,prevPos,cc.position,0x6b8e23);
+      prevPos=cc.position.clone();
+    }
+    // Highlight ester group
+    oEst.material.emissive.setHex(0x2dc653);oEst.material.emissiveIntensity=.3;
+  }
+  addL(glyc,'Triglycéride (oléine)',.25,'#ffffff',2,2.2,0);
+  addL(glyc,'Glycérol',.18,'#00b4d8',-.7,-2.5,0);
+  addL(glyc,'3 groupes ester −COO−',.16,'#2dc653',1.2,-2.5,0);
+  addL(glyc,'Chaînes d\'acide gras (C₁₈)',.16,'#6b8e23',4,-2.5,0);
+  S.p15grp.add(glyc);
+  S.sc.add(S.p15grp);
+  S.la=function(){if(S.lv===15&&S.p15grp)S.p15grp.rotation.y+=.003;};
+  rP15();
+}
+function rP15(){
+  document.getElementById('sp').innerHTML=
+    '<div class="pt">🧈 Phase 15 — Corps Gras et Savon</div>'+
+    '<div class="bx"><h3>Structure des triglycérides</h3><p style="font-size:12px;color:var(--text2);line-height:1.6">'+
+    'Les corps gras (huiles, beurre, graisses) sont des <b>triesters de glycérol</b> et d\'acides gras à longue chaîne (10 à 20 C).</p></div>'+
+    '<div class="bx"><h3>Équation de saponification</h3><p style="font-size:11px;color:var(--accent);font-family:\'JetBrains Mono\',monospace;line-height:1.8">'+
+    'Oléine + 3 NaOH → Glycérol + 3 Oléate de sodium<br>'+
+    '<span style="color:var(--text2)">(triester)  (soude)  (trialcool) (SAVON)</span></p></div>'+
+    '<div class="bx"><h3>NaOH vs KOH</h3>'+
+    '<table class="dtbl"><tr><th></th><th>NaOH (soude)</th><th>KOH (potasse)</th></tr>'+
+    '<tr><td>Savon</td><td>Solide (dur)</td><td>Mou / liquide</td></tr>'+
+    '<tr><td>Exemple</td><td>Savon de Marseille</td><td>Savon noir</td></tr>'+
+    '<tr><td>Formule</td><td>R−COO⁻Na⁺</td><td>R−COO⁻K⁺</td></tr></table></div>'+
+    '<div class="bx"><h3>Fabrication industrielle</h3><p style="font-size:12px;color:var(--text2);line-height:1.5">'+
+    '1. Chauffer huile + soude → ébullition<br>'+
+    '2. Séparer glycérol, eau, impuretés<br>'+
+    '3. Re-chauffer + soude (×plusieurs fois)<br>'+
+    '→ Processus complet : ~10 jours pour τ > 95%</p></div>'+
+    '<div id="f15" class="fb"></div>'+
+    '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+    '<div class="qc" onclick="a15(1)">Q1 : Formule de l\'acide oléique ?</div>'+
+    '<div class="qc" onclick="a15(2)">Q2 : Famille des triglycérides ?</div>'+
+    '<div class="qc" onclick="a15(3)">Q3 : Équation saponification oléine ?</div>'+
+    '<div class="qc" onclick="a15(4)">Q4 : Pourquoi ajouter la soude plusieurs fois ?</div>'+
+    '<div class="qc" onclick="a15(5)">Q5 : Différence NaOH vs KOH ?</div></div></div>'+
+    '<button class="btn bp" onclick="ul(16);go(16)" style="width:100%">→ Phase 16 (Micelles)</button>';
+}
+function a15(q){var a={
+  1:'CH₃−(CH₂)₇−CH=CH−(CH₂)₇−COOH — Acide oléique : C18, une double liaison entre C9 et C10 (insaturé).',
+  2:'Les triglycérides sont des ESTERS (triesters de glycérol et d\'acides gras). Ils appartiennent à la famille des esters.',
+  3:'Oléine + 3 NaOH → glycérol + 3 oléate de sodium (savon). C\'est une triple saponification simultanée.',
+  4:'Le « savon vert » contient encore des corps gras non saponifiés. L\'ajout répété de soude permet de compléter la réaction et d\'atteindre un rendement > 95%.',
+  5:'NaOH (soude) → savon solide (dur), ex: savon de Marseille (R−COO⁻Na⁺). KOH (potasse) → savon mou/liquide, ex: savon noir (R−COO⁻K⁺).'
+};sFB('f15','inf',a[q]);}
+
+/* ================================================================
+   PHASE 16 — Micelles et Nettoyage
+   ================================================================ */
+function iP16(){
+  S.p16view='schematic';S.ca.position.set(0,0,12);S.ct.target.set(0,0,0);
+  buildP16();rP16();
+}
+function buildP16(){
+  if(S.p16grp){S.p16grp.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material){if(c.material.map)c.material.map.dispose();c.material.dispose();}});S.sc.remove(S.p16grp);}
+  S.p16grp=new THREE.Group();
+  // Build a micelle
+  var micelleG=new THREE.Group();
+  var nMol=24;
+  for(var i=0;i<nMol;i++){
+    var phi=Math.acos(1-2*(i+.5)/nMol);
+    var theta=Math.PI*(1+Math.sqrt(5))*i;
+    var r=2;
+    var x=r*Math.sin(phi)*Math.cos(theta);
+    var y=r*Math.sin(phi)*Math.sin(theta);
+    var z=r*Math.cos(phi);
+    // Tête (sphère bleue à la surface)
+    var head=mkSphere(.12,0x4361ee,{em:0x4361ee,emi:.3});
+    head.position.set(x,y,z);micelleG.add(head);
+    // Queue (ligne vers le centre)
+    var lineG=new THREE.CylinderGeometry(.02,.02,r*.6,4);
+    var lineM=new THREE.MeshStandardMaterial({color:0x6c757d});
+    var line=new THREE.Mesh(lineG,lineM);
+    var dir=new THREE.Vector3(x,y,z).normalize();
+    line.position.set(x*.65,y*.65,z*.65);
+    line.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+    micelleG.add(line);
+  }
+  // Centre lipophile
+  var center=mkSphere(.8,0xd4a017,{opa:.4,em:0xd4a017,emi:.2});
+  micelleG.add(center);
+  addL(micelleG,'MICELLE',.3,'#ffffff',0,3,0);
+  addL(micelleG,'Têtes hydrophiles (−COO⁻)',.2,'#4361ee',0,2.5,0);
+  addL(micelleG,'Queues hydrophobes (centre)',.18,'#6c757d',0,-2.8,0);
+  S.p16grp.add(micelleG);
+  S.sc.add(S.p16grp);
+  S.la=function(){if(S.lv===16&&S.p16grp)S.p16grp.rotation.y+=.004;};
+}
+function rP16(){
+  document.getElementById('sp').innerHTML=
+    '<div class="pt">🫧 Phase 16 — Micelles et Nettoyage</div>'+
+    '<div class="bx"><h3>Structure de l\'ion carboxylate</h3>'+
+    '<div style="display:flex;align-items:center;gap:12px;padding:8px;background:var(--bg);border-radius:var(--radius)">'+
+    '<div style="width:20px;height:20px;border-radius:50%;background:#4361ee;flex-shrink:0"></div>'+
+    '<div style="font-size:12px"><b style="color:var(--accent)">Tête hydrophile</b> (−COO⁻)<br><span style="color:var(--text2)">Soluble dans l\'eau (chargée)</span></div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:12px;padding:8px;background:var(--bg);border-radius:var(--radius);margin-top:4px">'+
+    '<div style="width:40px;height:4px;background:#6c757d;flex-shrink:0;border-radius:2px"></div>'+
+    '<div style="font-size:12px"><b style="color:var(--accent)">Queue hydrophobe</b> (chaîne C)<br><span style="color:var(--text2)">Lipophile, fuit l\'eau</span></div>'+
+    '</div></div>'+
+    '<div class="bx"><h3>Formation des micelles</h3><p style="font-size:12px;color:var(--text2);line-height:1.6">'+
+    'En solution, les ions carboxylate s\'assemblent en <b>sphères</b> :<br>'+
+    '• Queues hydrophobes → au <b>CENTRE</b> (fuient l\'eau)<br>'+
+    '• Têtes hydrophiles → à la <b>SURFACE</b> (contact eau)</p></div>'+
+    '<div class="bx"><h3>Mécanisme de nettoyage</h3><p style="font-size:12px;color:var(--text2);line-height:1.6">'+
+    '1. Les queues lipophiles <b>pénètrent</b> dans la graisse<br>'+
+    '2. Par frottement, la graisse se <b>détache</b> du tissu<br>'+
+    '3. La graisse est <b>emprisonnée</b> au centre de la micelle<br>'+
+    '4. Les têtes chargées (−) se <b>repoussent</b> → les taches se dispersent</p></div>'+
+    '<div class="bx" style="border-color:var(--orange)"><h3 style="color:var(--orange)">⚠️ Savon en eau dure</h3><p style="font-size:12px;color:var(--text2);line-height:1.5">'+
+    'En présence de Ca²⁺ ou Mg²⁺, le savon <b>précipite</b> et perd son pouvoir nettoyant. Les ions Ca²⁺ réagissent avec R−COO⁻ pour former un sel insoluble.</p></div>'+
+    '<div id="f16" class="fb"></div>'+
+    '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+    '<div class="qc" onclick="a16(6)">Q6 : Tête et queue de l\'oléate ?</div>'+
+    '<div class="qc" onclick="a16(7)">Q7 : Structure d\'une micelle ?</div>'+
+    '<div class="qc" onclick="a16(8)">Q8 : Mécanisme de nettoyage ?</div>'+
+    '<div class="qc" onclick="a16(9)">Q9 : Savon en eau dure ?</div></div></div>'+
+    '<button class="btn bp" onclick="ul(17);go(17)" style="width:100%">→ Phase 17 (Catalyse)</button>';
+}
+function a16(q){var a={
+  6:'Tête = −COO⁻ (hydrophile, chargée, soluble dans l\'eau). Queue = chaîne C₁₇ (hydrophobe, non polaire, lipophile = « aime la graisse »).',
+  7:'Les queues hydrophobes sont au centre (fuient l\'eau). Les têtes hydrophiles forment la surface extérieure (contact avec l\'eau). La micelle est sphérique.',
+  8:'Les queues lipophiles pénètrent dans la graisse. Par frottement, la graisse se détache et reste emprisonnée au centre de la micelle. Les têtes chargées (−) créent une répulsion mutuelle → les micelles se dispersent sans se redéposer.',
+  9:'Les ions Ca²⁺ et Mg²⁺ réagissent avec R−COO⁻ pour former un précipité insoluble. Le savon ne forme plus de micelles → perte d\'efficacité.'
+};sFB('f16','inf',a[q]);}
+
+/* ================================================================
+   PHASE 17 — Catalyse
+   ================================================================ */
+function iP17(){
+  S.p17tab='homo';S.ca.position.set(0,2,10);S.ct.target.set(0,0,0);
+  S.p17grp=new THREE.Group();
+  // Éthanol au centre
+  var ethanol=mkSphere(.5,0x00b4d8,{em:0x00b4d8,emi:.2});
+  ethanol.position.set(0,0,0);S.p17grp.add(ethanol);
+  addL(S.p17grp,'CH₃CH₂OH',.25,'#ffffff',0,.9,0);
+  addL(S.p17grp,'Éthanol',.2,'#00b4d8',0,-.9,0);
+  // Chemin Cu (gauche)
+  var cuSphere=mkSphere(.4,0xb87333,{met:.6,rou:.3});cuSphere.position.set(-3,0,0);S.p17grp.add(cuSphere);
+  addL(S.p17grp,'Cu (300°C)',.2,'#b87333',-3,-.8,0);
+  var arrow1G=new THREE.Group();
+  var a1=mkBox(1.5,.06,.06,0xb87333);a1.position.set(-1.5,0,0);arrow1G.add(a1);
+  S.p17grp.add(arrow1G);
+  var prod1=mkSphere(.4,0xffb74d,{em:0xffb74d,emi:.3});prod1.position.set(-3,-2.5,0);S.p17grp.add(prod1);
+  addL(S.p17grp,'CH₃CHO + H₂',.2,'#ffb74d',-3,-3.3,0);
+  addL(S.p17grp,'Déshydrogénation',.18,'#ffb74d',-3,-3.8,0);
+  // Chemin Al₂O₃ (droite)
+  var alSphere=mkSphere(.4,0xf0f0f0,{rou:.8});alSphere.position.set(3,0,0);S.p17grp.add(alSphere);
+  addL(S.p17grp,'Al₂O₃ (300°C)',.2,'#aaaaaa',3,-.8,0);
+  var a2=mkBox(1.5,.06,.06,0xaaaaaa);a2.position.set(1.5,0,0);S.p17grp.add(a2);
+  var prod2=mkSphere(.4,0x81c784,{em:0x81c784,emi:.3});prod2.position.set(3,-2.5,0);S.p17grp.add(prod2);
+  addL(S.p17grp,'CH₂=CH₂ + H₂O',.2,'#81c784',3,-3.3,0);
+  addL(S.p17grp,'Déshydratation',.18,'#81c784',3,-3.8,0);
+  // Message central
+  addL(S.p17grp,'SÉLECTIVITÉ',.3,'#ffd60a',0,3,0);
+  S.sc.add(S.p17grp);
+  S.la=function(){if(S.lv===17&&S.p17grp)S.p17grp.rotation.y+=.002;};
+  rP17();
+}
+function rP17(){
+  document.getElementById('sp').innerHTML=
+    '<div class="pt">⚙️ Phase 17 — Catalyse</div>'+
+    '<div class="bx"><h3>Définition</h3><p style="font-size:12px;color:var(--text2);line-height:1.6">'+
+    'Un <b>catalyseur</b> accélère une réaction chimique <b>sans être consommé</b>. Il n\'apparaît pas dans l\'équation bilan. Il accélère les DEUX sens et <b>ne modifie PAS l\'équilibre</b>.</p></div>'+
+    '<div class="bx"><h3>3 Types de catalyse</h3>'+
+    '<div class="tg"><div class="to'+(S.p17tab==='homo'?' on':'')+'" onclick="S.p17tab=\'homo\';rP17()">Homogène</div>'+
+    '<div class="to'+(S.p17tab==='hetero'?' on':'')+'" onclick="S.p17tab=\'hetero\';rP17()">Hétérogène</div>'+
+    '<div class="to'+(S.p17tab==='enzym'?' on':'')+'" onclick="S.p17tab=\'enzym\';rP17()">Enzymatique</div></div>'+
+    '<div style="padding:10px;font-size:12px;color:var(--text2);line-height:1.6;margin-top:6px">'+(
+      S.p17tab==='homo'?'<b style="color:var(--text)">Catalyse homogène :</b> catalyseur et réactifs dans la <b>même phase</b>.<br>Exemple : H₃O⁺ catalyse l\'estérification et l\'hydrolyse (tous en solution aqueuse).':
+      S.p17tab==='hetero'?'<b style="color:var(--text)">Catalyse hétérogène :</b> catalyseur et réactifs dans des <b>phases différentes</b>.<br>Exemple : Cu solide catalyse la déshydrogénation de l\'éthanol gazeux.':
+      '<b style="color:var(--text)">Catalyse enzymatique :</b> le catalyseur est une <b>enzyme</b> (protéine biologique). Très spécifique : une enzyme = une réaction.<br>Modèle clé-serrure : le substrat s\'emboîte dans le site actif.')+'</div></div>'+
+    '<div class="key-box"><b>SÉLECTIVITÉ du catalyseur</b><br>'+
+    'L\'éthanol donne :<br>'+
+    '• Avec <b style="color:#b87333">Cu</b> → CH₃CHO + H₂ (déshydro<b>génation</b>)<br>'+
+    '• Avec <b style="color:#aaa">Al₂O₃</b> → CH₂=CH₂ + H₂O (déshydra<b>tation</b>)<br><br>'+
+    'Le <b>MÊME réactif</b> donne des <b>produits DIFFÉRENTS</b> selon le catalyseur !</div>'+
+    '<div id="f17" class="fb"></div>'+
+    '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+    '<div class="qc" onclick="a17(10)">Q10 : Qu\'est-ce qu\'un catalyseur ?</div>'+
+    '<div class="qc" onclick="a17(11)">Q11 : Modifie-t-il l\'équilibre ?</div>'+
+    '<div class="qc" onclick="a17(12)">Q12 : Distinguez les 3 types</div>'+
+    '<div class="qc" onclick="a17(13)">Q13 : Sélectivité Cu vs Al₂O₃ ?</div></div></div>'+
+    '<button class="btn bp" onclick="ul(18);go(18)" style="width:100%">→ Phase 18 (Synthèse finale)</button>';
+}
+function a17(q){var a={
+  10:'Un catalyseur accélère une réaction chimique sans être consommé. Il n\'apparaît pas dans l\'équation bilan.',
+  11:'Non. Il accélère la réaction dans les DEUX sens (direct et inverse) de la même manière. L\'équilibre est atteint plus vite mais la composition finale reste identique.',
+  12:'Homogène : même phase (ex: H₃O⁺ en solution). Hétérogène : phases différentes (ex: Cu solide + éthanol gazeux). Enzymatique : enzyme biologique, très spécifique (une enzyme = une réaction).',
+  13:'Cela montre que le catalyseur est SÉLECTIF. Cu → déshydrogénation (enlève 2H → éthanal). Al₂O₃ → déshydratation (enlève H₂O → éthène). Le chimiste choisit le catalyseur pour orienter la réaction vers le produit souhaité.'
+};sFB('f17','inf',a[q]);}
+
+/* ================================================================
+   PHASE 18 — Synthèse Finale
+   ================================================================ */
+function iP18(){
+  S.ca.position.set(0,2,8);S.ct.target.set(0,0,0);
+  S.p18grp=new THREE.Group();
+  addL(S.p18grp,'📋 Synthèse Finale',.5,'#4dabf7',0,1,0);
+  addL(S.p18grp,'5 réactions maîtrisées',.3,'#8b949e',0,-.5,0);
+  S.sc.add(S.p18grp);
+  S.la=function(){if(S.lv===18&&S.p18grp)S.p18grp.rotation.y+=.003;};
+  rP18();
+}
+function rP18(){
+  document.getElementById('sp').innerHTML=
+    '<div class="pt">📋 Phase 18 — Synthèse Finale</div>'+
+    '<div class="bx"><h3>Tableau récapitulatif complet</h3>'+
+    '<table class="dtbl"><tr><th>Réaction</th><th>Vitesse</th><th>τ</th><th>Réversible</th><th>Produits</th></tr>'+
+    CMP.map(function(c){return '<tr><td style="text-align:left;font-size:10px">'+c.r+'</td><td>'+c.v+'</td>'+
+    '<td style="color:'+(c.tau.indexOf('100')>=0||c.tau.indexOf('Totale')>=0?'var(--green)':'var(--orange)')+'">'+c.tau+'</td>'+
+    '<td>'+c.rev+'</td><td style="font-size:10px">'+c.prod+'</td></tr>';}).join('')+
+    '</table></div>'+
+    '<div class="bx"><h3>Concepts clés</h3><div style="font-size:12px;color:var(--text2);line-height:1.7">'+
+    '<b style="color:var(--green)">Réaction TOTALE</b> quand :<br>'+
+    '• Anhydride + alcool → pas d\'eau → pas d\'hydrolyse<br>'+
+    '• Saponification → R−COO⁻ ne réagit pas avec alcool<br><br>'+
+    '<b style="color:var(--orange)">Réaction LIMITÉE</b> quand :<br>'+
+    '• Estérification → H₂O permet hydrolyse inverse<br>'+
+    '• Hydrolyse eau → R−COOH permet estérification inverse<br><br>'+
+    '<b style="color:var(--accent)">Catalyseur</b> :<br>'+
+    '• Accélère sans être consommé<br>'+
+    '• Ne modifie PAS l\'équilibre<br>'+
+    '• Est sélectif (même réactif → produits différents)</div></div>'+
+    '<div class="bx"><h3>Applications</h3><div style="font-size:12px;color:var(--text2);line-height:1.7">'+
+    '🍌 <b>Arômes</b> : acétate d\'isoamyle (banane)<br>'+
+    '💊 <b>Aspirine</b> : acide acétylsalicylique<br>'+
+    '🧼 <b>Savon</b> : saponification des corps gras<br>'+
+    '⚙️ <b>Industrie</b> : catalyse sélective</div></div>'+
+    '<div id="f18" class="fb"></div>'+
+    '<div class="bx"><h3>Question finale</h3><div class="qc" onclick="a18(14)">Q14 : Résumez les 5 réactions (vitesse, τ, réversibilité, produits)</div></div>'+
+    '<div class="fb show ok" style="text-align:center;font-size:15px;font-weight:600">🎉 Félicitations !<br>Toutes les phases sont complétées.</div>';
+}
+function a18(q){sFB('f18','inf','Estérification : lente, limitée (67%), ⇌, ester+H₂O. Hydrolyse eau : lente, limitée (33%), ⇌, acide+alcool. Anhydride+alcool : rapide, totale (100%), →, ester+acide. Saponification : rapide, totale (100%), →, R−COO⁻+alcool. Saponification corps gras : rapide, totale (100%), →, savon+glycérol.');}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('sfM').classList.add('show');
+  try{initT();iP10();}catch(e){console.error(e);alert('Erreur: '+e.message);}
+});
+</script>
+<div class="pc3d-cf-ov" id="pc3d-cf-ov" aria-hidden="true"><div class="pc3d-cf" role="dialog" aria-modal="true" aria-label="Contact PC3D"><button class="pc3d-cf-x" id="pc3d-cf-x" aria-label="Fermer">&times;</button><div class="pc3d-cf-head"><span class="pc3d-cf-logo"><svg viewBox="0 0 120 120" width="42" height="42" xmlns="http://www.w3.org/2000/svg"><path d="M60 16 L100 92 L20 92 Z" fill="none" stroke="#4ECDC4" stroke-width="6" stroke-linejoin="round"/><circle cx="60" cy="72" r="11" fill="#00B8A9"/></svg></span><span><span class="pc3d-cf-t">Contact PC3D</span><span class="pc3d-cf-s">Partage tes idées, remarques et questions &middot; شاركنا أفكارك وملاحظاتك وكل ما تريد قوله لنا</span></span></div><input class="pc3d-cf-in" id="pc3d-cf-name" type="text" placeholder="Nom (optionnel) &middot; الاسم (اختياري)"><input class="pc3d-cf-in" id="pc3d-cf-email" type="email" placeholder="Ton email pour te répondre &middot; بريدك للرد عليك"><input type="text" id="pc3d-cf-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><textarea class="pc3d-cf-ta" id="pc3d-cf-msg" rows="5" placeholder="Écris ici tout ce que tu veux nous dire… &middot; اكتب هنا كل ما تريد قوله لنا…"></textarea><div class="pc3d-cf-note" id="pc3d-cf-note"></div><div class="pc3d-cf-fb" id="pc3d-cf-fb" style="display:none;font-size:12.5px;margin:-4px 2px 12px;line-height:1.55;color:#8fa0bd"></div><button class="pc3d-cf-send" id="pc3d-cf-send">Envoyer &middot; إرسال</button></div></div>
+<style>
+.pc3d-cf-ov{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,20,.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s;font-family:'Outfit',system-ui,-apple-system,sans-serif;}
+.pc3d-cf-ov.show{opacity:1;visibility:visible;}
+.pc3d-cf{width:100%;max-width:440px;box-sizing:border-box;background:linear-gradient(180deg,#0c1730,#070e1f);border:1px solid rgba(78,205,196,.32);border-radius:18px;padding:26px 24px 24px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative;transform:translateY(14px) scale(.98);transition:transform .28s cubic-bezier(.2,.9,.3,1.15);}
+.pc3d-cf-ov.show .pc3d-cf{transform:translateY(0) scale(1);}
+.pc3d-cf-x{position:absolute;top:12px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(255,255,255,.06);color:#aeb8cc;font-size:20px;line-height:1;cursor:pointer;transition:background .2s,color .2s;}
+.pc3d-cf-x:hover{background:rgba(255,255,255,.14);color:#fff;}
+.pc3d-cf-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.pc3d-cf-logo{flex:none;line-height:0;}
+.pc3d-cf-t{display:block;font-size:19px;font-weight:700;color:#eaf2ff;letter-spacing:.2px;}
+.pc3d-cf-s{display:block;font-size:11.5px;color:#8fa0bd;margin-top:4px;line-height:1.45;}
+.pc3d-cf-in,.pc3d-cf-ta{width:100%;box-sizing:border-box;margin-bottom:11px;padding:11px 13px;font-family:inherit;font-size:14px;color:#eaf2ff;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;outline:none;transition:border-color .2s,background .2s;}
+.pc3d-cf-in:focus,.pc3d-cf-ta:focus{border-color:#4ECDC4;background:rgba(78,205,196,.06);}
+.pc3d-cf-in::placeholder,.pc3d-cf-ta::placeholder{color:#6b7c99;}
+.pc3d-cf-ta{resize:vertical;min-height:112px;line-height:1.5;}
+.pc3d-cf-note{min-height:15px;font-size:12px;margin:1px 2px 12px;line-height:1.45;}
+.pc3d-cf-send{width:100%;padding:13px;border:none;border-radius:11px;font-family:inherit;font-size:15px;font-weight:700;color:#04121f;cursor:pointer;background:linear-gradient(180deg,#4ECDC4,#00B8A9);box-shadow:0 8px 22px rgba(0,184,169,.4);transition:transform .15s ease,box-shadow .2s,opacity .2s;}
+.pc3d-cf-send:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(0,184,169,.55);}
+.pc3d-cf-send:disabled{opacity:.6;cursor:default;transform:none;}
+</style>
+<script>(function(){
+var EMAIL='professeurkoudiaelmehdi@gmail.com';var W3KEY='';
+var ov=document.getElementById('pc3d-cf-ov');
+if(!ov)return;
+var msg=document.getElementById('pc3d-cf-msg'),nm=document.getElementById('pc3d-cf-name'),em=document.getElementById('pc3d-cf-email'),note=document.getElementById('pc3d-cf-note'),send=document.getElementById('pc3d-cf-send');
+function openM(e){if(e)e.preventDefault();ov.classList.add('show');ov.setAttribute('aria-hidden','false');setTimeout(function(){try{msg.focus();}catch(_){}}, 140);}
+function closeM(){ov.classList.remove('show');ov.setAttribute('aria-hidden','true');}
+var _trg=document.querySelectorAll('#pc3d-contact-btn,[data-pc3d-contact]');for(var _i=0;_i<_trg.length;_i++)_trg[_i].addEventListener('click',openM);
+document.getElementById('pc3d-cf-x').addEventListener('click',closeM);
+ov.addEventListener('click',function(e){if(e.target===ov)closeM();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ov.classList.contains('show'))closeM();});
+function setNote(t,ok){note.textContent=t;note.style.color=ok?'#4ECDC4':'#ff9a9a';}
+var fb=document.getElementById('pc3d-cf-fb'),hp=document.getElementById('pc3d-cf-hp');
+function showFB(){if(!fb)return;var nl=String.fromCharCode(10),p=[];if(nm.value)p.push('Nom: '+nm.value);if(em.value)p.push('Email: '+em.value);p.push('');p.push(msg.value);var href='mailto:'+EMAIL+'?subject='+encodeURIComponent('Message · PC3D')+'&body='+encodeURIComponent(p.join(nl));fb.innerHTML='Tu peux aussi écrire directement à <a href="'+href+'" style="color:#4ECDC4;font-weight:600">'+EMAIL+'</a>';fb.style.display='block';}
+send.addEventListener('click',function(){
+ if(hp&&hp.value){setNote('Merci ! · شكراً',true);setTimeout(closeM,1100);return;}
+ if(!msg.value.trim()){setNote("Merci d'écrire ton message · اكتب رسالتك من فضلك",false);try{msg.focus();}catch(_){}return;}
+ setNote('Envoi en cours… · جارٍ الإرسال…',true);send.disabled=true;if(fb)fb.style.display='none';
+ var url,payload;
+ if(W3KEY){url='https://api.web3forms.com/submit';payload={access_key:W3KEY,name:nm.value||'—',email:em.value||'—',message:msg.value,subject:'Nouveau message · PC3D',from_name:'PC3D — Contact'};}
+ else{url='https://formsubmit.co/ajax/'+EMAIL;payload={nom:nm.value||'—',email:em.value||'—',message:msg.value,_subject:'Nouveau message · PC3D',_template:'table',_captcha:'false'};}
+ fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)})
+ .then(function(r){return r.json();})
+ .then(function(d){
+   if(d&&(d.success===true||d.success==='true')){setNote('Merci ! Ton message a été envoyé ✓ · تم إرسال رسالتك، شكراً',true);msg.value='';nm.value='';em.value='';if(fb)fb.style.display='none';setTimeout(closeM,2000);}
+   else{setNote("Activation requise une seule fois — vérifie l'email · يلزم تفعيل لمرّة واحدة عبر الإيميل",false);showFB();}
+   send.disabled=false;
+ })
+ .catch(function(){setNote("Connexion impossible pour l'instant · تعذّر الإرسال الآن",false);showFB();send.disabled=false;});
+});
+})();</script>
+
+</body>
+</html>

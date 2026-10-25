@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChimioLab | Réactifs</title>
+  <meta name="description"
+    content="Inventaire des réactifs chimiques du laboratoire ChimioLab — données en temps réel." />
+  <script type="module" crossorigin src="/assets/_commonjsHelpers-B-UnjaXt.js"></script>
+  <script type="module" crossorigin src="/assets/main-ib9NfbRS.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-BhO1utRg.css">
+</head>
+
+<body data-page="reactifs">
+  <header class="site-header">
+    <div class="container nav-shell">
+      <a class="brand" href="./index.html" aria-label="Retour à l'accueil ChimioLab">
+        <span class="brand-mark">⚗️</span>
+        <span class="brand-text"><strong>Chimio</strong><span>Lab</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Navigation principale">
+        <a class="nav-link" href="./index.html" data-nav-link="index">Accueil</a>
+        <a class="nav-link" href="./reactifs.html" data-nav-link="reactifs">Réactifs</a>
+        <a class="nav-link" href="./materiels.html" data-nav-link="materiels">Matériels</a>
+        <a class="nav-link" href="./tp.html" data-nav-link="tp">Travaux Pratiques</a>
+        <a class="nav-link" href="./about.html" data-nav-link="about">À propos</a>
+      </nav>
+      <a class="platform-link" href="/admin/login">Accéder à la plateforme →</a>
+      <button class="menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-label="Ouvrir le menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="mobile-menu" data-mobile-menu>
+    <div class="mobile-backdrop" data-menu-close></div>
+    <div class="mobile-panel">
+      <div>
+        <div class="mobile-top">
+          <a class="brand" href="./index.html">
+            <span class="brand-mark">⚗️</span>
+            <span class="brand-text"><strong>Chimio</strong><span>Lab</span></span>
+          </a>
+          <button class="mobile-close" type="button" data-menu-close aria-label="Fermer le menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+        <nav class="mobile-links" aria-label="Navigation mobile">
+          <a href="./index.html" data-nav-link="index">Accueil</a>
+          <a href="./reactifs.html" data-nav-link="reactifs">Réactifs</a>
+          <a href="./materiels.html" data-nav-link="materiels">Matériels</a>
+          <a href="./tp.html" data-nav-link="tp">Travaux Pratiques</a>
+          <a href="./about.html" data-nav-link="about">À propos</a>
+        </nav>
+      </div>
+      <a class="button button--primary" href="/admin/login">Accéder à la plateforme →</a>
+    </div>
+  </div>
+
+  <main class="page-main">
+    <section class="subhero">
+      <div class="container reveal">
+        <a class="back-link" href="./index.html">← Retour à l'accueil</a>
+        <h1>🧪 Réactifs chimiques</h1>
+        <p>
+          Consultez les produits du laboratoire, leurs pictogrammes GHS et fiches de sécurité.
+        </p>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="container toolbar-shell">
+        <label class="search-wrap" aria-label="Recherche réactifs">
+          <span>🔍</span>
+          <input type="search" placeholder="Rechercher un produit..." data-reactif-search />
+        </label>
+        <div class="chip-group">
+          <button class="chip is-active" type="button" data-reactif-filter="all">Tous</button>
+          <button class="chip" type="button" data-reactif-filter="high">🔴 Danger élevé</button>
+          <button class="chip" type="button" data-reactif-filter="medium">🟡 Attention</button>
+          <button class="chip" type="button" data-reactif-filter="low">🟢 Faible risque</button>
+          <button class="chip" type="button" data-reactif-filter="expiring">⏰ Bientôt périmés</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="page-grid-section">
+      <div class="container">
+        <div class="card-grid" id="products-grid"></div>
+        <div class="empty-state" data-reactif-empty>
+          Aucun réactif ne correspond aux filtres actuels.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" data-qr-modal>
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-card">
+      <button class="modal-close" type="button" data-modal-close aria-label="Fermer la fenêtre">✕</button>
+      <div class="section-tag">QR Code</div>
+      <h2 data-qr-name>Produit</h2>
+      <div class="modal-formula" data-qr-formula>Formule</div>
+      <div class="qr-placeholder" data-qr-placeholder></div>
+      <p>Scannez ce code pour accéder à la fiche complète de sécurité.</p>
+      <p><strong>Emplacement :</strong> <span data-qr-location></span></p>
+      <div class="modal-actions">
+        <button class="button button--primary" type="button" data-qr-download>📥 Télécharger</button>
+        <button class="button button--soft" type="button" data-modal-close>✕ Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <h3>⚗️ ChimioLab</h3>
+        <p>Plateforme de gestion du laboratoire scolaire — CRMEF Derb Ghallef.</p>
+      </div>
+      <div>
+        <h3>Navigation</h3>
+        <div class="footer-links">
+          <a href="./index.html">Accueil</a>
+          <a href="./reactifs.html">Réactifs</a>
+          <a href="./materiels.html">Matériels</a>
+          <a href="./tp.html">Travaux Pratiques</a>
+        </div>
+      </div>
+      <div>
+        <h3>Accès</h3>
+        <div class="footer-links">
+          <a href="/admin/login">Se connecter à la plateforme</a>
+          <a href="./about.html">À propos du projet</a>
+        </div>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      ChimioLab © 2026 — Développé dans le cadre d'un Projet de Fin d'Études au CRMEF encadré par Pr Azzeddine Atibi
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</body>
+
+</html>

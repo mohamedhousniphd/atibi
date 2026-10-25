@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulation — Transformations Forcées : Électrolyse</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap');
+:root{--bg:#0a0e14;--bg2:#131820;--panel:#171d26;--accent:#58a6ff;--cyan:#39d2c0;--copper:#e8a050;--brown:#a0522d;--green:#3fb950;--danger:#f85149;--warn:#d29922;--text:#e6edf3;--textL:#8b949e;--border:#252d38;--r:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh}
+h1,h2,h3,h4{font-family:'Fira Sans',sans-serif}
+#topBar{height:48px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px}
+#topBar h1{font-size:13px;font-weight:600;background:linear-gradient(90deg,var(--cyan),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+.ptrack{display:flex;align-items:center;gap:4px;margin-left:auto}
+.pdot{width:9px;height:9px;border-radius:50%;background:var(--border);border:2px solid #3a3a3a;transition:.3s}
+.pdot.active{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+.pdot.done{background:var(--green);border-color:var(--green)}
+.pline{width:16px;height:1px;background:var(--border)}
+#phaseLabel{font-size:9px;color:var(--textL);margin-left:4px}
+#mainContainer{display:flex;height:calc(100vh - 48px - 38px)}
+#scene3d{flex:1;position:relative;background:var(--bg);min-width:0}
+#sidePanel{width:350px;min-width:280px;background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;font-size:11px}
+#sidePanel::-webkit-scrollbar{width:3px}
+#sidePanel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+#bottomBar{height:38px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px}
+.btn{font-family:'Fira Sans';font-size:10.5px;font-weight:600;padding:5px 11px;border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:4px;background:var(--bg2);color:var(--text)}
+.btn:hover{border-color:var(--cyan)}
+.btn-p{background:rgba(56,166,192,.1);border-color:rgba(56,166,192,.3);color:var(--cyan)}
+.btn-g{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.25);color:var(--green)}
+.btn-d{background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.25);color:var(--danger)}
+.btn:disabled{opacity:.25;cursor:not-allowed}
+.card{background:var(--bg2);border-radius:var(--r);padding:10px;border:1px solid var(--border);border-left:3px solid var(--accent)}
+.card.green{border-left-color:var(--green)}.card.orange{border-left-color:var(--warn)}.card.cyan{border-left-color:var(--cyan)}
+.card h3{font-size:11.5px;margin-bottom:3px}.card p,.card label{font-size:11px;line-height:1.4;color:var(--textL)}
+.input-group{display:flex;align-items:center;gap:4px;margin:4px 0}
+.input-group input{flex:1;padding:5px 7px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:var(--bg);color:var(--text);font-family:'Source Sans 3'}
+.input-group input:focus{outline:none;border-color:var(--cyan)}
+.unit{font-size:10px;color:var(--textL)}
+.feedback{padding:6px 9px;border-radius:5px;font-size:11px;margin-top:4px;display:none;border:1px solid transparent}
+.feedback.correct{display:block;background:rgba(63,185,80,.06);color:var(--green);border-color:rgba(63,185,80,.12)}
+.feedback.incorrect{display:block;background:rgba(248,81,73,.06);color:var(--danger);border-color:rgba(248,81,73,.12)}
+.feedback.hint{display:block;background:rgba(210,153,34,.06);color:var(--warn);border-color:rgba(210,153,34,.12)}
+.feedback.info{display:block;background:rgba(56,166,192,.06);color:var(--cyan);border-color:rgba(56,166,192,.12)}
+.data-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,.04)}
+.data-row:last-child{border-bottom:none}
+.data-val{font-weight:600;font-family:'JetBrains Mono';color:var(--cyan);font-size:10px}
+#safetyModal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(10px)}
+#safetyModal .mc{background:var(--panel);border:1px solid var(--danger);border-radius:12px;padding:22px;max-width:440px;width:92%}
+#safetyModal h2{color:var(--danger);font-size:15px;margin-bottom:8px}
+#safetyModal .wi{font-size:32px;text-align:center;margin-bottom:4px}
+#safetyModal p{font-size:12px;line-height:1.6;margin-bottom:8px;color:var(--textL)}
+#safetyModal label{font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:8px}
+#safetyModal input[type=checkbox]{width:14px;height:14px;accent-color:var(--green)}
+.overlay-3d{position:absolute;top:8px;left:8px;background:rgba(10,14,20,.88);border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:10px;max-width:240px;pointer-events:none;z-index:10}
+.overlay-3d h4{font-size:10.5px;color:var(--cyan);margin-bottom:1px}
+.overlay-3d p{color:var(--textL);font-size:9.5px}
+.lcd{position:absolute;border-radius:7px;padding:9px 13px;font-family:'JetBrains Mono',monospace;font-weight:bold;text-align:center;z-index:10;display:none;border:1px solid var(--border);background:rgba(10,14,20,.92)}
+#meterPanel{bottom:10px;right:10px;color:#33ff88;font-size:18px;min-width:140px}
+#ampPanel{bottom:10px;left:10px;color:var(--copper);font-size:16px;min-width:130px}
+.lcd .lbl{font-size:7px;color:var(--textL);letter-spacing:2px;font-weight:400;margin-bottom:1px}
+.lcd .sub{font-size:8px;margin-top:2px;font-weight:400}
+#massLabel{position:absolute;top:8px;right:8px;background:rgba(10,14,20,.88);border:1px solid var(--border);border-radius:5px;padding:6px 9px;font-size:10px;display:none;z-index:10;font-family:'JetBrains Mono'}
+#massLabel .val{font-weight:700;color:var(--cyan)}
+#eqOverlay{position:absolute;bottom:42px;left:50%;transform:translateX(-50%);display:none;z-index:10;pointer-events:none}
+.eq-row{display:flex;gap:10px}
+.eq-box{background:rgba(10,14,20,.9);border:1px solid var(--border);border-radius:5px;padding:5px 10px;font-size:11px;font-family:'JetBrains Mono';white-space:nowrap}
+.eq-box.left{border-left:3px solid var(--copper);color:var(--copper)}
+.eq-box.right{border-left:3px solid var(--cyan);color:var(--cyan)}
+#magCanvas{position:absolute;top:0;left:0;pointer-events:none;z-index:20}
+.phase-content{display:none}.phase-content.active{display:flex;flex-direction:column;gap:8px}
+.q-num{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:var(--cyan);color:var(--bg);font-size:9px;font-weight:700;margin-right:3px}
+.electrode-btn{padding:4px 9px;margin:2px;border-radius:4px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:10.5px;font-weight:600;color:var(--text);transition:.15s}
+.electrode-btn:hover{border-color:var(--cyan)}
+.electrode-btn.sel{border-color:var(--cyan);background:rgba(56,166,192,.08);color:var(--cyan)}
+.comp-table{width:100%;border-collapse:collapse;font-size:9.5px;margin-top:4px}
+.comp-table th,.comp-table td{border:1px solid var(--border);padding:3px 5px;text-align:left}
+.comp-table th{background:var(--bg);color:var(--textL)}
+.comp-table td:first-child{color:var(--textL);font-weight:600}
+.app-card{background:var(--bg);border-radius:5px;padding:6px;border:1px solid var(--border);margin:3px 0}
+.app-card h4{font-size:10px;color:var(--cyan)}.app-card p{font-size:10px;color:var(--textL);margin-top:1px}
+#chronoDisplay{font-family:'JetBrains Mono';font-size:18px;font-weight:bold;color:var(--cyan);text-align:center;text-shadow:0 0 6px rgba(56,166,192,.2)}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border);outline:none;margin:5px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--cyan);cursor:pointer;box-shadow:0 0 4px var(--cyan)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<a href="index.html" id="pc3d-home-btn" title="Retour à l'accueil · العودة للرئيسية" style="position:fixed;bottom:18px;left:18px;z-index:2147483647;display:inline-flex;align-items:center;gap:7px;padding:9px 15px 9px 12px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#e8f0ff;text-decoration:none;background:linear-gradient(180deg,rgba(10,21,48,.94),rgba(5,10,24,.9));border:1px solid rgba(0,184,169,.45);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 0 1px rgba(0,184,169,.08);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00b8a9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+<span>PC3D · Accueil</span>
+</a>
+<style>#pc3d-home-btn:hover{transform:translateY(-2px);border-color:rgba(0,184,169,.85);box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 18px rgba(0,184,169,.35);}</style>
+<a href="#" id="pc3d-contact-btn" title="Contact · تواصل معنا" style="position:fixed;right:18px;bottom:18px;z-index:9000;display:inline-flex;align-items:center;gap:8px;padding:11px 16px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#04121f;text-decoration:none;background:linear-gradient(180deg,#4ECDC4,#00B8A9);border:1px solid rgba(255,255,255,.28);border-radius:999px;box-shadow:0 8px 26px rgba(0,184,169,.45),0 2px 8px rgba(0,0,0,.4);transition:transform .18s ease,box-shadow .18s ease;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#04121f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>Contact</span></a><style>#pc3d-contact-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,184,169,.6),0 2px 8px rgba(0,0,0,.5);}@media(max-width:600px){#pc3d-contact-btn span{display:none;}#pc3d-contact-btn{padding:13px;}}</style>
+<div class="pc3d-uload" id="pc3d-uload"><div class="pc3d-uload-logo"><svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="uldc" cx="50%" cy="45%" r="55%"><stop offset="0%" stop-color="#F5F7FA"/><stop offset="45%" stop-color="#4ECDC4"/><stop offset="100%" stop-color="#00B8A9" stop-opacity="0"/></radialGradient><linearGradient id="uldp" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4ECDC4"/><stop offset="50%" stop-color="#00B8A9"/><stop offset="100%" stop-color="#9B59B6"/></linearGradient></defs><ellipse class="ulorbit" cx="60" cy="66" rx="54" ry="18" fill="none" stroke="#4ECDC4" stroke-opacity=".4" stroke-width="1.5"/><circle class="ulorbit" cx="6" cy="66" r="3" fill="#FF9A3C"/><path class="ulpyr" d="M60 14 L102 94 L18 94 Z" fill="url(#uldp)" fill-opacity=".14" stroke="url(#uldp)" stroke-width="3" stroke-linejoin="round"/><circle class="ulcore" cx="60" cy="70" r="13" fill="url(#uldc)"/></svg></div><div class="pc3d-uload-txt"><span>P</span><span>C</span><span>3</span><span>D</span></div></div><style>.pc3d-uload{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:#050a18;transition:opacity .6s ease,visibility .6s;font-family:'Outfit',system-ui,sans-serif;}.pc3d-uload.done{opacity:0;visibility:hidden;pointer-events:none;}.pc3d-uload-logo{width:120px;height:120px;}.pc3d-uload-logo svg{width:100%;height:100%;overflow:visible;}.pc3d-uload .ulorbit{transform-origin:60px 64px;animation:ulspin 1.4s linear infinite;}@keyframes ulspin{to{transform:rotate(360deg);}}.pc3d-uload .ulpyr{transform-origin:60px 60px;animation:ulpyr 1.6s ease-in-out infinite;}@keyframes ulpyr{0%,100%{transform:scale(.86) rotate(-4deg);}50%{transform:scale(1.06) rotate(4deg);}}.pc3d-uload .ulcore{transform-origin:60px 66px;animation:ulcore 1.1s ease-in-out infinite;}@keyframes ulcore{0%,100%{opacity:.5;transform:scale(.7);}50%{opacity:1;transform:scale(1.25);}}.pc3d-uload-txt{display:flex;gap:3px;font-size:12px;letter-spacing:.32em;color:#7fe9e0;text-transform:uppercase;}.pc3d-uload-txt span{animation:ultxt 1.4s ease-in-out infinite;}.pc3d-uload-txt span:nth-child(2){animation-delay:.1s;}.pc3d-uload-txt span:nth-child(3){animation-delay:.2s;}.pc3d-uload-txt span:nth-child(4){animation-delay:.3s;}@keyframes ultxt{0%,100%{opacity:.3;transform:translateY(0);}50%{opacity:1;transform:translateY(-3px);}}</style><script>(function(){function h(){var l=document.getElementById("pc3d-uload");if(l){l.classList.add("done");setTimeout(function(){l&&l.remove();},700);}}window.addEventListener("load",function(){setTimeout(h,1100);});setTimeout(h,3000);})();</script>
+<div id="safetyModal"><div class="mc"><div class="wi">⚠️</div><h2>Sécurité — Dibrome (Br₂)</h2>
+<p><strong>Toxique et corrosif.</strong> Manipulation sous <strong>hotte aspirante</strong> obligatoire.</p>
+<label><input type="checkbox" id="safetyCheck"> J'ai lu et compris.</label>
+<button class="btn btn-g" id="safetyBtn" disabled onclick="closeSafety()">Continuer</button></div></div>
+
+<div id="topBar"><h1>🧪 Transformations Forcées — Électrolyse</h1>
+<div class="ptrack"><div class="pdot active"></div><div class="pline"></div><div class="pdot"></div><div class="pline"></div><div class="pdot"></div><div class="pline"></div><div class="pdot"></div><div class="pline"></div><div class="pdot"></div></div>
+<span id="phaseLabel">Phase I</span></div>
+
+<div id="mainContainer">
+<div id="scene3d">
+<canvas id="magCanvas"></canvas>
+<div class="overlay-3d"><h4 id="overlayTitle">Phase I</h4><p id="overlayDesc">Préparez le mélange.</p></div>
+<div class="lcd" id="meterPanel"><div class="lbl">VOLTMÈTRE</div><span id="meterVal">0.000</span> V<div class="sub" id="meterSub"></div></div>
+<div class="lcd" id="ampPanel"><div class="lbl">AMPÈREMÈTRE</div><span id="ampVal">0.00</span> mA</div>
+<div id="massLabel">Δm = <span class="val" id="massVal">+0.00</span> mg</div>
+<div id="eqOverlay"><div class="eq-row"><div class="eq-box left" id="eqLeft"></div><div class="eq-box right" id="eqRight"></div></div></div>
+</div>
+<div id="sidePanel">
+<!-- P1 -->
+<div class="phase-content active" id="phase1Content">
+<div class="card green"><h3>🔬 Phase I — Montage</h3><p>Versez les 3 solutions dans le tube en U et observez la réaction spontanée.</p></div>
+<div class="card"><h3>Solutions disponibles</h3>
+<div class="data-row"><span>🟠 Br₂ (dibrome)</span><span class="data-val">10 mL · 10⁻⁵ mol/L</span></div>
+<div class="data-row"><span>⚪ KBr</span><span class="data-val">20 mL · 1 mol/L</span></div>
+<div class="data-row"><span>🔵 CuSO₄</span><span class="data-val">20 mL · 1 mol/L</span></div>
+</div>
+<button class="btn btn-p" id="pourBtn" onclick="pourSolutions()">🧪 Verser les solutions</button>
+<div class="card hidden" id="mixInfo"><h3>Réaction spontanée en cours...</h3>
+<p>Cu(s) + Br₂(aq) → Cu²⁺(aq) + 2Br⁻(aq)<br>
+Le dibrome <span style="color:var(--copper)">orange</span> est consommé → solution <span style="color:#4499ff">bleue</span> (Cu²⁺).</p></div>
+<div class="card hidden" id="mixResult"><h3>✅ Équilibre atteint</h3>
+<div class="data-row"><span>[Br₂]</span><span class="data-val">2×10⁻⁶ mol/L</span></div>
+<div class="data-row"><span>[Br⁻]</span><span class="data-val">0,40 mol/L</span></div>
+<div class="data-row"><span>[Cu²⁺]</span><span class="data-val">0,40 mol/L</span></div>
+<p style="margin-top:4px">La lame de Cu montre des signes de corrosion (dissolution).</p>
+</div>
+<button class="btn btn-g hidden" id="toP2" onclick="goPhase(2)">Phase II ▶</button>
+</div>
+<!-- P2 -->
+<div class="phase-content" id="phase2Content">
+<div class="card cyan"><h3>🔋 Phase II — Pile</h3><p>Connectez le multimètre.</p></div>
+<button class="btn btn-p" id="connMeter" onclick="connectMeter()">🔌 Connecter</button>
+<div class="card hidden" id="q1C"><h3><span class="q-num">1</span>Q<sub>r,i</sub></h3>
+<p>[Cu²⁺]·[Br⁻]²/[Br₂] — K=6,41×10¹³</p>
+<div class="input-group"><input id="q1In" placeholder="Ex: 3.2e4"><button class="btn btn-p" onclick="checkQ1()">OK</button></div>
+<div class="feedback" id="q1F"></div></div>
+<div class="card hidden" id="q2C"><h3><span class="q-num">2</span>Sens</h3>
+<div style="display:flex;gap:4px;margin:3px 0"><button class="electrode-btn" onclick="checkQ2('d')">Direct →</button><button class="electrode-btn" onclick="checkQ2('i')">Inverse ←</button></div>
+<div class="feedback" id="q2F"></div></div>
+<div class="card hidden" id="q3C"><h3><span class="q-num">3</span>F.é.m.</h3>
+<div class="input-group"><input id="q3In" placeholder="V" style="width:55px"><span class="unit">V</span><button class="btn btn-p" onclick="checkQ3()">OK</button></div>
+<div class="feedback" id="q3F"></div></div>
+<div class="card hidden" id="q4C"><h3>Demi-équations</h3>
+<p style="font-family:'JetBrains Mono';font-size:9.5px;color:var(--copper)">Anode: Cu→Cu²⁺+2e⁻</p>
+<p style="font-family:'JetBrains Mono';font-size:9.5px;color:var(--cyan)">Cathode: Br₂+2e⁻→2Br⁻</p></div>
+<button class="btn btn-p hidden" id="ionBtn2" onclick="toggleIonView()">🔬 Microscopique</button>
+<button class="btn btn-g hidden" id="toP3" onclick="goPhase(3)">Phase III ▶</button>
+</div>
+<!-- P3 -->
+<div class="phase-content" id="phase3Content">
+<div class="card orange"><h3>⚡ Phase III — Électrolyse</h3><p>Forcer la réaction inverse.</p></div>
+<button class="btn btn-p" id="connGen" onclick="connectGen()">🔌 Générateur</button>
+<div class="hidden" id="genUI">
+<div class="card"><h3>Polarité — Borne <span style="color:var(--danger)">+</span></h3>
+<div style="display:flex;gap:4px;margin:3px 0">
+<button class="electrode-btn" id="polCu" onclick="setPol('cu')">Cu</button>
+<button class="electrode-btn" id="polGr" onclick="setPol('gr')">Graphite</button>
+</div><div class="feedback" id="polF"></div></div>
+<div class="hidden" id="tensionUI">
+<div class="card"><h3>Tension</h3>
+<div style="display:flex;align-items:center;gap:6px"><input type="range" min="0" max="12" step="0.1" value="6" id="tensRange" oninput="setTension(this.value)" style="flex:1">
+<span style="font-family:'JetBrains Mono';font-size:13px;color:var(--cyan)" id="tensVal">6.0V</span></div></div>
+<button class="btn btn-d" id="electBtn" onclick="toggleElect()">▶ Start</button>
+<div id="chronoDisplay" style="margin-top:4px">00:00</div>
+<div style="margin-top:5px;height:130px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:2px"><canvas id="chartCanvas"></canvas></div>
+</div>
+<div class="card hidden" id="qm1C"><h3><span class="q-num">5</span>Courant inversé ?</h3>
+<div style="display:flex;gap:4px;margin:3px 0"><button class="electrode-btn" onclick="checkQM('n')">Oui</button><button class="electrode-btn" onclick="checkQM('o')">Non</button></div>
+<div class="feedback" id="qm1F"></div></div>
+<div class="card hidden" id="qm2C"><h3><span class="q-num">6</span>Anode ?</h3>
+<div style="display:flex;gap:4px;margin:3px 0"><button class="electrode-btn" onclick="checkQM2('gr')">Graphite</button><button class="electrode-btn" onclick="checkQM2('cu')">Cu</button></div>
+<div class="feedback" id="qm2F"></div></div>
+<div class="card hidden" id="qm3C"><h3><span class="q-num">7</span>Forcée ?</h3>
+<div style="display:flex;gap:4px;margin:3px 0"><button class="electrode-btn" onclick="checkQM3('f')">Forcée</button><button class="electrode-btn" onclick="checkQM3('s')">Spontanée</button></div>
+<div class="feedback" id="qm3F"></div></div>
+<div class="card hidden" id="compCard"><h3>📊 Comparaison</h3>
+<table class="comp-table">
+<tr><th></th><th>Pile</th><th>Électrolyseur</th></tr>
+<tr><td>Anode</td><td>Cu→Cu²⁺</td><td>2Br⁻→Br₂</td></tr>
+<tr><td>Cathode</td><td>Br₂→2Br⁻</td><td>Cu²⁺→Cu</td></tr>
+<tr><td>Cu</td><td style="color:var(--danger)">−Δm</td><td style="color:var(--green)">+Δm</td></tr>
+</table></div>
+</div>
+<button class="btn btn-g hidden" id="toP4" onclick="goPhase(4)">Phase IV ▶</button>
+</div>
+<!-- P4 -->
+<div class="phase-content" id="phase4Content">
+<div class="card cyan"><h3>📊 Faraday</h3><p style="font-family:'JetBrains Mono';font-size:10px">n=(I·Δt)/(z·F)</p></div>
+<div class="card"><h3><span class="q-num">8</span>n(Cu) I=0,5A Δt=120s</h3>
+<div class="input-group"><input id="q7In" placeholder="mol"><span class="unit">mol</span><button class="btn btn-p" onclick="checkQ7()">OK</button></div>
+<div class="feedback" id="q7F"></div></div>
+<div class="card hidden" id="q8C"><h3><span class="q-num">9</span>m(Cu)</h3>
+<div class="input-group"><input id="q8In" placeholder="g"><span class="unit">g</span><button class="btn btn-p" onclick="checkQ8()">OK</button></div>
+<div class="feedback" id="q8F"></div></div>
+<div class="card hidden" id="q9C"><h3><span class="q-num">10</span>Applications</h3>
+<label style="display:block;margin:2px 0"><input type="checkbox" id="a1"> Galvanoplastie</label>
+<label style="display:block;margin:2px 0"><input type="checkbox" id="a2"> Affinage</label>
+<label style="display:block;margin:2px 0"><input type="checkbox" id="a3"> Chlore/soude</label>
+<label style="display:block;margin:2px 0"><input type="checkbox" id="a4"> Distillation</label>
+<button class="btn btn-p" onclick="checkQ9()" style="margin-top:3px">OK</button>
+<div class="feedback" id="q9F"></div></div>
+<div class="card green hidden" id="doneCard"><h3>🎉 Activité 1 terminée !</h3><p>Passez à l'Activité 2 : Électrolyse de NaCl.</p></div>
+<button class="btn btn-g hidden" id="toP5" onclick="goPhase(5)">Activité 2 — NaCl ▶</button>
+</div>
+
+<!-- PHASE 5 — NaCl -->
+<div class="phase-content" id="phase5Content">
+<div class="card cy"><h3>🧪 Phase V — Électrolyse de NaCl</h3><p>Application industrielle : production de Cl₂, H₂ et NaOH.</p></div>
+
+<!-- V.1 Montage -->
+<div id="v1Block">
+<div class="card"><h3>Béchers</h3>
+<div class="data-row"><span>NaCl (aq) 100 g/L</span><span class="data-val">incolore</span></div>
+<div class="data-row"><span>Indigo</span><span class="data-val">bleu foncé</span></div>
+<div class="data-row"><span>Phénolphtaléine</span><span class="data-val">incolore</span></div>
+</div>
+<button class="btn btn-p" id="pourNaCl" onclick="pourNaCl()">🧪 Verser NaCl</button>
+</div>
+
+<!-- V.2 Tension seuil -->
+<div class="hidden" id="v2Block">
+<div class="card"><h3>Tension seuil</h3>
+<div style="display:flex;align-items:center;gap:6px"><input type="range" min="0" max="12" step="0.1" value="0" id="naclTR" oninput="setNaclTension(this.value)" style="flex:1"><span style="font-family:'JetBrains Mono';font-size:13px;color:var(--cyan)" id="naclTV">0.0V</span></div>
+</div>
+<div class="card hidden" id="nq1C"><h3><span class="q-num">1</span>Tension minimale U<sub>AC</sub></h3>
+<p>Notez la valeur à laquelle les premières bulles apparaissent.</p>
+<div class="input-group"><input id="nq1I" placeholder="V"><button class="btn btn-p" onclick="ckNQ1()">OK</button></div>
+<div class="feedback" id="nq1F"></div></div>
+</div>
+
+<!-- V.3 Observations -->
+<div class="hidden" id="v3Block">
+<div class="card green"><h3>⚡ Électrolyse en cours</h3>
+<p>Observez les bulles aux électrodes.</p>
+<div class="data-row"><span>Anode (+)</span><span class="data-val" style="color:#aacc33">Bulles vert-jaune (Cl₂)</span></div>
+<div class="data-row"><span>Cathode (−)</span><span class="data-val">Bulles blanches (H₂)</span></div>
+</div>
+<button class="btn btn-p" id="addIndicBtn" onclick="addIndicators()">🧪 Ajouter indicateurs</button>
+</div>
+
+<!-- V.4 Tests identification -->
+<div class="hidden" id="v4Block">
+<div class="card" style="border-left-color:#3344aa"><h3>🔵 Indigo → Anode</h3>
+<p id="indigoStatus">Ajout en cours...</p></div>
+<div class="card" style="border-left-color:#cc44aa"><h3>🩷 Phénolphtaléine → Cathode</h3>
+<p id="phenolStatus">Ajout en cours...</p></div>
+<button class="btn btn-p hidden" id="flameBtn" onclick="flameTest()">🔥 Test à la flamme (H₂)</button>
+<div class="hidden" id="flameResult"><div class="card orange"><h3>💥 Détonation !</h3><p>Le gaz détone → c'est du dihydrogène (H₂).</p></div></div>
+
+<!-- NaCl Questions -->
+<div class="card hidden" id="nq4C"><h3><span class="q-num">4</span>Identification</h3>
+<p>Identifiez les espèces formées à chaque électrode.</p>
+<div class="input-group"><input id="nq4I" placeholder="Anode: ..., Cathode: ..."><button class="btn btn-p" onclick="ckNQ4()">OK</button></div>
+<div class="feedback" id="nq4F"></div></div>
+
+<div class="card hidden" id="nq5C"><h3><span class="q-num">5</span>Demi-éq. anode</h3>
+<p>Écrivez la demi-équation d'oxydation.</p>
+<div class="input-group"><input id="nq5I" placeholder="2Cl⁻ → ..."><button class="btn btn-p" onclick="ckNQ5()">OK</button></div>
+<div class="feedback" id="nq5F"></div></div>
+
+<div class="card hidden" id="nq7C"><h3><span class="q-num">7</span>Équation bilan</h3>
+<p>Déduisez l'équation bilan.</p>
+<div class="input-group"><input id="nq7I" placeholder="2Cl⁻ + 2H₂O → ..."><button class="btn btn-p" onclick="ckNQ7()">OK</button></div>
+<div class="feedback" id="nq7F"></div></div>
+</div>
+
+<!-- V.5 Applications industrielles -->
+<div class="hidden" id="v5Block">
+<div class="card green"><h3>🏭 Applications industrielles</h3></div>
+<div class="card" style="border-left-color:#55cc88">
+<h3>🧴 Eau de Javel</h3>
+<p>Cl₂ + 2HO⁻ → ClO⁻ + Cl⁻ + H₂O<br>Désinfection eau potable, piscines, blanchiment.</p></div>
+<div class="card" style="border-left-color:#cc8833">
+<h3>🔧 PVC</h3>
+<p>Cl₂ → chlorure de vinyle → PVC. Tuyaux, fenêtres, câbles.</p></div>
+<div class="card" style="border-left-color:#8855cc">
+<h3>🧼 Soude caustique (NaOH)</h3>
+<p>Savon, papier, textiles, industrie alimentaire.</p></div>
+<div class="card" style="border-left-color:#33aadd">
+<h3>🚀 Dihydrogène (H₂)</h3>
+<p>Piles à hydrogène, synthèse NH₃ (Haber), raffinage.</p></div>
+
+<div class="card hidden" id="nq8C"><h3><span class="q-num">8</span>3 applications</h3>
+<p>Citez 3 applications et le produit utilisé.</p>
+<label style="display:block;margin:2px 0"><input type="checkbox" id="na1"> Eau de Javel (Cl₂+NaOH)</label>
+<label style="display:block;margin:2px 0"><input type="checkbox" id="na2"> PVC (Cl₂)</label>
+<label style="display:block;margin:2px 0"><input type="checkbox" id="na3"> Soude caustique (NaOH)</label>
+<label style="display:block;margin:2px 0"><input type="checkbox" id="na4"> Distillation du pétrole</label>
+<button class="btn btn-p" onclick="ckNQ8()" style="margin-top:3px">OK</button>
+<div class="feedback" id="nq8F"></div></div>
+<div class="card green hidden" id="naclDone"><h3>🎉 Activité 2 terminée !</h3><p>Bravo ! Vous maîtrisez l'électrolyse industrielle.</p></div>
+</div>
+</div>
+</div>
+</div>
+<div id="bottomBar">
+<button class="btn" id="prevBtn" onclick="prevPhase()" disabled>◀</button>
+<button class="btn hidden" id="ionBtnBot" onclick="toggleIonView()">🔬</button>
+<button class="btn" onclick="togglePanel()" id="panelToggle">📐 Masquer panneau</button>
+<button class="btn" onclick="toggleLiquid()" id="liqToggle">💧 Masquer liquide</button>
+<button class="btn" id="nextBtn" onclick="nextPhase()" disabled>▶</button>
+</div>
+
+<script>
+// =========== SCIENCE ===========
+const FC=96485,MCu=63.546,Z=2;
+const Qri=(0.4*0.4*0.4)/2e-6; // 3.2e4
+const K=6.41e13;
+const E0Cu=0.34,E0Br=1.07;
+const ECu=E0Cu-(0.06/Z)*Math.log10(1/0.4);
+const EBr=E0Br-(0.06/Z)*Math.log10(0.4*0.4/2e-6);
+const Epile=EBr-ECu;
+
+// =========== STATE ===========
+let phase=1,unlocked=[true,false,false,false,false];
+let ionView=false,eRunning=false,eTime=0;
+let tension=6,current=0,massChg=0,polarity=null;
+let chart=null,cD={l:[],d:[]},cInt=null;
+let att={q1:0,q3:0,q7:0,q8:0};
+let poured=false,pourProgress=0,reactionProgress=0,pourElapsed=0;
+
+// Three
+let scene,camera,renderer;
+let tubeGrp,tubeCurve,tubeCurvePts=[];
+let liqMeshL,liqMeshR; // liquid meshes inside tube
+let eCu,eGr;
+let ions=[],ePairs=[],corrosionParts=[];
+let beakers=[]; // 3 beaker objects
+let generatorGrp,multimeterGrp;
+let panelHidden=false,liquidHidden=false;
+let sph={theta:0.15,phi:Math.PI/5,r:8},target=new THREE.Vector3(0,1.2,0);
+let mouseScreen={x:-999,y:0},mouseNDC={x:0,y:0};
+let raycaster=new THREE.Raycaster();
+let magActive=false;
+
+// =========== ACTIVITY 2 — NaCl STATE ===========
+let act2Built=false;
+let act2TubeGrp,act2LiqL,act2LiqR,act2LiqB;
+let act2ElecA,act2ElecB; // 2 graphite electrodes
+let act2Beakers=[];
+let act2Bubbles=[];
+let act2NaclTension=0,act2NaclCurrent=0,act2Threshold=2.2;
+let act2Started=false,act2Poured=false,act2PourProg=0,act2PourElapsed=0;
+let act2IndicatorsAdded=false,act2IndigoProgress=0,act2PhenolProgress=0;
+let act2FlameTriggered=false;
+let act2Ions=[];
+
+// =========== TUBE CURVE DEFINITION ===========
+// Smooth U-shape: left arm down, smooth curve bottom, right arm up
+function buildTubeCurve(){
+  const pts=[];
+  const armTop=3.6, armBot=0.3, R=1.15;
+  // Left arm: top to bottom
+  for(let i=0;i<=10;i++){
+    pts.push(new THREE.Vector3(-R, armTop-i*(armTop-armBot)/10, 0));
+  }
+  // Smooth U bottom: semicircle from (-R,armBot) down through (0,armBot-R) to (+R,armBot)
+  for(let i=1;i<20;i++){
+    const a=Math.PI+Math.PI*(i/20); // π → 2π
+    pts.push(new THREE.Vector3(Math.cos(a)*R, armBot+Math.sin(a)*R, 0));
+  }
+  // Right arm: bottom to top
+  for(let i=0;i<=10;i++){
+    pts.push(new THREE.Vector3(R, armBot+i*(armTop-armBot)/10, 0));
+  }
+  tubeCurve=new THREE.CatmullRomCurve3(pts);
+  tubeCurvePts=pts;
+}
+
+// Get a random position INSIDE the tube at parameter t (0-1)
+function posInTube(tParam,radiusOffset){
+  const p=tubeCurve.getPointAt(Math.max(0,Math.min(1,tParam)));
+  const ro=radiusOffset||0;
+  const rx=(Math.random()-0.5)*0.24*2+ro;
+  const rz=(Math.random()-0.5)*0.24*2;
+  return new THREE.Vector3(p.x+rx,p.y,p.z+rz);
+}
+
+// Constrain a position to stay inside tube using perpendicular projection
+function constrainToTube(pos){
+  let bestT=0,bestDist=Infinity;
+  for(let t=0;t<=1;t+=0.01){
+    const p=tubeCurve.getPointAt(t);
+    const d=pos.distanceTo(p);
+    if(d<bestDist){bestDist=d;bestT=t;}
+  }
+  const center=tubeCurve.getPointAt(Math.min(bestT,0.999));
+  const tangent=tubeCurve.getTangentAt(Math.min(bestT,0.999)).normalize();
+  const offset=pos.clone().sub(center);
+  // Remove tangential component — keep only perpendicular
+  const tangComp=tangent.multiplyScalar(offset.dot(tangent));
+  const perp=offset.clone().sub(tangComp);
+  const maxR=0.26;
+  const perpDist=perp.length();
+  if(perpDist>maxR){
+    perp.multiplyScalar(maxR/perpDist);
+  }
+  pos.copy(center).add(perp);
+  return bestT;
+}
+
+// =========== SAFETY ===========
+document.getElementById('safetyCheck').addEventListener('change',function(){
+  document.getElementById('safetyBtn').disabled=!this.checked;
+});
+function closeSafety(){document.getElementById('safetyModal').style.display='none';initScene();}
+
+// =========== INIT ===========
+function initScene(){
+  const c=document.getElementById('scene3d');
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x0a0e14);
+  scene.fog=new THREE.FogExp2(0x0a0e14,0.018);
+  camera=new THREE.PerspectiveCamera(38,c.clientWidth/c.clientHeight,0.1,100);
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(c.clientWidth,c.clientHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.4;
+  c.appendChild(renderer.domElement);
+  const mc=document.getElementById('magCanvas');
+  mc.width=c.clientWidth;mc.height=c.clientHeight;
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0x223344,0.45));
+  const key=new THREE.DirectionalLight(0xffffff,0.6);key.position.set(3,8,5);key.castShadow=true;scene.add(key);
+  scene.add(new THREE.PointLight(0x39d2c0,0.6,15).translateX(-3).translateY(4).translateZ(-2));
+  scene.add(new THREE.PointLight(0xe8a050,0.4,15).translateX(3).translateY(3).translateZ(3));
+  scene.add(new THREE.PointLight(0x1144aa,0.35,8).translateY(-1));
+
+  buildTubeCurve();
+  buildTube();
+  buildElectrodes();
+  buildBeakers();
+  buildGenerator();
+  buildLabels();
+  setupControls(c);
+  updateCam();
+
+  c.addEventListener('mousemove',e=>{
+    const r=c.getBoundingClientRect();
+    mouseScreen.x=e.clientX-r.left;mouseScreen.y=e.clientY-r.top;
+    mouseNDC.x=((e.clientX-r.left)/r.width)*2-1;
+    mouseNDC.y=-((e.clientY-r.top)/r.height)*2+1;
+  });
+  c.addEventListener('mouseleave',()=>{mouseScreen.x=-999;});
+  window.addEventListener('resize',()=>{
+    camera.aspect=c.clientWidth/c.clientHeight;camera.updateProjectionMatrix();
+    renderer.setSize(c.clientWidth,c.clientHeight);
+    mc.width=c.clientWidth;mc.height=c.clientHeight;
+  });
+  animate();
+}
+
+function updateCam(){
+  camera.position.set(
+    target.x+sph.r*Math.sin(sph.phi)*Math.sin(sph.theta),
+    target.y+sph.r*Math.cos(sph.phi),
+    target.z+sph.r*Math.sin(sph.phi)*Math.cos(sph.theta)
+  );camera.lookAt(target);
+}
+function setupControls(c){
+  const cv=renderer.domElement;let drag=false,pan=false,px=0,py=0;
+  cv.addEventListener('mousedown',e=>{if(e.button===0)drag=true;if(e.button===2)pan=true;px=e.clientX;py=e.clientY;});
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+  cv.addEventListener('mousemove',e=>{
+    const dx=e.clientX-px,dy=e.clientY-py;
+    if(drag){sph.theta-=dx*.004;sph.phi=Math.max(.15,Math.min(Math.PI-.15,sph.phi-dy*.004));updateCam();}
+    if(pan){const r=new THREE.Vector3();camera.getWorldDirection(r);const u=new THREE.Vector3(0,1,0);r.cross(u).normalize();target.addScaledVector(r,-dx*.004);target.y+=dy*.004;updateCam();}
+    px=e.clientX;py=e.clientY;
+  });
+  cv.addEventListener('mouseup',()=>{drag=false;pan=false;});
+  cv.addEventListener('wheel',e=>{sph.r=Math.max(3,Math.min(14,sph.r+e.deltaY*.004));updateCam();},{passive:true});
+  let ts=[];
+  cv.addEventListener('touchstart',e=>{ts=[...e.touches];},{passive:true});
+  cv.addEventListener('touchmove',e=>{e.preventDefault();
+    if(e.touches.length===1&&ts.length>=1){sph.theta-=(e.touches[0].clientX-ts[0].clientX)*.004;sph.phi=Math.max(.15,Math.min(Math.PI-.15,sph.phi-(e.touches[0].clientY-ts[0].clientY)*.004));updateCam();}
+    else if(e.touches.length===2&&ts.length>=2){const d1=Math.hypot(ts[0].clientX-ts[1].clientX,ts[0].clientY-ts[1].clientY);const d2=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);sph.r=Math.max(3,Math.min(14,sph.r-(d2-d1)*.015));updateCam();}
+    ts=[...e.touches];
+  },{passive:false});
+}
+
+// =========== BUILD TUBE ===========
+function buildTube(){
+  tubeGrp=new THREE.Group();
+  // Glass shell — very transparent so liquid shows through
+  const tubeGeo=new THREE.TubeGeometry(tubeCurve,100,0.38,28,false);
+  const glassMat=new THREE.MeshPhysicalMaterial({
+    color:0xaaccdd,transparent:true,opacity:0.12,
+    roughness:0.02,clearcoat:1,clearcoatRoughness:0.03,
+    side:THREE.DoubleSide,depthWrite:false
+  });
+  const glassMesh=new THREE.Mesh(tubeGeo,glassMat);
+  glassMesh.renderOrder=2; // render glass AFTER liquid
+  tubeGrp.add(glassMesh);
+
+  // Rims
+  const rimMat=new THREE.MeshStandardMaterial({color:0x7799aa,metalness:0.4,roughness:0.3});
+  const rimGeo=new THREE.TorusGeometry(0.38,0.03,8,32);
+  const r1=new THREE.Mesh(rimGeo,rimMat);r1.position.set(-1.15,3.6,0);r1.rotation.x=Math.PI/2;tubeGrp.add(r1);
+  const r2=r1.clone();r2.position.set(1.15,3.6,0);tubeGrp.add(r2);
+
+  // LIQUID inside tube — LEFT ARM (t: 0 to ~0.35)
+  const liqPtsL=[];
+  for(let t=0.08;t<=0.42;t+=0.005){liqPtsL.push(tubeCurve.getPointAt(t));}
+  const liqCL=new THREE.CatmullRomCurve3(liqPtsL);
+  liqMeshL=new THREE.Mesh(
+    new THREE.TubeGeometry(liqCL,40,0.34,20,false),
+    new THREE.MeshStandardMaterial({color:0x2288dd,transparent:true,opacity:0,emissive:0x1155aa,emissiveIntensity:0.5,side:THREE.DoubleSide,depthWrite:true})
+  );
+  tubeGrp.add(liqMeshL);
+  // Cap ends to make it look solid
+  const capGeoL=new THREE.CircleGeometry(0.34,20);
+  const capMatL=new THREE.MeshStandardMaterial({color:0x2288dd,transparent:true,opacity:0,emissive:0x1155aa,emissiveIntensity:0.5,side:THREE.DoubleSide});
+  const capL1=new THREE.Mesh(capGeoL,capMatL);
+  const cpL0=liqCL.getPointAt(0),cpL0t=liqCL.getTangentAt(0);
+  capL1.position.copy(cpL0);capL1.lookAt(cpL0.clone().add(cpL0t));
+  tubeGrp.add(capL1);
+  const capL2=new THREE.Mesh(capGeoL.clone(),capMatL.clone());
+  const cpL1=liqCL.getPointAt(1),cpL1t=liqCL.getTangentAt(1);
+  capL2.position.copy(cpL1);capL2.lookAt(cpL1.clone().add(cpL1t));
+  tubeGrp.add(capL2);
+
+  // LIQUID — BOTTOM (t: 0.35 to 0.65)
+  const liqPtsB=[];
+  for(let t=0.38;t<=0.62;t+=0.005){liqPtsB.push(tubeCurve.getPointAt(t));}
+  const liqCB=new THREE.CatmullRomCurve3(liqPtsB);
+  const liqMeshB=new THREE.Mesh(
+    new THREE.TubeGeometry(liqCB,30,0.34,20,false),
+    new THREE.MeshStandardMaterial({color:0x2288dd,transparent:true,opacity:0,emissive:0x1155aa,emissiveIntensity:0.5,side:THREE.DoubleSide,depthWrite:true})
+  );
+  tubeGrp.add(liqMeshB);
+
+  // LIQUID — RIGHT ARM (t: 0.58 to 0.92)
+  const liqPtsR=[];
+  for(let t=0.58;t<=0.92;t+=0.005){liqPtsR.push(tubeCurve.getPointAt(t));}
+  const liqCR=new THREE.CatmullRomCurve3(liqPtsR);
+  liqMeshR=new THREE.Mesh(
+    new THREE.TubeGeometry(liqCR,40,0.34,20,false),
+    new THREE.MeshStandardMaterial({color:0x2288dd,transparent:true,opacity:0,emissive:0x1155aa,emissiveIntensity:0.5,side:THREE.DoubleSide,depthWrite:true})
+  );
+  tubeGrp.add(liqMeshR);
+
+  // Store all liquid meshes (including caps for opacity sync)
+  const allLiqParts=[liqMeshL,liqMeshB,liqMeshR,capL1,capL2];
+  tubeGrp.userData.liqMeshes=allLiqParts;
+
+  // Graduations on glass
+  for(let i=0;i<8;i++){
+    const t=new THREE.Mesh(new THREE.BoxGeometry(0.01,0.005,0.78),new THREE.MeshBasicMaterial({color:0x445566}));
+    t.position.set(-1.15,0.4+i*0.38,0);tubeGrp.add(t);
+    const t2=t.clone();t2.position.x=1.15;tubeGrp.add(t2);
+  }
+
+  scene.add(tubeGrp);
+}
+
+// =========== ELECTRODES ===========
+function buildElectrodes(){
+  // Copper plate — left arm
+  eCu=new THREE.Mesh(
+    new THREE.BoxGeometry(0.055,2.0,0.36),
+    new THREE.MeshStandardMaterial({color:0xcc7733,metalness:0.9,roughness:0.18,emissive:0x331100,emissiveIntensity:0.04})
+  );
+  eCu.position.set(-1.15,2.2,0);tubeGrp.add(eCu);
+
+  // Graphite rod — right arm
+  eGr=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.055,0.055,2.2,16),
+    new THREE.MeshStandardMaterial({color:0x222222,roughness:0.95,metalness:0.05})
+  );
+  eGr.position.set(1.15,2.3,0);tubeGrp.add(eGr);
+}
+
+// =========== 3 BEAKERS ===========
+function buildBeakers(){
+  const defs=[
+    {x:-3.0,z:2.2, label:'Br₂\n10 mL', liqColor:0xe87830},  // orange
+    {x:-1.5,z:2.8, label:'KBr\n20 mL', liqColor:0xdddddd},   // colorless
+    {x:0.0, z:2.2, label:'CuSO₄\n20 mL', liqColor:0x2277bb},  // blue
+  ];
+  defs.forEach((b,i)=>{
+    const grp=new THREE.Group();
+    // Glass beaker
+    const bGeo=new THREE.CylinderGeometry(0.35,0.32,1.0,20,1,true);
+    const bMat=new THREE.MeshPhysicalMaterial({color:0xaaccdd,transparent:true,opacity:0.18,roughness:0.02,clearcoat:1,side:THREE.DoubleSide});
+    grp.add(new THREE.Mesh(bGeo,bMat));
+    // Bottom
+    grp.add(new THREE.Mesh(new THREE.CircleGeometry(0.32,20),bMat.clone()).rotateX(-Math.PI/2).translateY(-0.5));
+    // Liquid inside
+    const lGeo=new THREE.CylinderGeometry(0.30,0.28,0.7,20);
+    const lMat=new THREE.MeshStandardMaterial({color:b.liqColor,transparent:true,opacity:0.75,emissive:b.liqColor,emissiveIntensity:0.2});
+    const liq=new THREE.Mesh(lGeo,lMat);
+    liq.position.y=-0.1;
+    grp.add(liq);
+    grp.userData.liquid=liq;
+    grp.userData.origPos=new THREE.Vector3(b.x,1.5,b.z);
+    grp.userData.pourTarget=new THREE.Vector3(i===0?-1.15:i===2?1.15:0,3.8,0.5);
+    grp.userData.pourDelay=i*1.2; // stagger: 0s, 1.2s, 2.4s
+    grp.userData.pourPhase=0; // 0=waiting, 1=moving, 2=tilting, 3=done
+    // Label
+    const cv=document.createElement('canvas');cv.width=128;cv.height=96;
+    const ctx=cv.getContext('2d');ctx.fillStyle='#e6edf3';ctx.font='bold 18px Fira Sans';ctx.textAlign='center';
+    b.label.split('\n').forEach((l,j)=>ctx.fillText(l,64,30+j*24));
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true}));
+    sp.scale.set(0.8,0.6,1);sp.position.y=0.9;
+    grp.add(sp);
+
+    grp.position.copy(grp.userData.origPos);
+    scene.add(grp);
+    beakers.push(grp);
+  });
+}
+
+// =========== GENERATOR ===========
+function buildGenerator(){
+  generatorGrp=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.7,0.5),new THREE.MeshStandardMaterial({color:0x3a3a3a,metalness:0.25,roughness:0.7}));
+  generatorGrp.add(body);
+  // Screen
+  const scCv=document.createElement('canvas');scCv.width=256;scCv.height=128;
+  const scTex=new THREE.CanvasTexture(scCv);
+  const scMesh=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.22),new THREE.MeshBasicMaterial({map:scTex,transparent:true}));
+  scMesh.position.set(0,0.08,0.26);generatorGrp.add(scMesh);
+  generatorGrp.userData.scCv=scCv;generatorGrp.userData.scTex=scTex;
+  // Terminals
+  generatorGrp.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.12,12),new THREE.MeshStandardMaterial({color:0xee2222,metalness:0.5})).rotateX(Math.PI/2).translateZ(-0.08).translateX(-0.35).translateY(0.26));
+  generatorGrp.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.12,12),new THREE.MeshStandardMaterial({color:0x111111,metalness:0.5})).rotateX(Math.PI/2).translateZ(-0.08).translateX(0.35).translateY(0.26));
+  mkLbl(generatorGrp,'+',new THREE.Vector3(-0.35,0.38,0.26),'#ff4444',14);
+  mkLbl(generatorGrp,'−',new THREE.Vector3(0.35,0.38,0.26),'#888',14);
+  mkLbl(generatorGrp,'G',new THREE.Vector3(0,0.38,0.26),'#aaa',16);
+  generatorGrp.position.set(0,4.8,0.7);generatorGrp.visible=false;scene.add(generatorGrp);
+
+  // Wires (tubes)
+  const mkWire=(pts,col)=>{const c=new THREE.CatmullRomCurve3(pts);tubeGrp.add(new THREE.Mesh(new THREE.TubeGeometry(c,16,0.02,8,false),new THREE.MeshStandardMaterial({color:col,roughness:0.5})));};
+  mkWire([new THREE.Vector3(-1.15,3.6,0),new THREE.Vector3(-1.15,4.2,0),new THREE.Vector3(-0.6,4.6,0.5),new THREE.Vector3(-0.35,4.8,0.7)],0xcc2222);
+  mkWire([new THREE.Vector3(1.15,3.6,0),new THREE.Vector3(1.15,4.2,0),new THREE.Vector3(0.6,4.6,0.5),new THREE.Vector3(0.35,4.8,0.7)],0x2244cc);
+
+  // MULTIMETER — positioned between the two wires, shows V and mA
+  multimeterGrp=new THREE.Group();
+  // Main body (dark box)
+  const mBody=new THREE.Mesh(
+    new THREE.BoxGeometry(0.7,0.5,0.3),
+    new THREE.MeshStandardMaterial({color:0x1a1a1a,metalness:0.2,roughness:0.8})
+  );
+  multimeterGrp.add(mBody);
+  // Bezel
+  const mBezel=new THREE.Mesh(
+    new THREE.BoxGeometry(0.72,0.52,0.28),
+    new THREE.MeshStandardMaterial({color:0x333333,metalness:0.1,roughness:0.9})
+  );
+  mBezel.position.z=-0.02;
+  multimeterGrp.add(mBezel);
+  // Screen (canvas texture for dynamic values)
+  const mCv=document.createElement('canvas');mCv.width=280;mCv.height=180;
+  const mTex=new THREE.CanvasTexture(mCv);
+  const mScreen=new THREE.Mesh(
+    new THREE.PlaneGeometry(0.5,0.32),
+    new THREE.MeshBasicMaterial({map:mTex})
+  );
+  mScreen.position.set(0,0.02,0.16);
+  multimeterGrp.add(mScreen);
+  multimeterGrp.userData.cv=mCv;
+  multimeterGrp.userData.tex=mTex;
+  // Red terminal (left)
+  const mTermR=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.08,10),new THREE.MeshStandardMaterial({color:0xee2222,metalness:0.6}));
+  mTermR.position.set(-0.22,-0.2,0.15);mTermR.rotation.x=Math.PI/2;
+  multimeterGrp.add(mTermR);
+  // Black terminal (right)
+  const mTermB=mTermR.clone();mTermB.material=new THREE.MeshStandardMaterial({color:0x111111,metalness:0.6});
+  mTermB.position.set(0.22,-0.2,0.15);
+  multimeterGrp.add(mTermB);
+  // Labels
+  mkLbl(multimeterGrp,'V/A',new THREE.Vector3(0,0.3,0.16),'#33ff88',11);
+  mkLbl(multimeterGrp,'●',new THREE.Vector3(-0.22,-0.3,0.16),'#ee3333',10);
+  mkLbl(multimeterGrp,'●',new THREE.Vector3(0.22,-0.3,0.16),'#333333',10);
+
+  multimeterGrp.position.set(0,4.3,0.35);
+  multimeterGrp.visible=false;
+  scene.add(multimeterGrp);
+}
+
+function updateGenScreen(){
+  if(!generatorGrp.visible)return;
+  const cv=generatorGrp.userData.scCv,ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,256,128);ctx.fillStyle='#001a00';ctx.fillRect(0,0,256,128);
+  ctx.fillStyle='#33ff66';ctx.font='bold 32px JetBrains Mono';ctx.textAlign='center';
+  ctx.fillText(tension.toFixed(1)+' V',128,48);
+  ctx.fillStyle='#ffaa33';ctx.font='bold 24px JetBrains Mono';
+  ctx.fillText((current*1000).toFixed(0)+' mA',128,90);
+  generatorGrp.userData.scTex.needsUpdate=true;
+}
+
+function buildLabels(){
+  mkLbl(tubeGrp,'Cu',new THREE.Vector3(-1.15,3.75,0.4),'#e8a050',16);
+  mkLbl(tubeGrp,'Graphite',new THREE.Vector3(1.15,3.75,0.4),'#8b949e',11);
+}
+
+function mkLbl(parent,text,pos,color,size){
+  const cv=document.createElement('canvas');cv.width=128;cv.height=48;
+  const x=cv.getContext('2d');x.fillStyle=color;x.font=`bold ${size||12}px Fira Sans`;
+  x.textAlign='center';x.fillText(text,64,32);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true}));
+  sp.position.copy(pos);sp.scale.set(0.5,0.18,1);parent.add(sp);
+}
+
+// =========== IONS INSIDE TUBE ===========
+function spawnIons(){
+  if(ions.length)return;
+  const types=[
+    {c:0x4499ff,r:0.04,n:14,ch:2,lbl:'Cu²⁺',tRange:[0.05,0.35]},  // left arm
+    {c:0x4499ff,r:0.04,n:6,ch:2,lbl:'Cu²⁺',tRange:[0.65,0.95]},    // right arm too
+    {c:0xff6633,r:0.045,n:14,ch:-1,lbl:'Br⁻',tRange:[0.65,0.95]},  // right arm
+    {c:0xff6633,r:0.045,n:6,ch:-1,lbl:'Br⁻',tRange:[0.05,0.35]},   // left arm too
+    {c:0x44dd55,r:0.022,n:8,ch:1,lbl:'K⁺',tRange:[0.1,0.9]},
+    {c:0xddcc33,r:0.03,n:5,ch:-2,lbl:'SO₄²⁻',tRange:[0.1,0.9],tetra:true},
+  ];
+  types.forEach(T=>{
+    for(let i=0;i<T.n;i++){
+      const geo=T.tetra?new THREE.TetrahedronGeometry(T.r):new THREE.SphereGeometry(T.r,10,10);
+      const mat=new THREE.MeshStandardMaterial({color:T.c,emissive:T.c,emissiveIntensity:0.45,transparent:true,opacity:0.9});
+      const m=new THREE.Mesh(geo,mat);
+      // Position INSIDE tube
+      const tParam=T.tRange[0]+Math.random()*(T.tRange[1]-T.tRange[0]);
+      const cp=tubeCurve.getPointAt(tParam);
+      m.position.set(cp.x+(Math.random()-0.5)*0.22,cp.y+(Math.random()-0.5)*0.1,cp.z+(Math.random()-0.5)*0.22);
+
+      // Label
+      const lCv=document.createElement('canvas');lCv.width=96;lCv.height=36;
+      const lx=lCv.getContext('2d');lx.fillStyle='#'+T.c.toString(16).padStart(6,'0');
+      lx.font='bold 16px JetBrains Mono';lx.textAlign='center';lx.fillText(T.lbl,48,24);
+      const lsp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(lCv),transparent:true}));
+      lsp.scale.set(0.25,0.09,1);lsp.position.y=T.r+0.05;m.add(lsp);
+
+      tubeGrp.add(m);
+      ions.push({m,ch:T.ch,vx:(Math.random()-0.5)*0.002,vy:(Math.random()-0.5)*0.002,vz:(Math.random()-0.5)*0.002,type:T.lbl});
+    }
+  });
+}
+function clearIons(){ions.forEach(i=>tubeGrp.remove(i.m));ions=[];}
+
+// =========== ELECTRONS ===========
+function spawnEPairs(){
+  if(ePairs.length)return;
+  const fwd=[
+    new THREE.Vector3(-1.15,3.6,0),new THREE.Vector3(-1.15,4.2,0),
+    new THREE.Vector3(-0.6,4.6,0.5),new THREE.Vector3(0,4.8,0.7),
+    new THREE.Vector3(0.6,4.6,0.5),new THREE.Vector3(1.15,4.2,0),new THREE.Vector3(1.15,3.6,0)
+  ];
+  const path=(phase===3&&polarity==='gr')?[...fwd].reverse():fwd;
+  for(let i=0;i<5;i++){
+    const g=new THREE.Group();
+    const em=new THREE.MeshBasicMaterial({color:0x88ffff});
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.018,8,8),em).translateX(-0.025));
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.018,8,8),em.clone()).translateX(0.025));
+    // Glow
+    const gc=document.createElement('canvas');gc.width=32;gc.height=32;
+    const gx=gc.getContext('2d');const gr=gx.createRadialGradient(16,16,0,16,16,16);
+    gr.addColorStop(0,'rgba(100,255,255,0.6)');gr.addColorStop(1,'rgba(100,255,255,0)');
+    gx.fillStyle=gr;gx.fillRect(0,0,32,32);
+    const gsp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(gc),transparent:true,blending:THREE.AdditiveBlending}));
+    gsp.scale.set(0.15,0.15,1);g.add(gsp);
+    // Label
+    const lc=document.createElement('canvas');lc.width=48;lc.height=24;
+    const lx=lc.getContext('2d');lx.fillStyle='#88ffff';lx.font='bold 14px JetBrains Mono';lx.textAlign='center';lx.fillText('e⁻',24,18);
+    const lsp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(lc),transparent:true}));
+    lsp.scale.set(0.15,0.07,1);lsp.position.y=0.05;g.add(lsp);
+    tubeGrp.add(g);
+    ePairs.push({g,path,t:i/5,spd:0.005,wait:0});
+  }
+}
+function clearEPairs(){ePairs.forEach(e=>tubeGrp.remove(e.g));ePairs=[];}
+function toggleIonView(){ionView=!ionView;magActive=ionView;if(ionView){spawnIons();spawnEPairs();}else{clearIons();clearEPairs();}}
+
+// =========== CORROSION PARTICLES ===========
+function spawnCorrosion(){
+  if(corrosionParts.length>30)return;
+  const geo=new THREE.SphereGeometry(0.012+Math.random()*0.008,6,6);
+  const mat=new THREE.MeshStandardMaterial({color:0xcc7733,metalness:0.8,roughness:0.2});
+  const m=new THREE.Mesh(geo,mat);
+  m.position.set(eCu.position.x+0.04,eCu.position.y-0.8+Math.random()*1.6,(Math.random()-0.5)*0.15);
+  m.userData.vy=0.002+Math.random()*0.003;
+  m.userData.vx=(Math.random()-0.5)*0.002;
+  m.userData.life=0;
+  tubeGrp.add(m);
+  corrosionParts.push(m);
+}
+
+// =========== MAGNIFYING GLASS ===========
+function drawMag(){
+  const mc=document.getElementById('magCanvas');
+  const ctx=mc.getContext('2d');
+  ctx.clearRect(0,0,mc.width,mc.height);
+  if(!magActive||mouseScreen.x<0)return;
+
+  raycaster.setFromCamera(mouseNDC,camera);
+  const hits=raycaster.intersectObjects([eCu,eGr],false);
+  let near=hits.length>0?(hits[0].object===eCu?'cu':'gr'):null;
+
+  const cx=mouseScreen.x,cy=mouseScreen.y,R=80;
+  // Always draw lens
+  ctx.save();ctx.strokeStyle='rgba(57,210,192,0.35)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx+R*0.7,cy+R*0.7);ctx.lineTo(cx+R*0.7+15,cy+R*0.7+15);
+  ctx.strokeStyle='rgba(57,210,192,0.5)';ctx.lineWidth=2.5;ctx.stroke();
+  if(!near){ctx.restore();return;}
+
+  ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();
+  ctx.fillStyle='rgba(8,12,18,0.93)';ctx.fillRect(cx-R,cy-R,R*2,R*2);
+
+  if(near==='cu'){
+    // Surface
+    const grd=ctx.createLinearGradient(cx-R,cy,cx-R+35,cy);
+    grd.addColorStop(0,'#B87333');grd.addColorStop(1,'#7a4a1f');
+    ctx.fillStyle=grd;ctx.fillRect(cx-R,cy-R,35,R*2);
+    ctx.fillStyle='#aa6633';
+    for(let i=0;i<6;i++){ctx.beginPath();ctx.arc(cx-R+33+Math.sin(time+i)*4,cy-R+15+i*22,2+Math.random()*3,0,Math.PI*2);ctx.fill();}
+    // Cu²⁺ ion
+    const ix=cx+15+Math.sin(time*1.5)*12,iy=cy-8+Math.cos(time*1.2)*8;
+    ctx.fillStyle='#4499ff';ctx.beginPath();ctx.arc(ix,iy,9,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 8px JetBrains Mono';ctx.textAlign='center';ctx.fillText('Cu²⁺',ix,iy+3);
+    // e⁻
+    const ex=cx-R+38+Math.abs(Math.sin(time*3))*18;
+    ctx.fillStyle='#88ffff';ctx.beginPath();ctx.arc(ex,cy-15,3.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(ex+2,cy+5,3.5,0,Math.PI*2);ctx.fill();
+    ctx.font='7px JetBrains Mono';ctx.fillText('e⁻',ex,cy-20);ctx.fillText('e⁻',ex+2,cy);
+    ctx.fillStyle='#39d2c0';ctx.font='bold 9px JetBrains Mono';
+    ctx.fillText(phase===3?'Cu²⁺+2e⁻→Cu':'Cu→Cu²⁺+2e⁻',cx,cy+R-12);
+    ctx.fillStyle=phase===3?'#39d2c0':'#f85149';ctx.font='bold 10px Fira Sans';
+    ctx.fillText(phase===3?'Cathode — Dépôt':'Anode — Corrosion',cx,cy-R+12);
+  }else{
+    ctx.fillStyle='#1a1a1a';ctx.fillRect(cx+R-35,cy-R,35,R*2);
+    ctx.strokeStyle='#2a2a2a';ctx.lineWidth=0.5;
+    for(let i=0;i<10;i++){ctx.beginPath();ctx.moveTo(cx+R-33,cy-R+i*16);ctx.lineTo(cx+R,cy-R+i*16+4);ctx.stroke();}
+    const bx=cx-25+Math.sin(time*1.3)*8,by=cy-12;
+    ctx.fillStyle='#ff5533';ctx.beginPath();ctx.arc(bx,by,8,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(bx+4,cy+12,8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 7px JetBrains Mono';ctx.textAlign='center';ctx.fillText('Br⁻',bx,by+3);ctx.fillText('Br⁻',bx+4,cy+15);
+    const b2x=cx+15;
+    ctx.fillStyle='#8B4513';ctx.beginPath();ctx.arc(b2x,cy-4,6,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(b2x,cy+4,6,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#8B4513';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(b2x,cy-4);ctx.lineTo(b2x,cy+4);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 7px JetBrains Mono';ctx.fillText('Br₂',b2x,cy+16);
+    ctx.fillStyle='#39d2c0';ctx.font='bold 9px JetBrains Mono';
+    ctx.fillText(phase===3?'2Br⁻→Br₂+2e⁻':'Br₂+2e⁻→2Br⁻',cx,cy+R-12);
+    ctx.fillStyle=phase===3?'#f85149':'#39d2c0';ctx.font='bold 10px Fira Sans';
+    ctx.fillText(phase===3?'Anode — Oxydation':'Cathode — Réduction',cx,cy-R+12);
+  }
+  ctx.restore();
+}
+
+// =========== ANIMATION ===========
+let time=0;
+function animate(){
+  requestAnimationFrame(animate);
+  time+=0.016;
+
+  // Pour animation (Phase 1) — beakers move, tilt, pour
+  if(poured&&pourProgress<1){
+    pourProgress+=0.002;
+    pourElapsed+=0.016;
+
+    beakers.forEach((b,idx)=>{
+      const delay=b.userData.pourDelay;
+      const t=Math.max(0,pourElapsed-delay);
+      const liq=b.userData.liquid;
+      const orig=b.userData.origPos;
+      const target=b.userData.pourTarget;
+
+      if(t<=0) return; // waiting
+
+      if(t<1.5){
+        // Phase 1: move toward tube top
+        const p=Math.min(t/1.5,1);
+        const ease=p*p*(3-2*p); // smoothstep
+        b.position.lerpVectors(orig,target,ease);
+      } else if(t<3.0){
+        // Phase 2: tilt and pour
+        b.position.copy(target);
+        const tiltP=Math.min((t-1.5)/1.0,1);
+        b.rotation.z=tiltP*0.9; // tilt ~50°
+        // Drain liquid
+        if(liq.scale.y>0.02) liq.scale.y-=0.008;
+        liq.material.opacity=Math.max(0,liq.material.opacity-0.008);
+      } else if(t<4.5){
+        // Phase 3: return upright and move back
+        const retP=Math.min((t-3.0)/1.2,1);
+        const ease=retP*retP*(3-2*retP);
+        b.rotation.z=0.9*(1-ease);
+        b.position.lerpVectors(target,orig,ease);
+      } else {
+        b.position.copy(orig);b.rotation.z=0;
+      }
+    });
+
+    // Tube fills with liquid — high opacity, starts orange
+    const liqMeshes=tubeGrp.userData.liqMeshes;
+    const orangeToBlue=Math.min(1,reactionProgress);
+    const r=0.91*(1-orangeToBlue)+0.13*orangeToBlue;
+    const g=0.47*(1-orangeToBlue)+0.53*orangeToBlue;
+    const bv=0.19*(1-orangeToBlue)+0.87*orangeToBlue;
+    liqMeshes.forEach(m=>{
+      if(m.material.opacity<0.92)m.material.opacity+=0.007;
+      m.material.color.setRGB(r,g,bv);
+      m.material.emissive.setRGB(r*0.45,g*0.45,bv*0.45);
+      m.material.emissiveIntensity=0.55;
+    });
+  }
+
+  // Reaction progress (orange→blue) after pouring
+  if(poured&&pourProgress>=0.5&&reactionProgress<1){
+    reactionProgress+=0.004;
+    // Corrosion on Cu
+    if(Math.random()<0.07)spawnCorrosion();
+    // Cu electrode erodes visually
+    eCu.scale.x=Math.max(0.7,1-reactionProgress*0.2);
+    eCu.scale.z=Math.max(0.7,1-reactionProgress*0.2);
+  }
+
+  // Corrosion particles drift (iterate backwards to avoid splice issues)
+  for(let i=corrosionParts.length-1;i>=0;i--){
+    const p=corrosionParts[i];
+    p.position.x+=p.userData.vx;
+    p.position.y-=p.userData.vy*0.3;
+    p.userData.life+=0.016;
+    if(p.userData.life>3){tubeGrp.remove(p);corrosionParts.splice(i,1);}
+  }
+
+  // Electrolysis effects
+  if(eRunning&&polarity==='gr'){
+    // Left (Cu cathode): blue fades as Cu²⁺ is consumed
+    liqMeshL.material.color.lerp(new THREE.Color(0.45,0.58,0.65),0.001);
+    liqMeshL.material.emissive.lerp(new THREE.Color(0.15,0.2,0.22),0.001);
+    // Right (Gr anode): turns orange-brown (Br₂ forms)
+    liqMeshR.material.color.lerp(new THREE.Color(0.7,0.35,0.1),0.001);
+    liqMeshR.material.emissive.lerp(new THREE.Color(0.3,0.12,0.03),0.001);
+    // Cu electrode grows (deposition) and gets shinier
+    const s=1+massChg*0.4;
+    eCu.scale.x=Math.min(2.2,s);eCu.scale.z=Math.min(2.2,s);
+    eCu.material.roughness=Math.max(0.05,eCu.material.roughness-0.0001);
+    eCu.material.emissiveIntensity=Math.min(0.15,eCu.material.emissiveIntensity+0.00005);
+    // Dendrite growth
+    if(Math.random()<0.02)spawnCorrosion();
+  }
+
+  // Ion physics — constrained to tube
+  ions.forEach(p=>{
+    p.vx+=(Math.random()-0.5)*0.0008;p.vy+=(Math.random()-0.5)*0.0008;p.vz+=(Math.random()-0.5)*0.0008;
+    if(eRunning||phase===2){
+      const dir=(phase===3&&polarity==='gr')?-1:1;
+      // Migration: cations toward cathode, anions toward anode
+      // In tube coordinates, left arm is t<0.5, right is t>0.5
+      if(p.ch>0)p.vx+=0.0001*dir;
+      if(p.ch<0)p.vx-=0.0001*dir;
+    }
+    p.m.position.x+=p.vx;p.m.position.y+=p.vy;p.m.position.z+=p.vz;
+    // CONSTRAIN to tube interior
+    constrainToTube(p.m.position);
+    p.vx*=0.96;p.vy*=0.96;p.vz*=0.96;
+    p.m.material.emissiveIntensity=0.35+Math.sin(time*2.5+p.ch)*0.12;
+  });
+
+  // Electron pairs
+  ePairs.forEach(ep=>{
+    if(ep.wait>0){ep.wait-=0.016;return;}
+    ep.t+=ep.spd;
+    if(ep.t>=1){ep.t=0;ep.wait=0.3+Math.random()*0.5;}
+    const pts=ep.path,n=pts.length-1;
+    const seg=Math.min(Math.floor(ep.t*n),n-1);
+    ep.g.position.lerpVectors(pts[seg],pts[seg+1],(ep.t*n)-seg);
+  });
+
+  if(generatorGrp&&generatorGrp.visible)updateGenScreen();
+  updateMultimeterScreen();
+  animateAct2();
+  renderer.render(scene,camera);
+  drawMag();
+}
+
+// =========== NAV ===========
+function goPhase(n){if(!unlocked[n-1])return;phase=n;updateUI();}
+function nextPhase(){if(phase<4&&unlocked[phase]){phase++;updateUI();}}
+function prevPhase(){if(phase>1){phase--;updateUI();}}
+function updateUI(){
+  document.querySelectorAll('.phase-content').forEach(e=>e.classList.remove('active'));
+  document.getElementById('phase'+phase+'Content').classList.add('active');
+  document.querySelectorAll('.pdot').forEach((d,i)=>{d.classList.remove('active','done');if(i+1===phase)d.classList.add('active');else if(i+1<phase)d.classList.add('done');});
+  const lb=['Phase I','Phase II — Pile','Phase III — Électrolyse','Phase IV','Phase V — NaCl'];
+  document.getElementById('phaseLabel').textContent=lb[phase-1]||'';
+  const t=['Phase I','Phase II','Phase III','Phase IV','Phase V — NaCl'];
+  const d=['Préparez le mélange.','Mesurez la f.é.m.','Forcez la réaction.','Loi de Faraday.','Électrolyse industrielle.'];
+  document.getElementById('overlayTitle').textContent=t[phase-1]||'Phase V';
+  document.getElementById('overlayDesc').textContent=d[phase-1]||'NaCl';
+  document.getElementById('prevBtn').disabled=phase===1;
+  document.getElementById('nextBtn').disabled=!unlocked[phase]||phase===5;
+  document.getElementById('ionBtnBot').classList.toggle('hidden',phase<2||phase===5);
+  document.getElementById('meterPanel').style.display=(phase===2&&document.getElementById('connMeter').disabled)?'block':'none';
+  document.getElementById('ampPanel').style.display=(phase===3&&eRunning)?'block':'none';
+  document.getElementById('massLabel').style.display=(phase===3&&eRunning)?'block':'none';
+  if(phase===2&&document.getElementById('connMeter').disabled)showEqs('Cu→Cu²⁺+2e⁻','Br₂+2e⁻→2Br⁻');
+  else if(phase===3&&polarity==='gr')showEqs('Cu²⁺+2e⁻→Cu','2Br⁻→Br₂+2e⁻');
+  else if(phase===5&&act2Started)showEqs('2Cl⁻→Cl₂+2e⁻','2H₂O+2e⁻→H₂+2HO⁻');
+  else document.getElementById('eqOverlay').style.display='none';
+  if(generatorGrp) generatorGrp.visible=(phase===3&&document.getElementById('connGen').disabled)||(phase===5&&act2Poured);
+  if(multimeterGrp) multimeterGrp.visible=(phase>=2&&phase<=4&&(document.getElementById('connMeter').disabled||document.getElementById('connGen').disabled))||(phase===5&&act2Poured);
+  beakers.forEach(b=>{b.visible=phase===1;});
+  // Build Activity 2 scene on first entry
+  if(phase===5&&!act2Built) buildAct2Scene();
+  // Scene switching: Activity 1 vs 2
+  if(tubeGrp) tubeGrp.visible=phase<=4;
+  if(act2TubeGrp) act2TubeGrp.visible=phase===5;
+  act2Beakers.forEach(b=>{b.visible=phase===5&&(!act2Poured||act2PourProg<1);});
+}
+function showEqs(l,r){document.getElementById('eqLeft').textContent=l;document.getElementById('eqRight').textContent=r;document.getElementById('eqOverlay').style.display='block';}
+
+// =========== PHASE 1 ===========
+function pourSolutions(){
+  poured=true;
+  document.getElementById('pourBtn').disabled=true;document.getElementById('pourBtn').textContent='⏳ Versement en cours...';
+  show('mixInfo');
+  setTimeout(()=>{document.getElementById('pourBtn').textContent='✅ Versé';},7000);
+  setTimeout(()=>{show('mixResult');show('toP2');unlocked[1]=true;document.getElementById('nextBtn').disabled=false;},10000);
+}
+
+// =========== PHASE 2 ===========
+function connectMeter(){
+  const b=document.getElementById('connMeter');b.disabled=true;b.textContent='✅ OK';
+  document.getElementById('meterPanel').style.display='block';
+  document.getElementById('meterVal').textContent=Epile.toFixed(3);
+  document.getElementById('meterSub').textContent='⊕ graphite';
+  multimeterGrp.visible=true;
+  spawnEPairs();showEqs('Cu→Cu²⁺+2e⁻','Br₂+2e⁻→2Br⁻');
+  setTimeout(()=>show('q1C'),700);
+}
+function checkQ1(){att.q1++;const v=pv('q1In'),fb=$('q1F');if(isNaN(v)){sfb(fb,'incorrect','Valeur.');return;}
+  if(v/Qri>.7&&v/Qri<1.3){sfb(fb,'correct','✅ Q='+Qri.toExponential(2)+' ≪ K');show('q2C');}
+  else{if(att.q1<=3)sfb(fb,att.q1===1?'incorrect':'hint',att.q1===1?'Dilution!':'💡 0,4×0,16/2e-6');else{sfb(fb,'info','Q='+Qri.toExponential(2));show('q2C');}}}
+function checkQ2(a){if(a==='d'){sfb($('q2F'),'correct','✅ Direct');show('q3C');}else sfb($('q2F'),'incorrect','Q<K→?');}
+function checkQ3(){att.q3++;const v=pv('q3In'),fb=$('q3F');if(isNaN(v)){sfb(fb,'incorrect','Valeur.');return;}
+  if(Math.abs(v-Epile)<.15){sfb(fb,'correct','✅ E='+Epile.toFixed(2)+'V');show('q4C');show('ionBtn2');show('toP3');unlocked[2]=true;document.getElementById('nextBtn').disabled=false;}
+  else{if(att.q3<=2)sfb(fb,'incorrect',Epile.toFixed(3)+'V');else{sfb(fb,'info','E='+Epile.toFixed(3));show('toP3');unlocked[2]=true;}}}
+
+// =========== PHASE 3 ===========
+function connectGen(){document.getElementById('connGen').disabled=true;document.getElementById('connGen').textContent='✅';
+  document.getElementById('meterPanel').style.display='none';document.getElementById('eqOverlay').style.display='none';
+  generatorGrp.visible=true;multimeterGrp.visible=true;show('genUI');clearEPairs();}
+function setPol(p){polarity=p;document.getElementById('polCu').classList.toggle('sel',p==='cu');document.getElementById('polGr').classList.toggle('sel',p==='gr');
+  if(p==='cu')sfb($('polF'),'hint','⚠️ Pas électrolyse.');
+  else{sfb($('polF'),'correct','✅ Électrolyse!');show('tensionUI');showEqs('Cu²⁺+2e⁻→Cu','2Br⁻→Br₂+2e⁻');setTimeout(()=>show('qm1C'),400);}}
+function setTension(v){tension=parseFloat(v);document.getElementById('tensVal').textContent=tension.toFixed(1)+'V';
+  current=tension>Epile?(tension-Epile)*0.08:0;document.getElementById('ampVal').textContent=(-current*1000).toFixed(1);}
+function toggleElect(){const btn=document.getElementById('electBtn');
+  if(!eRunning){if(tension<=Epile){alert('Tension > '+Epile.toFixed(2)+' V');return;}
+    eRunning=true;btn.textContent='⏹';btn.className='btn';
+    document.getElementById('ampPanel').style.display='block';document.getElementById('massLabel').style.display='block';multimeterGrp.visible=true;
+    if(!chart)initChart();clearEPairs();spawnEPairs();
+    cInt=setInterval(()=>{eTime++;const n=(current*eTime)/(Z*FC);massChg=n*MCu;
+      document.getElementById('chronoDisplay').textContent=ft(eTime);
+      document.getElementById('massVal').textContent='+'+(massChg*1000).toFixed(2);
+      document.getElementById('ampVal').textContent=(-current*1000).toFixed(1);
+      if(eTime%3===0){cD.l.push(eTime);cD.d.push(-current*1000);chart.update();}
+    },1000);
+  }else{eRunning=false;btn.textContent='▶';btn.className='btn btn-d';clearInterval(cInt);}}
+function ft(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function initChart(){Chart.defaults.color='#8b949e';Chart.defaults.borderColor='#1c2128';
+  chart=new Chart(document.getElementById('chartCanvas').getContext('2d'),{
+    type:'line',data:{labels:cD.l,datasets:[{data:cD.d,borderColor:'#39d2c0',backgroundColor:'rgba(57,210,192,.05)',fill:true,tension:.3,pointRadius:1,borderWidth:1.5}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{color:'#161b22'}},y:{grid:{color:'#161b22'}}},plugins:{legend:{display:false}}}});}
+function checkQM(a){if(a==='n'){sfb($('qm1F'),'correct','✅ Inversé');show('qm2C');}else sfb($('qm1F'),'incorrect','Comparez.');}
+function checkQM2(a){if(a==='gr'){sfb($('qm2F'),'correct','✅ Graphite=anode');show('qm3C');}else sfb($('qm2F'),'incorrect','Borne+=anode');}
+function checkQM3(a){if(a==='f'){sfb($('qm3F'),'correct','✅ Forcée');show('compCard');show('toP4');unlocked[3]=true;document.getElementById('nextBtn').disabled=false;}else sfb($('qm3F'),'incorrect','≠spontané→?');}
+
+// =========== PHASE 4 ===========
+function checkQ7(){att.q7++;const v=pv('q7In'),fb=$('q7F'),exp=(.5*120)/(Z*FC);if(isNaN(v)){sfb(fb,'incorrect','Valeur.');return;}
+  if(v/exp>.8&&v/exp<1.2){sfb(fb,'correct','✅ n='+exp.toExponential(2));show('q8C');}
+  else{if(att.q7<=2)sfb(fb,att.q7===1?'incorrect':'hint',att.q7===1?'n=(I·Δt)/(z·F)':'💡(0,5×120)/(2×96485)');else{sfb(fb,'info','n='+exp.toExponential(3));show('q8C');}}}
+function checkQ8(){att.q8++;const v=pv('q8In'),fb=$('q8F'),exp=((.5*120)/(Z*FC))*MCu;if(isNaN(v)){sfb(fb,'incorrect','Valeur.');return;}
+  if(v/exp>.8&&v/exp<1.2){sfb(fb,'correct','✅ m='+exp.toFixed(4)+'g');show('q9C');}
+  else{if(att.q8<=2)sfb(fb,'incorrect','m=n×M');else{sfb(fb,'info','m='+exp.toFixed(4)+'g');show('q9C');}}}
+function checkQ9(){const fb=$('q9F');if($('a4').checked){sfb(fb,'incorrect','≠électrolyse');return;}
+  if([$('a1'),$('a2'),$('a3')].filter(x=>x.checked).length>=2){sfb(fb,'correct','✅ Bravo!');show('doneCard');show('toP5');unlocked[4]=true;document.getElementById('nextBtn').disabled=false;}
+  else sfb(fb,'hint','≥2');}
+
+// =========== UTILS ===========
+function sfb(el,t,h){el.className='feedback '+t;el.innerHTML=h;el.style.display='block';}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function pv(id){return parseFloat(document.getElementById(id).value.replace(',','.'));}
+function $(id){return document.getElementById(id);}
+
+// =========== MULTIMETER SCREEN UPDATE ===========
+function updateMultimeterScreen(){
+  if(!multimeterGrp||!multimeterGrp.visible)return;
+  const cv=multimeterGrp.userData.cv,ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,280,180);
+  // Background
+  ctx.fillStyle='#001a08';ctx.fillRect(0,0,280,180);
+  // Border
+  ctx.strokeStyle='#1a3a2a';ctx.lineWidth=2;ctx.strokeRect(2,2,276,176);
+
+  if(phase===2){
+    // Voltmeter mode
+    ctx.fillStyle='#33ff88';ctx.font='bold 14px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('VOLTMÈTRE',140,24);
+    ctx.font='bold 38px JetBrains Mono';
+    ctx.fillText(Epile.toFixed(3),140,75);
+    ctx.font='bold 16px JetBrains Mono';
+    ctx.fillText('V',250,75);
+    // Polarity indicator
+    ctx.fillStyle='#88ffaa';ctx.font='14px JetBrains Mono';
+    ctx.fillText('⊕ Graphite  ⊖ Cu',140,110);
+  } else if(phase===3){
+    // Dual display: V and mA
+    ctx.fillStyle='#33ff88';ctx.font='bold 12px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('TENSION',140,20);
+    ctx.font='bold 30px JetBrains Mono';
+    ctx.fillText(tension.toFixed(1)+' V',140,55);
+    // Current
+    ctx.fillStyle='#ffaa33';ctx.font='bold 12px JetBrains Mono';
+    ctx.fillText('INTENSITÉ',140,85);
+    ctx.font='bold 28px JetBrains Mono';
+    const iVal=eRunning?(-current*1000).toFixed(1):'0.0';
+    ctx.fillText(iVal+' mA',140,118);
+    // Mode
+    ctx.fillStyle='#666';ctx.font='10px JetBrains Mono';
+    ctx.fillText(eRunning?'● ÉLECTROLYSE':'○ EN ATTENTE',140,145);
+  } else if(phase===5){
+    // NaCl electrolysis display
+    ctx.fillStyle='#33ff88';ctx.font='bold 12px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('NaCl — TENSION',140,20);
+    ctx.font='bold 30px JetBrains Mono';
+    ctx.fillText(act2NaclTension.toFixed(1)+' V',140,55);
+    ctx.fillStyle='#ffaa33';ctx.font='bold 12px JetBrains Mono';
+    ctx.fillText('INTENSITÉ',140,85);
+    ctx.font='bold 28px JetBrains Mono';
+    ctx.fillText((act2NaclCurrent*1000).toFixed(1)+' mA',140,118);
+    ctx.fillStyle=act2Started?'#aacc33':'#666';ctx.font='10px JetBrains Mono';
+    ctx.fillText(act2Started?'● BULLES VISIBLES':'○ U < U_AC',140,148);
+  }
+  multimeterGrp.userData.tex.needsUpdate=true;
+}
+
+// =========== TOGGLE PANEL ===========
+function togglePanel(){
+  panelHidden=!panelHidden;
+  const sp=document.getElementById('sidePanel');
+  sp.style.display=panelHidden?'none':'flex';
+  document.getElementById('panelToggle').textContent=panelHidden?'📐 Afficher panneau':'📐 Masquer panneau';
+  // Resize renderer
+  setTimeout(()=>{
+    const c=document.getElementById('scene3d');
+    camera.aspect=c.clientWidth/c.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(c.clientWidth,c.clientHeight);
+    const mc=document.getElementById('magCanvas');
+    mc.width=c.clientWidth;mc.height=c.clientHeight;
+  },50);
+}
+
+// =========== TOGGLE LIQUID ===========
+function toggleLiquid(){
+  liquidHidden=!liquidHidden;
+  const lm=tubeGrp?tubeGrp.userData.liqMeshes:[];
+  lm.forEach(m=>{m.visible=!liquidHidden;});
+  // Also toggle Act2 liquid
+  if(act2TubeGrp&&act2TubeGrp.userData.liqMeshes){
+    act2TubeGrp.userData.liqMeshes.forEach(m=>{m.visible=!liquidHidden;});
+  }
+  document.getElementById('liqToggle').textContent=liquidHidden?'💧 Afficher liquide':'💧 Masquer liquide';
+}
+
+// =============================================================
+// =============== ACTIVITY 2 — NaCl ELECTROLYSIS ==============
+// =============================================================
+
+function buildAct2Scene(){
+  if(act2Built) return;
+  act2Built=true;
+
+  act2TubeGrp=new THREE.Group();
+
+  // === TUBE EN U (same curve shape) ===
+  const pts=[];
+  const R=1.15,aTop=3.6,aBot=0.3;
+  for(let i=0;i<=10;i++) pts.push(new THREE.Vector3(-R,aTop-i*(aTop-aBot)/10,0));
+  for(let i=1;i<20;i++){const a=Math.PI+Math.PI*(i/20);pts.push(new THREE.Vector3(Math.cos(a)*R,aBot+Math.sin(a)*R,0));}
+  for(let i=0;i<=10;i++) pts.push(new THREE.Vector3(R,aBot+i*(aTop-aBot)/10,0));
+  const crv=new THREE.CatmullRomCurve3(pts);
+  act2TubeGrp.userData.curve=crv;
+
+  // Glass
+  const gMat=new THREE.MeshPhysicalMaterial({color:0xaaccdd,transparent:true,opacity:0.12,roughness:0.02,clearcoat:1,side:THREE.DoubleSide,depthWrite:false});
+  const gMesh=new THREE.Mesh(new THREE.TubeGeometry(crv,100,0.38,28,false),gMat);
+  gMesh.renderOrder=2;
+  act2TubeGrp.add(gMesh);
+
+  // Rims
+  const rmM=new THREE.MeshStandardMaterial({color:0x7799aa,metalness:0.4,roughness:0.3});
+  const rm1=new THREE.Mesh(new THREE.TorusGeometry(0.38,0.03,8,32),rmM);
+  rm1.position.set(-R,aTop,0);rm1.rotation.x=Math.PI/2;act2TubeGrp.add(rm1);
+  const rm2=rm1.clone();rm2.position.set(R,aTop,0);act2TubeGrp.add(rm2);
+
+  // === LIQUID (incolore = light grey/white, opaque) ===
+  const lMat=()=>new THREE.MeshStandardMaterial({color:0xcccccc,transparent:true,opacity:0,emissive:0x555555,emissiveIntensity:0.2,side:THREE.DoubleSide,depthWrite:true});
+  const mkLiq=(t0,t1)=>{
+    const lp=[];for(let t=t0;t<=t1;t+=0.005)lp.push(crv.getPointAt(t));
+    return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lp),30,0.34,20,false),lMat());
+  };
+  act2LiqL=mkLiq(0.08,0.42);act2TubeGrp.add(act2LiqL);
+  act2LiqB=mkLiq(0.38,0.62);act2TubeGrp.add(act2LiqB);
+  act2LiqR=mkLiq(0.58,0.92);act2TubeGrp.add(act2LiqR);
+  act2TubeGrp.userData.liqMeshes=[act2LiqL,act2LiqB,act2LiqR];
+
+  // === 2 GRAPHITE ELECTRODES ===
+  const grM=new THREE.MeshStandardMaterial({color:0x222222,roughness:0.95,metalness:0.05});
+  act2ElecA=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,2.2,16),grM);
+  act2ElecA.position.set(R,2.2,0);act2TubeGrp.add(act2ElecA); // Anode right
+  act2ElecB=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,2.2,16),grM.clone());
+  act2ElecB.position.set(-R,2.2,0);act2TubeGrp.add(act2ElecB); // Cathode left
+
+  // Labels
+  mkLbl(act2TubeGrp,'Anode (+)',new THREE.Vector3(R,3.75,0.4),'#aacc33',10);
+  mkLbl(act2TubeGrp,'Cathode (−)',new THREE.Vector3(-R,3.75,0.4),'#88aaff',10);
+
+  // Graduations
+  for(let i=0;i<7;i++){
+    const grd=new THREE.Mesh(new THREE.BoxGeometry(0.01,0.005,0.78),new THREE.MeshBasicMaterial({color:0x445566}));
+    grd.position.set(-R,0.5+i*0.42,0);act2TubeGrp.add(grd);
+    const g2=grd.clone();g2.position.x=R;act2TubeGrp.add(g2);
+  }
+
+  // Wires to generator
+  const mkW=(pts,col)=>{const c=new THREE.CatmullRomCurve3(pts);act2TubeGrp.add(new THREE.Mesh(new THREE.TubeGeometry(c,16,0.02,8,false),new THREE.MeshStandardMaterial({color:col,roughness:0.5})));};
+  mkW([new THREE.Vector3(R,3.6,0),new THREE.Vector3(R,4.2,0),new THREE.Vector3(0.6,4.6,0.5),new THREE.Vector3(0.35,4.8,0.7)],0xcc2222); // anode red
+  mkW([new THREE.Vector3(-R,3.6,0),new THREE.Vector3(-R,4.2,0),new THREE.Vector3(-0.6,4.6,0.5),new THREE.Vector3(-0.35,4.8,0.7)],0x2244cc); // cathode blue
+
+  scene.add(act2TubeGrp);
+
+  // === BEAKERS for NaCl ===
+  const bDefs=[
+    {x:2.5,z:2.5,label:'NaCl (aq)\n100 g/L',color:0xcccccc},
+    {x:3.8,z:2.0,label:'Indigo',color:0x1122aa},
+    {x:5.0,z:2.5,label:'Phénolph.',color:0xdddddd},
+  ];
+  bDefs.forEach((b,i)=>{
+    const g=new THREE.Group();
+    const bG=new THREE.CylinderGeometry(i===0?0.35:0.15, i===0?0.32:0.12, i===0?1.0:0.7, 20,1,true);
+    const bM=new THREE.MeshPhysicalMaterial({color:0xaaccdd,transparent:true,opacity:0.18,clearcoat:1,side:THREE.DoubleSide});
+    g.add(new THREE.Mesh(bG,bM));
+    const lG=new THREE.CylinderGeometry(i===0?0.30:0.12, i===0?0.28:0.1, i===0?0.7:0.45, 20);
+    const lM=new THREE.MeshStandardMaterial({color:b.color,transparent:true,opacity:0.75,emissive:b.color,emissiveIntensity:0.15});
+    const liq=new THREE.Mesh(lG,lM);liq.position.y=-0.1;g.add(liq);
+    g.userData.liquid=liq;
+    g.userData.origPos=new THREE.Vector3(b.x,1.5,b.z);
+    // Label
+    const cv=document.createElement('canvas');cv.width=128;cv.height=80;
+    const cx=cv.getContext('2d');cx.fillStyle='#e6edf3';cx.font='bold 16px Fira Sans';cx.textAlign='center';
+    b.label.split('\n').forEach((l,j)=>cx.fillText(l,64,28+j*20));
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true}));
+    sp.scale.set(0.7,0.45,1);sp.position.y=i===0?0.8:0.55;g.add(sp);
+    g.position.copy(g.userData.origPos);
+    g.visible=false;
+    scene.add(g);
+    act2Beakers.push(g);
+  });
+}
+
+// === POUR NaCl ===
+function pourNaCl(){
+  act2Poured=true;act2PourProg=0;act2PourElapsed=0;
+  document.getElementById('pourNaCl').disabled=true;
+  document.getElementById('pourNaCl').textContent='⏳ Versement...';
+  setTimeout(()=>{
+    document.getElementById('pourNaCl').textContent='✅ Versé';
+    show('v2Block');
+    if(generatorGrp) generatorGrp.visible=true;
+    if(multimeterGrp) multimeterGrp.visible=true;
+  },4000);
+}
+
+// === NaCl TENSION ===
+function setNaclTension(v){
+  act2NaclTension=parseFloat(v);
+  document.getElementById('naclTV').textContent=act2NaclTension.toFixed(1)+'V';
+  if(act2NaclTension>=act2Threshold&&!act2Started){
+    act2Started=true;
+    act2NaclCurrent=(act2NaclTension-act2Threshold)*0.08;
+    show('nq1C');show('v3Block');
+    showEqs('2Cl⁻→Cl₂+2e⁻','2H₂O+2e⁻→H₂+2HO⁻');
+  }
+  if(act2Started) act2NaclCurrent=(act2NaclTension-act2Threshold)*0.08;
+}
+
+// === BUBBLES ===
+function spawnBubble(side){
+  // side: 'anode' (right, Cl₂ yellow-green) or 'cathode' (left, H₂ white)
+  const isAnode=side==='anode';
+  const x=isAnode?1.15:-1.15;
+  const color=isAnode?0xaacc33:0xeeeeff;
+  const geo=new THREE.SphereGeometry(0.02+Math.random()*0.02,8,8);
+  const mat=new THREE.MeshStandardMaterial({
+    color:color,transparent:true,opacity:isAnode?0.6:0.3,
+    emissive:color,emissiveIntensity:0.3
+  });
+  const m=new THREE.Mesh(geo,mat);
+  const elecY=isAnode?act2ElecA.position.y:act2ElecB.position.y;
+  m.position.set(x+(Math.random()-0.5)*0.08,elecY-0.5+Math.random()*1.0,(Math.random()-0.5)*0.08);
+  act2TubeGrp.add(m);
+  act2Bubbles.push({m,vy:0.008+Math.random()*0.006,vx:(Math.random()-0.5)*0.002,life:0});
+}
+
+// === INDICATORS ===
+function addIndicators(){
+  act2IndicatorsAdded=true;
+  document.getElementById('addIndicBtn').disabled=true;
+  document.getElementById('addIndicBtn').textContent='✅ Ajoutés';
+  show('v4Block');
+  setTimeout(()=>{
+    document.getElementById('indigoStatus').textContent='L\'indigo se décolore → Cl₂ détecté !';
+    show('flameBtn');
+  },3000);
+  setTimeout(()=>{
+    document.getElementById('phenolStatus').textContent='Phénolphtaléine → ROSE → HO⁻ détecté !';
+    show('nq4C');
+  },4000);
+}
+
+// === FLAME TEST ===
+function flameTest(){
+  act2FlameTriggered=true;
+  document.getElementById('flameBtn').disabled=true;
+  // Flash effect
+  const flash=new THREE.PointLight(0xffaa00,3,10);
+  flash.position.set(-1.15,3.5,0.5);
+  act2TubeGrp.add(flash);
+  setTimeout(()=>{act2TubeGrp.remove(flash);},300);
+  // Second flash
+  setTimeout(()=>{
+    const f2=new THREE.PointLight(0xff4400,2,8);
+    f2.position.set(-1.15,3.3,0.3);act2TubeGrp.add(f2);
+    setTimeout(()=>{act2TubeGrp.remove(f2);},200);
+  },150);
+  show('flameResult');
+}
+
+// === NaCl QUESTIONS ===
+function ckNQ1(){
+  const v=pv('nq1I'),fb=$('nq1F');
+  if(isNaN(v)){sfb(fb,'incorrect','Valeur.');return;}
+  if(Math.abs(v-2.2)<0.5){sfb(fb,'correct','✅ U_AC ≈ 2,2 V. Une tension minimale est nécessaire pour vaincre les potentiels d\'électrode.');}
+  else sfb(fb,'hint','Regardez quand les bulles apparaissent (~2,2 V).');
+}
+function ckNQ4(){
+  const v=document.getElementById('nq4I').value.toLowerCase(),fb=$('nq4F');
+  if(v.includes('cl')&&v.includes('h')){sfb(fb,'correct','✅ Anode: Cl₂ (indigo décoloré). Cathode: H₂ (détone) + HO⁻ (phénol. rose).');show('nq5C');}
+  else sfb(fb,'hint','Anode: quel gaz décolore l\'indigo? Cathode: quel gaz détone?');
+}
+function ckNQ5(){
+  const v=document.getElementById('nq5I').value,fb=$('nq5F');
+  if(v.includes('Cl')&&v.includes('2e')){sfb(fb,'correct','✅ 2Cl⁻(aq) → Cl₂(g) + 2e⁻');show('nq7C');}
+  else sfb(fb,'hint','2Cl⁻ → ... + 2e⁻');
+}
+function ckNQ7(){
+  const v=document.getElementById('nq7I').value,fb=$('nq7F');
+  if(v.includes('Cl')&&v.includes('H')&&v.includes('HO')){sfb(fb,'correct','✅ 2Cl⁻ + 2H₂O → Cl₂ + H₂ + 2HO⁻');show('v5Block');show('nq8C');}
+  else sfb(fb,'hint','Combinez les deux demi-équations.');
+}
+function ckNQ8(){
+  const fb=$('nq8F');
+  if($('na4').checked){sfb(fb,'incorrect','Distillation ≠ électrolyse.');return;}
+  if([$('na1'),$('na2'),$('na3')].filter(x=>x.checked).length>=3){sfb(fb,'correct','✅ Bravo !');show('naclDone');}
+  else sfb(fb,'hint','Cochez 3 applications correctes.');
+}
+
+// === ACTIVITY 2 ANIMATION (called from main animate loop) ===
+function animateAct2(){
+  if(!act2TubeGrp||!act2TubeGrp.visible) return;
+
+  // Pour animation
+  if(act2Poured&&act2PourProg<1){
+    act2PourProg+=0.005;act2PourElapsed+=0.016;
+    // Beaker animation (only NaCl beaker, index 0)
+    const b=act2Beakers[0];
+    if(b){
+      const orig=b.userData.origPos;
+      const target=new THREE.Vector3(0,3.8,0.5);
+      const t=act2PourElapsed;
+      if(t<1.5){const p=Math.min(t/1.5,1);const e=p*p*(3-2*p);b.position.lerpVectors(orig,target,e);}
+      else if(t<3.0){b.position.copy(target);b.rotation.z=Math.min((t-1.5)/0.8,1)*0.9;const liq=b.userData.liquid;if(liq.scale.y>0.02)liq.scale.y-=0.008;}
+      else if(t<4.2){const rp=Math.min((t-3.0)/1.0,1);b.rotation.z=0.9*(1-rp);b.position.lerpVectors(target,orig,rp);}
+      else{b.position.copy(orig);b.rotation.z=0;}
+    }
+    // Fill liquid (incolore → white/transparent)
+    [act2LiqL,act2LiqB,act2LiqR].forEach(m=>{
+      if(m.material.opacity<0.85)m.material.opacity+=0.006;
+    });
+  }
+
+  // Bubbles spawn when electrolysis started
+  if(act2Started&&act2NaclTension>=act2Threshold){
+    if(Math.random()<0.06) spawnBubble('anode');
+    if(Math.random()<0.05) spawnBubble('cathode');
+  }
+
+  // Animate bubbles (rise with oscillation)
+  for(let i=act2Bubbles.length-1;i>=0;i--){
+    const bb=act2Bubbles[i];
+    bb.m.position.y+=bb.vy;
+    bb.m.position.x+=Math.sin(time*4+i)*0.001+bb.vx;
+    bb.life+=0.016;
+    // Grow slightly as they rise
+    const s=1+bb.life*0.3;
+    bb.m.scale.set(s,s,s);
+    // Remove at top
+    if(bb.m.position.y>3.5||bb.life>4){
+      act2TubeGrp.remove(bb.m);act2Bubbles.splice(i,1);
+    }
+  }
+
+  // Indicator color changes
+  if(act2IndicatorsAdded){
+    // Anode side (right): indigo blue → decolorizes
+    act2IndigoProgress=Math.min(1,act2IndigoProgress+0.003);
+    // Right liquid goes from white to slight blue then back to clear
+    if(act2IndigoProgress<0.3){
+      act2LiqR.material.color.lerp(new THREE.Color(0.15,0.15,0.5),0.01); // blue tint (indigo)
+    } else {
+      act2LiqR.material.color.lerp(new THREE.Color(0.75,0.75,0.7),0.005); // decolorize
+    }
+
+    // Cathode side (left): phenolphthalein → pink
+    act2PhenolProgress=Math.min(1,act2PhenolProgress+0.002);
+    act2LiqL.material.color.lerp(new THREE.Color(0.85,0.4,0.6),act2PhenolProgress*0.008);
+    act2LiqL.material.emissive.lerp(new THREE.Color(0.3,0.1,0.2),act2PhenolProgress*0.005);
+  }
+}
+
+// Hook into main animation loop
+
+updateUI();
+</script>
+<div class="pc3d-cf-ov" id="pc3d-cf-ov" aria-hidden="true"><div class="pc3d-cf" role="dialog" aria-modal="true" aria-label="Contact PC3D"><button class="pc3d-cf-x" id="pc3d-cf-x" aria-label="Fermer">&times;</button><div class="pc3d-cf-head"><span class="pc3d-cf-logo"><svg viewBox="0 0 120 120" width="42" height="42" xmlns="http://www.w3.org/2000/svg"><path d="M60 16 L100 92 L20 92 Z" fill="none" stroke="#4ECDC4" stroke-width="6" stroke-linejoin="round"/><circle cx="60" cy="72" r="11" fill="#00B8A9"/></svg></span><span><span class="pc3d-cf-t">Contact PC3D</span><span class="pc3d-cf-s">Partage tes idées, remarques et questions &middot; شاركنا أفكارك وملاحظاتك وكل ما تريد قوله لنا</span></span></div><input class="pc3d-cf-in" id="pc3d-cf-name" type="text" placeholder="Nom (optionnel) &middot; الاسم (اختياري)"><input class="pc3d-cf-in" id="pc3d-cf-email" type="email" placeholder="Ton email pour te répondre &middot; بريدك للرد عليك"><input type="text" id="pc3d-cf-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><textarea class="pc3d-cf-ta" id="pc3d-cf-msg" rows="5" placeholder="Écris ici tout ce que tu veux nous dire… &middot; اكتب هنا كل ما تريد قوله لنا…"></textarea><div class="pc3d-cf-note" id="pc3d-cf-note"></div><div class="pc3d-cf-fb" id="pc3d-cf-fb" style="display:none;font-size:12.5px;margin:-4px 2px 12px;line-height:1.55;color:#8fa0bd"></div><button class="pc3d-cf-send" id="pc3d-cf-send">Envoyer &middot; إرسال</button></div></div>
+<style>
+.pc3d-cf-ov{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,20,.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s;font-family:'Outfit',system-ui,-apple-system,sans-serif;}
+.pc3d-cf-ov.show{opacity:1;visibility:visible;}
+.pc3d-cf{width:100%;max-width:440px;box-sizing:border-box;background:linear-gradient(180deg,#0c1730,#070e1f);border:1px solid rgba(78,205,196,.32);border-radius:18px;padding:26px 24px 24px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative;transform:translateY(14px) scale(.98);transition:transform .28s cubic-bezier(.2,.9,.3,1.15);}
+.pc3d-cf-ov.show .pc3d-cf{transform:translateY(0) scale(1);}
+.pc3d-cf-x{position:absolute;top:12px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(255,255,255,.06);color:#aeb8cc;font-size:20px;line-height:1;cursor:pointer;transition:background .2s,color .2s;}
+.pc3d-cf-x:hover{background:rgba(255,255,255,.14);color:#fff;}
+.pc3d-cf-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.pc3d-cf-logo{flex:none;line-height:0;}
+.pc3d-cf-t{display:block;font-size:19px;font-weight:700;color:#eaf2ff;letter-spacing:.2px;}
+.pc3d-cf-s{display:block;font-size:11.5px;color:#8fa0bd;margin-top:4px;line-height:1.45;}
+.pc3d-cf-in,.pc3d-cf-ta{width:100%;box-sizing:border-box;margin-bottom:11px;padding:11px 13px;font-family:inherit;font-size:14px;color:#eaf2ff;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;outline:none;transition:border-color .2s,background .2s;}
+.pc3d-cf-in:focus,.pc3d-cf-ta:focus{border-color:#4ECDC4;background:rgba(78,205,196,.06);}
+.pc3d-cf-in::placeholder,.pc3d-cf-ta::placeholder{color:#6b7c99;}
+.pc3d-cf-ta{resize:vertical;min-height:112px;line-height:1.5;}
+.pc3d-cf-note{min-height:15px;font-size:12px;margin:1px 2px 12px;line-height:1.45;}
+.pc3d-cf-send{width:100%;padding:13px;border:none;border-radius:11px;font-family:inherit;font-size:15px;font-weight:700;color:#04121f;cursor:pointer;background:linear-gradient(180deg,#4ECDC4,#00B8A9);box-shadow:0 8px 22px rgba(0,184,169,.4);transition:transform .15s ease,box-shadow .2s,opacity .2s;}
+.pc3d-cf-send:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(0,184,169,.55);}
+.pc3d-cf-send:disabled{opacity:.6;cursor:default;transform:none;}
+</style>
+<script>(function(){
+var EMAIL='professeurkoudiaelmehdi@gmail.com';var W3KEY='';
+var ov=document.getElementById('pc3d-cf-ov');
+if(!ov)return;
+var msg=document.getElementById('pc3d-cf-msg'),nm=document.getElementById('pc3d-cf-name'),em=document.getElementById('pc3d-cf-email'),note=document.getElementById('pc3d-cf-note'),send=document.getElementById('pc3d-cf-send');
+function openM(e){if(e)e.preventDefault();ov.classList.add('show');ov.setAttribute('aria-hidden','false');setTimeout(function(){try{msg.focus();}catch(_){}}, 140);}
+function closeM(){ov.classList.remove('show');ov.setAttribute('aria-hidden','true');}
+var _trg=document.querySelectorAll('#pc3d-contact-btn,[data-pc3d-contact]');for(var _i=0;_i<_trg.length;_i++)_trg[_i].addEventListener('click',openM);
+document.getElementById('pc3d-cf-x').addEventListener('click',closeM);
+ov.addEventListener('click',function(e){if(e.target===ov)closeM();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ov.classList.contains('show'))closeM();});
+function setNote(t,ok){note.textContent=t;note.style.color=ok?'#4ECDC4':'#ff9a9a';}
+var fb=document.getElementById('pc3d-cf-fb'),hp=document.getElementById('pc3d-cf-hp');
+function showFB(){if(!fb)return;var nl=String.fromCharCode(10),p=[];if(nm.value)p.push('Nom: '+nm.value);if(em.value)p.push('Email: '+em.value);p.push('');p.push(msg.value);var href='mailto:'+EMAIL+'?subject='+encodeURIComponent('Message · PC3D')+'&body='+encodeURIComponent(p.join(nl));fb.innerHTML='Tu peux aussi écrire directement à <a href="'+href+'" style="color:#4ECDC4;font-weight:600">'+EMAIL+'</a>';fb.style.display='block';}
+send.addEventListener('click',function(){
+ if(hp&&hp.value){setNote('Merci ! · شكراً',true);setTimeout(closeM,1100);return;}
+ if(!msg.value.trim()){setNote("Merci d'écrire ton message · اكتب رسالتك من فضلك",false);try{msg.focus();}catch(_){}return;}
+ setNote('Envoi en cours… · جارٍ الإرسال…',true);send.disabled=true;if(fb)fb.style.display='none';
+ var url,payload;
+ if(W3KEY){url='https://api.web3forms.com/submit';payload={access_key:W3KEY,name:nm.value||'—',email:em.value||'—',message:msg.value,subject:'Nouveau message · PC3D',from_name:'PC3D — Contact'};}
+ else{url='https://formsubmit.co/ajax/'+EMAIL;payload={nom:nm.value||'—',email:em.value||'—',message:msg.value,_subject:'Nouveau message · PC3D',_template:'table',_captcha:'false'};}
+ fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)})
+ .then(function(r){return r.json();})
+ .then(function(d){
+   if(d&&(d.success===true||d.success==='true')){setNote('Merci ! Ton message a été envoyé ✓ · تم إرسال رسالتك، شكراً',true);msg.value='';nm.value='';em.value='';if(fb)fb.style.display='none';setTimeout(closeM,2000);}
+   else{setNote("Activation requise une seule fois — vérifie l'email · يلزم تفعيل لمرّة واحدة عبر الإيميل",false);showFB();}
+   send.disabled=false;
+ })
+ .catch(function(){setNote("Connexion impossible pour l'instant · تعذّر الإرسال الآن",false);showFB();send.disabled=false;});
+});
+})();</script>
+
+</body>
+</html>

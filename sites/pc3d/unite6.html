@@ -1,0 +1,2099 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Évolution Spontanée — Unité 6</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0a1220;--bg2:#0f1828;--bg3:#162137;--bg4:#1f2d47;
+  --text:#e8eef7;--text2:#8ca0c0;--accent:#38bdf8;
+  --green:#4ade80;--red:#f87171;--orange:#fb923c;
+  --cyan:#22d3ee;--violet:#a78bfa;--amber:#fbbf24;
+  --panel:#0c1420;--border:#1e2d48;--radius:10px;
+  --blue:#3b82f6;
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background:#050811;color:var(--text);}
+#topNav{position:fixed;top:0;left:0;right:0;height:52px;background:linear-gradient(180deg,rgba(15,24,40,0.95),rgba(10,18,32,0.9));border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;z-index:1000;gap:6px;overflow-x:auto;backdrop-filter:blur(10px);}
+#brand{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1.5px;margin-right:14px;white-space:nowrap;}
+#brand::before{content:'◆ ';color:var(--amber);}
+.nav-btn{padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;white-space:nowrap;transition:all .2s;letter-spacing:0.3px;}
+.nav-btn:hover:not(.locked){background:var(--bg4);color:var(--text);border-color:#2a4066;}
+.nav-btn.active{background:var(--accent);color:#050811;border-color:var(--accent);box-shadow:0 0 18px rgba(56,189,248,0.5);}
+.nav-btn.locked{opacity:.32;cursor:not-allowed;}
+#main{position:fixed;top:52px;left:0;right:0;bottom:0;display:flex;}
+#canv{flex:1;position:relative;min-width:0;background:radial-gradient(circle at 50% 35%, #142540 0%, #081424 50%, #050811 100%);}
+#microBtn{position:absolute;top:14px;left:14px;z-index:50;padding:8px 14px;background:rgba(15,24,40,0.92);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-size:11px;display:none;backdrop-filter:blur(8px);font-weight:700;letter-spacing:0.5px;transition:all .2s;}
+#microBtn:hover{background:rgba(56,189,248,0.15);box-shadow:0 0 12px rgba(56,189,248,0.3);}
+#fpsBadge{position:absolute;top:14px;right:14px;z-index:50;padding:5px 10px;background:rgba(0,0,0,0.6);border-radius:6px;color:#7dd3fc;font-size:10px;font-family:'JetBrains Mono',monospace;border:1px solid rgba(56,189,248,0.2);}
+#sceneTag{position:absolute;bottom:14px;left:14px;z-index:50;padding:6px 12px;background:rgba(10,18,32,0.85);border-radius:6px;color:var(--text2);font-size:10px;font-family:'JetBrains Mono',monospace;border:1px solid var(--border);letter-spacing:1.2px;}
+/* Micro Overlay plein écran */
+#microOverlay{position:fixed;top:52px;left:0;right:380px;bottom:0;z-index:500;display:none;background:transparent;pointer-events:none;}
+#microOverlay.show{display:block;}
+#microOverlay canvas{width:100%;height:100%;display:block;pointer-events:auto;cursor:crosshair;}
+@media(max-width:800px){#microOverlay{right:0;bottom:45vh;}}
+
+#side{width:380px;min-width:360px;background:linear-gradient(180deg,var(--panel),#070b14);border-left:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.pt{font-size:14px;font-weight:700;color:var(--accent);padding-bottom:7px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;}
+.bx{background:linear-gradient(135deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:var(--radius);padding:12px;position:relative;}
+.bx h3{font-size:10px;font-weight:700;margin-bottom:8px;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;}
+.bx p{font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:4px;}
+.ms{background:linear-gradient(135deg,#0d1c30,#142b52);border:1px solid var(--accent);border-radius:var(--radius);padding:13px;position:relative;overflow:hidden;box-shadow:0 0 24px rgba(56,189,248,0.1);}
+.ms::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--accent),var(--amber),transparent);}
+.ms .ml{font-size:9px;text-transform:uppercase;letter-spacing:2.5px;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.ms .mv{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);margin:3px 0;}
+.btn{padding:9px 14px;border:none;border-radius:var(--radius);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;justify-content:center;letter-spacing:0.3px;}
+.bp{background:var(--accent);color:#050811;}.bp:hover:not(:disabled){background:#0ea5e9;box-shadow:0 0 14px rgba(56,189,248,0.5);}
+.bo{background:transparent;border:1px solid var(--border);color:var(--text2);}.bo:hover:not(:disabled){border-color:var(--accent);color:var(--text);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.bg{display:flex;gap:6px;flex-wrap:wrap;}
+.tg{display:flex;gap:2px;background:var(--bg);border-radius:var(--radius);padding:2px;}
+.to{flex:1;padding:7px 8px;border:none;border-radius:7px;background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;font-size:11px;transition:all .2s;text-align:center;font-weight:500;}
+.to.act{background:var(--accent);color:#050811;font-weight:700;}
+.to:disabled{opacity:.4;cursor:not-allowed;}
+.fb{padding:10px;border-radius:var(--radius);font-size:12px;line-height:1.5;display:none;animation:fi .3s;margin-top:6px;}
+.fb.show{display:block;}
+.fb.ok{background:rgba(74,222,128,.1);border:1px solid var(--green);color:#86efac;}
+.fb.err{background:rgba(248,113,113,.1);border:1px solid var(--red);color:#fca5a5;}
+.fb.inf{background:rgba(56,189,248,.1);border:1px solid var(--accent);color:#7dd3fc;}
+.fb.wrn{background:rgba(251,191,36,.1);border:1px solid var(--amber);color:#fcd34d;}
+@keyframes fi{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.cinp{width:74px;padding:5px 7px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;transition:all .2s;}
+.cinp:focus{border-color:var(--accent);box-shadow:0 0 10px rgba(56,189,248,0.25);}
+.pb{width:100%;height:4px;background:var(--bg);border-radius:3px;overflow:hidden;}
+.pf{height:100%;background:linear-gradient(90deg,var(--accent),var(--amber));border-radius:3px;transition:width .5s;box-shadow:0 0 6px rgba(56,189,248,0.6);}
+.dtbl{width:100%;border-collapse:collapse;font-size:10px;font-family:'JetBrains Mono',monospace;}
+.dtbl th,.dtbl td{padding:5px 3px;border:1px solid var(--border);text-align:center;}
+.dtbl th{background:var(--bg3);color:var(--accent);font-weight:700;}
+.dtbl td{background:var(--bg);}
+.dtbl input{width:92%;padding:3px;background:var(--bg3);border:1px solid var(--border);color:var(--text);text-align:center;font-family:inherit;font-size:10px;border-radius:3px;}
+.chart-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:7px;}
+.chart-wrap canvas{width:100%!important;max-height:160px;}
+input[type="range"]{-webkit-appearance:none;width:100%;height:5px;border-radius:3px;background:var(--bg4);outline:none;margin:7px 0;}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);box-shadow:0 0 8px rgba(56,189,248,0.6);}
+.badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.badge-g{background:rgba(74,222,128,.18);color:var(--green);border:1px solid rgba(74,222,128,0.3);}
+.badge-r{background:rgba(248,113,113,.18);color:var(--red);border:1px solid rgba(248,113,113,0.3);}
+.badge-b{background:rgba(56,189,248,.18);color:var(--accent);border:1px solid rgba(56,189,248,0.3);}
+.mcq-opt{display:block;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg);cursor:pointer;font-size:11px;color:var(--text2);transition:all .2s;margin-bottom:5px;text-align:left;line-height:1.45;font-family:inherit;}
+.mcq-opt:hover:not(.correct):not(.wrong){border-color:var(--accent);color:var(--text);background:var(--bg3);}
+.mcq-opt.correct{border-color:var(--green);background:rgba(74,222,128,.14);color:var(--green);pointer-events:none;}
+.mcq-opt.wrong{border-color:var(--red);background:rgba(248,113,113,.1);color:var(--red);pointer-events:none;}
+.mo{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.82);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+.mo.show{display:flex;}
+.md{background:linear-gradient(135deg,var(--bg2),#070b14);border:1px solid var(--accent);border-radius:14px;padding:26px;max-width:540px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 0 50px rgba(56,189,248,0.18);}
+.md h2{font-size:17px;margin-bottom:12px;color:var(--accent);font-family:'JetBrains Mono',monospace;}
+.md p{font-size:12px;line-height:1.6;color:var(--text2);margin-bottom:8px;}
+.md label{display:flex;align-items:center;gap:8px;margin:12px 0;font-size:12px;cursor:pointer;}
+.md input[type="checkbox"]{width:15px;height:15px;accent-color:var(--accent);}
+.ax-cv{cursor:pointer;display:block;border-radius:6px;}
+.ax-cv.drag{cursor:grabbing;}
+@media(max-width:800px){#main{flex-direction:column;}#side{width:100%;min-width:0;max-height:45vh;border-left:none;border-top:1px solid var(--border);}#canv{min-height:40vh;}}
+#side::-webkit-scrollbar{width:5px;}#side::-webkit-scrollbar-track{background:var(--bg);}#side::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+<a href="index.html" id="pc3d-home-btn" title="Retour à l'accueil · العودة للرئيسية" style="position:fixed;bottom:18px;left:18px;z-index:2147483647;display:inline-flex;align-items:center;gap:7px;padding:9px 15px 9px 12px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#e8f0ff;text-decoration:none;background:linear-gradient(180deg,rgba(10,21,48,.94),rgba(5,10,24,.9));border:1px solid rgba(0,184,169,.45);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 0 1px rgba(0,184,169,.08);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00b8a9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+<span>PC3D · Accueil</span>
+</a>
+<style>#pc3d-home-btn:hover{transform:translateY(-2px);border-color:rgba(0,184,169,.85);box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 18px rgba(0,184,169,.35);}</style>
+<a href="#" id="pc3d-contact-btn" title="Contact · تواصل معنا" style="position:fixed;right:18px;bottom:18px;z-index:9000;display:inline-flex;align-items:center;gap:8px;padding:11px 16px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#04121f;text-decoration:none;background:linear-gradient(180deg,#4ECDC4,#00B8A9);border:1px solid rgba(255,255,255,.28);border-radius:999px;box-shadow:0 8px 26px rgba(0,184,169,.45),0 2px 8px rgba(0,0,0,.4);transition:transform .18s ease,box-shadow .18s ease;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#04121f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>Contact</span></a><style>#pc3d-contact-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,184,169,.6),0 2px 8px rgba(0,0,0,.5);}@media(max-width:600px){#pc3d-contact-btn span{display:none;}#pc3d-contact-btn{padding:13px;}}</style>
+<div class="pc3d-uload" id="pc3d-uload"><div class="pc3d-uload-logo"><svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="uldc" cx="50%" cy="45%" r="55%"><stop offset="0%" stop-color="#F5F7FA"/><stop offset="45%" stop-color="#4ECDC4"/><stop offset="100%" stop-color="#00B8A9" stop-opacity="0"/></radialGradient><linearGradient id="uldp" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4ECDC4"/><stop offset="50%" stop-color="#00B8A9"/><stop offset="100%" stop-color="#9B59B6"/></linearGradient></defs><ellipse class="ulorbit" cx="60" cy="66" rx="54" ry="18" fill="none" stroke="#4ECDC4" stroke-opacity=".4" stroke-width="1.5"/><circle class="ulorbit" cx="6" cy="66" r="3" fill="#FF9A3C"/><path class="ulpyr" d="M60 14 L102 94 L18 94 Z" fill="url(#uldp)" fill-opacity=".14" stroke="url(#uldp)" stroke-width="3" stroke-linejoin="round"/><circle class="ulcore" cx="60" cy="70" r="13" fill="url(#uldc)"/></svg></div><div class="pc3d-uload-txt"><span>P</span><span>C</span><span>3</span><span>D</span></div></div><style>.pc3d-uload{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:#050a18;transition:opacity .6s ease,visibility .6s;font-family:'Outfit',system-ui,sans-serif;}.pc3d-uload.done{opacity:0;visibility:hidden;pointer-events:none;}.pc3d-uload-logo{width:120px;height:120px;}.pc3d-uload-logo svg{width:100%;height:100%;overflow:visible;}.pc3d-uload .ulorbit{transform-origin:60px 64px;animation:ulspin 1.4s linear infinite;}@keyframes ulspin{to{transform:rotate(360deg);}}.pc3d-uload .ulpyr{transform-origin:60px 60px;animation:ulpyr 1.6s ease-in-out infinite;}@keyframes ulpyr{0%,100%{transform:scale(.86) rotate(-4deg);}50%{transform:scale(1.06) rotate(4deg);}}.pc3d-uload .ulcore{transform-origin:60px 66px;animation:ulcore 1.1s ease-in-out infinite;}@keyframes ulcore{0%,100%{opacity:.5;transform:scale(.7);}50%{opacity:1;transform:scale(1.25);}}.pc3d-uload-txt{display:flex;gap:3px;font-size:12px;letter-spacing:.32em;color:#7fe9e0;text-transform:uppercase;}.pc3d-uload-txt span{animation:ultxt 1.4s ease-in-out infinite;}.pc3d-uload-txt span:nth-child(2){animation-delay:.1s;}.pc3d-uload-txt span:nth-child(3){animation-delay:.2s;}.pc3d-uload-txt span:nth-child(4){animation-delay:.3s;}@keyframes ultxt{0%,100%{opacity:.3;transform:translateY(0);}50%{opacity:1;transform:translateY(-3px);}}</style><script>(function(){function h(){var l=document.getElementById("pc3d-uload");if(l){l.classList.add("done");setTimeout(function(){l&&l.remove();},700);}}window.addEventListener("load",function(){setTimeout(h,1100);});setTimeout(h,3000);})();</script>
+<div id="topNav">
+  <span id="brand">EVOLUTION SPONTANÉE · U6</span>
+  <div class="nav-btn active" data-ph="1" onclick="goPhase(1)">⚗️ 1. Acide-Base</div>
+  <div class="nav-btn locked" data-ph="2" onclick="goPhase(2)"><span class="lk">🔒 </span>2. Redox</div>
+  <div class="nav-btn locked" data-ph="3" onclick="goPhase(3)"><span class="lk">🔒 </span>3. Critère &amp; Exercice</div>
+</div>
+
+<div class="mo show" id="safetyModal"><div class="md">
+  <h2>⚠️ Sécurité au Laboratoire</h2>
+  <p>Cette simulation met en jeu des réactions chimiques acide-base et d'oxydoréduction.</p>
+  <p>• <b>Acides</b> : irritants — éviter contact peau/yeux<br>• <b>AgNO₃</b> : corrosif, tache durablement la peau<br>• <b>Ions Fe³⁺</b> : colorants</p>
+  <p>En laboratoire réel : <b>blouse, lunettes et gants</b> obligatoires. Ne jamais pipeter à la bouche.</p>
+  <label><input type="checkbox" id="sfC" onchange="document.getElementById('sfB').disabled=!this.checked"> J'ai lu et compris les consignes de sécurité</label>
+  <button class="btn bp" id="sfB" disabled onclick="closeSafety()">Commencer la simulation</button>
+</div></div>
+
+<div id="main">
+  <div id="canv">
+    <button id="microBtn" onclick="toggleMicro()">🔬 VUE MICROSCOPIQUE</button>
+    <div id="fpsBadge"></div>
+    <div id="sceneTag"></div>
+  </div>
+  <div id="microOverlay"><canvas id="microCanvas"></canvas></div>
+  <div id="side"></div>
+</div>
+<div class="mo" id="qModal"><div class="md" id="qMC"></div></div>
+
+<script>
+/* ==================================================================
+   CONSTANTES
+   ================================================================== */
+var C_SOL = 0.1, Ka1 = 1.6e-4, Ka2 = 1.6e-5, K_AB = 10;
+var MELANGES = [
+  { id:1, V1:10, V2:10, V3:10, V4:10, Vt:40, Qri:1.0,  sens:'direct',    pH:4.12 },
+  { id:2, V1:2,  V2:10, V3:20, V4:2,  Vt:34, Qri:50,   sens:'inverse',   pH:4.50 },
+  { id:3, V1:2,  V2:10, V3:20, V4:10, Vt:42, Qri:10,   sens:'equilibre', pH:4.30 }
+];
+var K_R1 = 6.0e4, K_R2 = 3.9e15, K_EX = 3.2;
+
+// COULEURS VIVES ET SATURÉES (la clé du rendu visible)
+var COLORS = {
+  clear:    { hex:0xcce8f5, r:0.80, g:0.91, b:0.96 },   // légèrement bleuté-transparent
+  methanoic:{ hex:0xe8f1fa, r:0.91, g:0.95, b:0.98 },   // incolore
+  fe3:      { hex:0xe8871c, r:0.91, g:0.53, b:0.11 },   // jaune-orangé intense
+  fe2:      { hex:0x86c287, r:0.52, g:0.76, b:0.53 },   // vert pâle
+  iodine:   { hex:0x6b3410, r:0.42, g:0.20, b:0.06 },   // brun foncé
+  mix_fe_i: { hex:0x3a1c08, r:0.23, g:0.11, b:0.03 },   // brun très foncé
+  ag_sol:   { hex:0xd8e5f0, r:0.85, g:0.90, b:0.94 },   // incolore-argenté
+  cu2:      { hex:0x1e88e5, r:0.12, g:0.53, b:0.90 },   // bleu vif CuSO4
+  copper:   { hex:0xc46a29, r:0.77, g:0.42, b:0.16 },
+  silver:   { hex:0xe8e8ec, r:0.91, g:0.91, b:0.93 }
+};
+
+/* ==================================================================
+   ÉTAT GLOBAL
+   ================================================================== */
+var G = {
+  scene:null, camera:null, renderer:null, controls:null, clock:null,
+  phase:0, unlocked:[1], currentPhaseObj:null, pendingPhase:null,
+  animInProgress:false, activeTimers:[], chart:null,
+  microOn:false, microRAF:null,
+  frameCount:0, fpsTime:0
+};
+
+function regTimer(fn,delay){var id=setTimeout(function(){var i=G.activeTimers.indexOf(id);if(i>=0)G.activeTimers.splice(i,1);fn();},delay);G.activeTimers.push(id);return id;}
+function clearAllTimers(){for(var i=G.activeTimers.length-1;i>=0;i--)clearTimeout(G.activeTimers[i]);G.activeTimers=[];}
+function lockAnims(){G.animInProgress=true;setBtnsDisabled(true);}
+function unlockAnims(){G.animInProgress=false;setBtnsDisabled(false);if(G.pendingPhase!==null){var p=G.pendingPhase;G.pendingPhase=null;goPhase(p);}}
+function setBtnsDisabled(d){document.querySelectorAll('.anim-btn').forEach(function(b){if(!b.dataset.permDisabled)b.disabled=d;});}
+function disposeObject(obj){if(!obj)return;if(obj.children&&obj.children.length){for(var i=obj.children.length-1;i>=0;i--)disposeObject(obj.children[i]);}if(obj.geometry)obj.geometry.dispose();if(obj.material){if(Array.isArray(obj.material))obj.material.forEach(function(m){if(m.map)m.map.dispose();m.dispose();});else{if(obj.material.map)obj.material.map.dispose();obj.material.dispose();}}if(obj.parent)obj.parent.remove(obj);}
+function disposeScene(){if(!G.scene)return;var rm=[];G.scene.traverse(function(c){if(!c.isLight&&c!==G.scene)rm.push(c);});for(var i=rm.length-1;i>=0;i--)disposeObject(rm[i]);}
+
+/* ==================================================================
+   INIT THREE — ÉCLAIRAGE SOIGNEUSEMENT CALIBRÉ
+   ================================================================== */
+function initThree(){
+  var w=document.getElementById('canv');
+  G.scene=new THREE.Scene();
+  G.scene.background=null;
+  G.scene.fog=new THREE.FogExp2(0x050811,0.018);
+
+  G.camera=new THREE.PerspectiveCamera(42,w.clientWidth/w.clientHeight,0.1,200);
+  G.camera.position.set(0,3.5,13);
+
+  G.renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  G.renderer.setSize(w.clientWidth,w.clientHeight);
+  G.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  G.renderer.shadowMap.enabled=true;
+  G.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  G.renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  G.renderer.toneMappingExposure=1.4; // PLUS LUMINEUX
+  G.renderer.setClearColor(0x000000,0);
+  w.appendChild(G.renderer.domElement);
+
+  G.controls=new THREE.OrbitControls(G.camera,G.renderer.domElement);
+  G.controls.enableDamping=true;G.controls.dampingFactor=0.08;
+  G.controls.minDistance=3;G.controls.maxDistance=28;G.controls.enablePan=true;
+  G.controls.maxPolarAngle=Math.PI*0.85;
+
+  // ÉCLAIRAGE AUGMENTÉ POUR VOIR LES LIQUIDES
+  G.scene.add(new THREE.HemisphereLight(0xe0f0ff,0x0a1220,0.7));
+
+  var key=new THREE.DirectionalLight(0xffffff,1.3); // PLUS FORT
+  key.position.set(-6,12,8);
+  key.castShadow=true;
+  key.shadow.mapSize.set(2048,2048);
+  key.shadow.camera.near=0.5;key.shadow.camera.far=40;
+  key.shadow.camera.left=-12;key.shadow.camera.right=12;
+  key.shadow.camera.top=10;key.shadow.camera.bottom=-6;
+  key.shadow.bias=-0.0005;
+  G.scene.add(key);
+
+  var fill=new THREE.DirectionalLight(0x38bdf8,0.6);
+  fill.position.set(8,5,-3);G.scene.add(fill);
+
+  var warm=new THREE.PointLight(0xffc080,1.0,18,2);
+  warm.position.set(3,3,5);G.scene.add(warm);
+
+  var rim=new THREE.PointLight(0x60a5fa,0.8,15,2);
+  rim.position.set(-5,2,-3);G.scene.add(rim);
+
+  G.scene.add(new THREE.AmbientLight(0x4a5a7a,0.55)); // AMBIENT PLUS FORT
+
+  G.clock=new THREE.Clock();
+  window.addEventListener('resize',onResize);
+
+  (function animLoop(){
+    requestAnimationFrame(animLoop);
+    var dt=Math.min(G.clock.getDelta(),0.05);
+    G.controls.update();
+    G.scene.traverse(function(c){if(c.userData&&c.userData.bb)c.quaternion.copy(G.camera.quaternion);});
+    if(G.currentPhaseObj&&G.currentPhaseObj.update){try{G.currentPhaseObj.update(dt);}catch(e){console.error(e);}}
+    G.frameCount++;G.fpsTime+=dt;
+    if(G.fpsTime>=1.0){var b=document.getElementById('fpsBadge');if(b)b.textContent=G.frameCount+' FPS';G.frameCount=0;G.fpsTime=0;}
+    G.renderer.render(G.scene,G.camera);
+  })();
+}
+function onResize(){var w=document.getElementById('canv');if(!w||!G.camera||!G.renderer)return;G.camera.aspect=w.clientWidth/w.clientHeight;G.camera.updateProjectionMatrix();G.renderer.setSize(w.clientWidth,w.clientHeight);if(G.microOn)resizeMicroCanvas();}
+
+/* ==================================================================
+   LABEL BILLBOARD
+   ================================================================== */
+function mkLabel(text,size,color,withBg){
+  color=color||'#ffffff';
+  var cv=document.createElement('canvas');cv.width=512;cv.height=128;
+  var cx=cv.getContext('2d');cx.clearRect(0,0,512,128);
+  if(withBg){
+    cx.fillStyle='rgba(10,18,32,0.88)';cx.strokeStyle=color;cx.lineWidth=3;
+    roundRect(cx,20,20,472,88,18);cx.fill();cx.stroke();
+  }
+  var fs=Math.min(64,Math.floor(420/(text.length||1)*1.5));
+  cx.font='bold '+fs+'px Outfit,sans-serif';
+  cx.textAlign='center';cx.textBaseline='middle';
+  cx.shadowColor='rgba(0,0,0,0.85)';cx.shadowBlur=8;cx.shadowOffsetY=2;
+  cx.fillStyle=color;cx.fillText(text,256,64);
+  var tx=new THREE.CanvasTexture(cv);tx.minFilter=THREE.LinearFilter;
+  var sm=new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false});
+  var sp=new THREE.Sprite(sm);sp.scale.set(size*4,size,1);sp.renderOrder=999;sp.userData={bb:true};
+  return sp;
+}
+function roundRect(cx,x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.lineTo(x+w-r,y);cx.quadraticCurveTo(x+w,y,x+w,y+r);cx.lineTo(x+w,y+h-r);cx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);cx.lineTo(x+r,y+h);cx.quadraticCurveTo(x,y+h,x,y+h-r);cx.lineTo(x,y+r);cx.quadraticCurveTo(x,y,x+r,y);cx.closePath();}
+
+/* ==================================================================
+   TABLE DE LABO
+   ================================================================== */
+function mkLabTable(){
+  var grp=new THREE.Group();
+  var top=new THREE.Mesh(
+    new THREE.BoxGeometry(26,0.25,13),
+    new THREE.MeshStandardMaterial({color:0x1a2540,roughness:0.65,metalness:0.3})
+  );
+  top.position.y=-2.1;top.receiveShadow=true;grp.add(top);
+
+  // Plan réfléchissant
+  var floor=new THREE.Mesh(
+    new THREE.PlaneGeometry(26,13),
+    new THREE.MeshStandardMaterial({color:0x0f1a30,roughness:0.15,metalness:0.7,transparent:true,opacity:0.85})
+  );
+  floor.rotation.x=-Math.PI/2;floor.position.y=-1.975;floor.receiveShadow=true;grp.add(floor);
+
+  // Grille
+  var grid=new THREE.GridHelper(26,26,0x2a4066,0x152440);
+  grid.position.y=-1.97;
+  grid.material.transparent=true;grid.material.opacity=0.55;
+  grp.add(grid);
+  return grp;
+}
+
+/* ==================================================================
+   BÉCHER PHOTO-RÉALISTE — LIQUIDE DENSE, COLORÉ, VISIBLE
+   ================================================================== */
+function mkBeaker(r,h,label,colorData,level){
+  var grp=new THREE.Group();
+
+  // === VERRE ===
+  // Utilise une opacité PLUS FORTE pour que le verre soit visible
+  var glassMat=new THREE.MeshPhysicalMaterial({
+    color:0xa8c8e8,
+    transparent:true,opacity:0.25,
+    roughness:0.02,metalness:0,
+    side:THREE.DoubleSide,depthWrite:false,
+    clearcoat:1.0,clearcoatRoughness:0.05,
+    transmission:0.6,ior:1.45,
+    reflectivity:0.8,
+    envMapIntensity:1.5
+  });
+
+  // Paroi extérieure
+  var glass=new THREE.Mesh(
+    new THREE.CylinderGeometry(r,r*0.95,h,64,1,true),
+    glassMat
+  );
+  glass.renderOrder=3;
+  grp.add(glass);
+
+  // Rebord épais (rim) - TRÈS visible
+  var rimGeo=new THREE.TorusGeometry(r*0.99,0.035,12,64);
+  var rimMat=new THREE.MeshPhysicalMaterial({
+    color:0xc8e0ff,transparent:true,opacity:0.4,
+    roughness:0.05,clearcoat:1.0,metalness:0.2,
+    side:THREE.DoubleSide
+  });
+  var rim=new THREE.Mesh(rimGeo,rimMat);
+  rim.rotation.x=Math.PI/2;rim.position.y=h/2;rim.renderOrder=4;
+  grp.add(rim);
+
+  // Fond visible (plus opaque)
+  var botMat=new THREE.MeshPhysicalMaterial({
+    color:0xa8c8e8,transparent:true,opacity:0.35,
+    side:THREE.DoubleSide,roughness:0.1,clearcoat:1.0,transmission:0.4
+  });
+  var bot=new THREE.Mesh(new THREE.CircleGeometry(r*0.95,64),botMat);
+  bot.rotation.x=-Math.PI/2;bot.position.y=-h/2;bot.renderOrder=3;
+  grp.add(bot);
+
+  // Bec verseur (petit arc)
+  var spoutCurve=new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-r*0.98,h/2,0.1),
+    new THREE.Vector3(-r*1.1,h/2+0.05,0),
+    new THREE.Vector3(-r*0.98,h/2,-0.1)
+  ]);
+  var spout=new THREE.Mesh(
+    new THREE.TubeGeometry(spoutCurve,12,0.025,8,false),
+    rimMat
+  );
+  spout.renderOrder=4;
+  grp.add(spout);
+
+  // Graduations BLANCHES visibles
+  for(var i=1;i<=4;i++){
+    var gy=-h/2+(h*i/5);
+    var ring=new THREE.Mesh(
+      new THREE.TorusGeometry(r*1.005,0.01,6,48),
+      new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.55})
+    );
+    ring.position.y=gy;grp.add(ring);
+    var num=mkLabel((i*10)+' mL',0.11,'rgba(200,230,255,0.7)');
+    num.position.set(r+0.3,gy,0);grp.add(num);
+  }
+
+  if(label){
+    var lb=mkLabel(label,0.32,'#38bdf8',true);
+    lb.position.set(0,h/2+0.55,0);
+    grp.add(lb);
+  }
+
+  grp.userData={radius:r,height:h,liqLevel:0};
+
+  if(level>0){
+    setBeakerLiquid(grp,colorData||COLORS.clear,level);
+  }
+
+  return grp;
+}
+
+function setBeakerLiquid(beaker,colorData,level){
+  // Nettoyer l'ancien
+  if(beaker.userData.liquid){
+    disposeObject(beaker.userData.liquid);
+    beaker.userData.liquid=null;
+    beaker.userData.liqMat=null;
+    beaker.userData.surfMat=null;
+  }
+  if(level<=0){beaker.userData.liqLevel=0;return null;}
+
+  var r=beaker.userData.radius,h=beaker.userData.height;
+  var lH=h*level;
+  var lR=r*0.92;
+
+  var colorHex=(typeof colorData==='object'&&colorData.hex)?colorData.hex:colorData;
+
+  // LIQUIDE DENSE ET VISIBLE
+  // Solution : opaque à 90%+, emissive pour lumière interne, pas de transmission
+  var lMat=new THREE.MeshStandardMaterial({
+    color:colorHex,
+    transparent:true,
+    opacity:0.95,
+    roughness:0.25,
+    metalness:0,
+    emissive:colorHex,
+    emissiveIntensity:0.25,
+    side:THREE.DoubleSide
+  });
+  var liq=new THREE.Mesh(
+    new THREE.CylinderGeometry(lR,lR*0.96,lH,64),
+    lMat
+  );
+  liq.position.y=-h/2+lH/2;
+  liq.renderOrder=1;
+  liq.castShadow=false;
+
+  // Surface du liquide (ménisque) - avec reflet
+  var sMat=new THREE.MeshStandardMaterial({
+    color:colorHex,
+    transparent:true,opacity:0.75,
+    emissive:colorHex,emissiveIntensity:0.3,
+    roughness:0.05,metalness:0.1,
+    side:THREE.DoubleSide
+  });
+  var surf=new THREE.Mesh(new THREE.CircleGeometry(lR,64),sMat);
+  surf.rotation.x=-Math.PI/2;
+  surf.position.y=lH/2;
+  surf.renderOrder=2;
+  liq.add(surf);
+
+  beaker.add(liq);
+  beaker.userData.liquid=liq;
+  beaker.userData.liqMat=lMat;
+  beaker.userData.surfMat=sMat;
+  beaker.userData.liqLevel=level;
+  return liq;
+}
+
+function lerpBeakerColor(beaker,r,g,b,emis){
+  if(!beaker||!beaker.userData.liqMat)return;
+  beaker.userData.liqMat.color.setRGB(r,g,b);
+  beaker.userData.liqMat.emissive.setRGB(r*(emis||0.25),g*(emis||0.25),b*(emis||0.25));
+  beaker.userData.liqMat.needsUpdate=true;
+  if(beaker.userData.surfMat){
+    beaker.userData.surfMat.color.setRGB(r,g,b);
+    beaker.userData.surfMat.emissive.setRGB(r*(emis||0.3),g*(emis||0.3),b*(emis||0.3));
+    beaker.userData.surfMat.needsUpdate=true;
+  }
+}
+
+/* ==================================================================
+   ERLENMEYER (forme conique comme image 2)
+   ================================================================== */
+function mkErlenmeyer(r,h,label,colorData){
+  var grp=new THREE.Group();
+
+  var glassMat=new THREE.MeshPhysicalMaterial({
+    color:0xa8c8e8,transparent:true,opacity:0.25,
+    roughness:0.02,clearcoat:1.0,clearcoatRoughness:0.05,
+    side:THREE.DoubleSide,depthWrite:false,
+    transmission:0.6,ior:1.45,reflectivity:0.8
+  });
+
+  // Corps conique
+  var body=new THREE.Mesh(
+    new THREE.CylinderGeometry(r*0.32,r,h*0.68,48,1,true),
+    glassMat
+  );
+  body.renderOrder=3;
+  grp.add(body);
+
+  // Goulot
+  var neck=new THREE.Mesh(
+    new THREE.CylinderGeometry(r*0.3,r*0.32,h*0.3,32,1,true),
+    glassMat
+  );
+  neck.position.y=h*0.49;neck.renderOrder=3;
+  grp.add(neck);
+
+  // Rim
+  var rim=new THREE.Mesh(
+    new THREE.TorusGeometry(r*0.31,0.025,8,32),
+    glassMat
+  );
+  rim.rotation.x=Math.PI/2;rim.position.y=h*0.63;rim.renderOrder=4;
+  grp.add(rim);
+
+  // Fond
+  var botMat=new THREE.MeshPhysicalMaterial({
+    color:0xa8c8e8,transparent:true,opacity:0.35,
+    side:THREE.DoubleSide,roughness:0.1,clearcoat:1.0
+  });
+  var bot=new THREE.Mesh(new THREE.CircleGeometry(r,48),botMat);
+  bot.rotation.x=-Math.PI/2;bot.position.y=-h*0.34;bot.renderOrder=3;
+  grp.add(bot);
+
+  // LIQUIDE VISIBLE ET COLORÉ (opacity 0.95)
+  var colorHex=(typeof colorData==='object'&&colorData.hex)?colorData.hex:(colorData||0xcce8f5);
+  var liqMat=new THREE.MeshStandardMaterial({
+    color:colorHex,transparent:true,opacity:0.92,
+    roughness:0.25,emissive:colorHex,emissiveIntensity:0.28,
+    side:THREE.DoubleSide
+  });
+  var liqH=h*0.42;
+  var liq=new THREE.Mesh(
+    new THREE.CylinderGeometry(r*0.55,r*0.96,liqH,48),
+    liqMat
+  );
+  liq.position.y=-h*0.12;liq.renderOrder=1;
+  grp.add(liq);
+
+  // Surface liquide
+  var surfMat=new THREE.MeshStandardMaterial({
+    color:colorHex,transparent:true,opacity:0.75,
+    emissive:colorHex,emissiveIntensity:0.3,
+    roughness:0.05,metalness:0.1,side:THREE.DoubleSide
+  });
+  var surf=new THREE.Mesh(new THREE.CircleGeometry(r*0.55,48),surfMat);
+  surf.rotation.x=-Math.PI/2;
+  surf.position.y=-h*0.12+liqH/2;
+  surf.renderOrder=2;
+  grp.add(surf);
+
+  // Bouchon (plus visible)
+  var cap=new THREE.Mesh(
+    new THREE.CylinderGeometry(r*0.33,r*0.3,0.2,24),
+    new THREE.MeshStandardMaterial({color:0x3a4a5a,roughness:0.6,metalness:0.4})
+  );
+  cap.position.y=h*0.7;grp.add(cap);
+
+  if(label){
+    var lb=mkLabel(label,0.22,'#fbbf24',true);
+    lb.position.set(0,0,r+0.38);
+    grp.add(lb);
+  }
+  return grp;
+}
+
+/* ==================================================================
+   pH-MÈTRE avec sonde verticale (comme image 2)
+   ================================================================== */
+function mkPHMeter(){
+  var grp=new THREE.Group();
+  // Boîtier
+  var box=new THREE.Mesh(
+    new THREE.BoxGeometry(1.5,1.1,0.42),
+    new THREE.MeshStandardMaterial({color:0x2a3442,roughness:0.5,metalness:0.4})
+  );
+  grp.add(box);
+  // Cadre écran
+  var fr=new THREE.Mesh(
+    new THREE.BoxGeometry(1.05,0.55,0.03),
+    new THREE.MeshStandardMaterial({color:0x05080c,roughness:0.3})
+  );
+  fr.position.set(0,0.15,0.22);grp.add(fr);
+  // Écran LCD
+  var cv=document.createElement('canvas');cv.width=512;cv.height=256;
+  var cx=cv.getContext('2d');var tx=new THREE.CanvasTexture(cv);tx.minFilter=THREE.LinearFilter;
+  function updScr(v){
+    var grd=cx.createLinearGradient(0,0,0,256);
+    grd.addColorStop(0,'#003b18');grd.addColorStop(1,'#001608');
+    cx.fillStyle=grd;cx.fillRect(0,0,512,256);
+    cx.strokeStyle='rgba(0,255,90,0.06)';cx.lineWidth=1;
+    for(var x=0;x<512;x+=16){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,256);cx.stroke();}
+    cx.font='bold 104px "JetBrains Mono"';cx.textAlign='center';cx.textBaseline='middle';
+    cx.shadowColor='#00ff60';cx.shadowBlur=22;cx.fillStyle='#00ff60';
+    cx.fillText(v!==null?'pH '+v.toFixed(2):'pH ---',256,105);
+    cx.shadowBlur=0;cx.font='28px Outfit';cx.fillStyle='rgba(0,255,90,0.55)';
+    cx.fillText('T = 25.0 °C',256,195);
+    tx.needsUpdate=true;
+  }
+  var scr=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.5),new THREE.MeshBasicMaterial({map:tx}));
+  scr.position.set(0,0.15,0.23);grp.add(scr);
+  updScr(null);grp.userData.updScr=updScr;
+
+  var lb=mkLabel('pH-mètre',0.14,'#38bdf8');
+  lb.position.set(0,-0.4,0.22);grp.add(lb);
+
+  // Boutons
+  for(var i=0;i<4;i++){
+    var btn=new THREE.Mesh(
+      new THREE.CylinderGeometry(0.045,0.045,0.05,12),
+      new THREE.MeshStandardMaterial({
+        color:i===0?0x22dd66:(i===1?0xf87171:0x4a5a6a),
+        emissive:i===0?0x003a10:0x000000,emissiveIntensity:i===0?0.4:0,
+        roughness:0.35,metalness:0.3
+      })
+    );
+    btn.rotation.x=Math.PI/2;btn.position.set(-0.45+i*0.3,-0.22,0.22);grp.add(btn);
+  }
+
+  // Câble courbe vers sonde
+  var cablePts=[
+    new THREE.Vector3(-0.6,-0.55,0),
+    new THREE.Vector3(-0.9,-1.4,0.15),
+    new THREE.Vector3(-0.4,-2.3,0.2),
+    new THREE.Vector3(0,-3.0,0)
+  ];
+  var cable=new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(cablePts),36,0.035,10,false),
+    new THREE.MeshStandardMaterial({color:0x0c0c10,roughness:0.9,metalness:0.1})
+  );
+  grp.add(cable);
+
+  // SONDE VERTICALE (comme image 2)
+  // Corps cylindrique en verre
+  var sondeBody=new THREE.Group();
+  sondeBody.position.copy(cablePts[3]);
+  sondeBody.position.y-=0.35;
+
+  // Connecteur métallique
+  var conn=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08,0.08,0.25,16),
+    new THREE.MeshStandardMaterial({color:0xc0c8d0,metalness:0.9,roughness:0.2})
+  );
+  conn.position.y=0.45;sondeBody.add(conn);
+
+  // Tube principal (verre transparent - on voit dedans)
+  var tubeMat=new THREE.MeshPhysicalMaterial({
+    color:0xb8d0e8,transparent:true,opacity:0.35,
+    roughness:0.05,clearcoat:1.0,transmission:0.4,
+    side:THREE.DoubleSide,depthWrite:false
+  });
+  var tube=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.07,0.065,1.2,24,1,true),
+    tubeMat
+  );
+  sondeBody.add(tube);
+
+  // Électrode interne VISIBLE (métal gris brillant)
+  var electrode=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018,0.018,1.1,12),
+    new THREE.MeshStandardMaterial({color:0xd4d8dc,metalness:0.95,roughness:0.2})
+  );
+  sondeBody.add(electrode);
+
+  // Bulbe en verre (pointe)
+  var bulb=new THREE.Mesh(
+    new THREE.SphereGeometry(0.08,20,20),
+    tubeMat
+  );
+  bulb.position.y=-0.7;sondeBody.add(bulb);
+
+  // Petit point électrode au centre du bulbe
+  var bulbTip=new THREE.Mesh(
+    new THREE.SphereGeometry(0.025,10,10),
+    new THREE.MeshStandardMaterial({color:0x886644,metalness:0.8,roughness:0.3})
+  );
+  bulbTip.position.y=-0.7;sondeBody.add(bulbTip);
+
+  grp.add(sondeBody);
+  grp.userData.sondeBody=sondeBody;
+  grp.userData.sondeOrigY=sondeBody.position.y;
+  return grp;
+}
+
+/* ==================================================================
+   PIPETTE DROITE VERTICALE (style image 2 - tube + bulbe en haut)
+   Pipette = verre long avec embout effilé en bas
+   ================================================================== */
+function mkPipette(){
+  var grp=new THREE.Group();
+
+  // Poire (gros bulbe en haut)
+  var bulb=new THREE.Mesh(
+    new THREE.SphereGeometry(0.18,24,24),
+    new THREE.MeshStandardMaterial({color:0x2d1b2f,roughness:0.75,metalness:0.1})
+  );
+  bulb.position.y=1.0;grp.add(bulb);
+
+  // Collier métallique sous la poire
+  var collar=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09,0.09,0.1,16),
+    new THREE.MeshStandardMaterial({color:0xa0a8b0,metalness:0.8,roughness:0.25})
+  );
+  collar.position.y=0.82;grp.add(collar);
+
+  // Tube principal transparent
+  var tubeMat=new THREE.MeshPhysicalMaterial({
+    color:0xc0d8ec,transparent:true,opacity:0.3,
+    roughness:0.03,clearcoat:1.0,transmission:0.5,
+    side:THREE.DoubleSide,depthWrite:false
+  });
+  var tube=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08,0.065,1.8,24,1,true),
+    tubeMat
+  );
+  tube.position.y=-0.1;grp.add(tube);
+
+  // Embout effilé (cône)
+  var tip=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.065,0.012,0.25,16,1,false),
+    tubeMat
+  );
+  tip.position.y=-1.12;grp.add(tip);
+
+  // Rebord sommet
+  var topRim=new THREE.Mesh(
+    new THREE.TorusGeometry(0.085,0.01,6,24),
+    new THREE.MeshStandardMaterial({color:0xc0d8ec,transparent:true,opacity:0.5,roughness:0.05,metalness:0.2})
+  );
+  topRim.rotation.x=Math.PI/2;topRim.position.y=0.8;grp.add(topRim);
+
+  // Graduations (anneaux sur le tube)
+  for(var i=0;i<8;i++){
+    var y=-0.8+i*0.22;
+    var mark=new THREE.Mesh(
+      new THREE.TorusGeometry(0.072,0.005,4,16),
+      new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.45})
+    );
+    mark.position.y=y;grp.add(mark);
+  }
+  // Numéros tous les 5 mL
+  for(var i=0;i<5;i++){
+    var y=-0.8+i*0.44;
+    var num=mkLabel((20-i*5)+'',0.07,'rgba(220,240,255,0.7)');
+    num.position.set(0.14,y,0);grp.add(num);
+  }
+
+  // LIQUIDE INTÉRIEUR (visible, coloré, dense)
+  var liqMat=new THREE.MeshStandardMaterial({
+    color:COLORS.clear.hex,transparent:true,opacity:0.92,
+    emissive:COLORS.clear.hex,emissiveIntensity:0.3,roughness:0.2
+  });
+  // Cylindre de liquide qui occupe le tube (depuis l'embout jusqu'à un niveau variable)
+  var liq=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.062,0.04,1.7,24),
+    liqMat
+  );
+  liq.position.y=-0.1;
+  liq.scale.y=0.01; // Caché initialement (niveau=0)
+  liq.renderOrder=1;
+  grp.add(liq);
+
+  grp.userData.liq=liq;
+  grp.userData.liqMat=liqMat;
+  grp.userData.tipY=-1.25; // Position Y de la pointe dans le repère local
+
+  return grp;
+}
+
+/* ==================================================================
+   UI HELPERS
+   ================================================================== */
+function sFB(id,tp,msg){var f=document.getElementById(id);if(!f)return;f.className='fb show '+tp;f.innerHTML=msg;}
+function setProg(p,pct){var b=document.getElementById('prog'+p);if(b)b.style.width=pct+'%';}
+function pF(id){var el=document.getElementById(id);if(!el)return NaN;return parseFloat((el.value||'').replace(',','.'));}
+function cl(a,b,t){if(isNaN(a))return false;return Math.abs(a-b)<=(t||Math.max(Math.abs(b)*0.15,0.002));}
+function togBtns(el){if(!el||!el.parentNode)return;el.parentNode.querySelectorAll('.to').forEach(function(b){b.classList.remove('act');});el.classList.add('act');}
+function setSceneTag(t){var e=document.getElementById('sceneTag');if(e)e.textContent=t||'';}
+
+/* ==================================================================
+   NAVIGATION
+   ================================================================== */
+function closeSafety(){document.getElementById('safetyModal').classList.remove('show');initThree();goPhase(1);}
+function goPhase(p){
+  if(G.unlocked.indexOf(p)<0)return;
+  if(G.animInProgress){G.pendingPhase=p;return;}
+  if(G.currentPhaseObj&&G.currentPhaseObj.destroy){try{G.currentPhaseObj.destroy();}catch(e){console.error(e);}}
+  clearAllTimers();disposeScene();
+  if(G.chart){try{G.chart.destroy();}catch(e){}G.chart=null;}
+  if(G.microOn){toggleMicro();}
+  var mb=document.getElementById('microBtn');if(mb){mb.style.display='none';}
+  G.scene.add(mkLabTable());
+  G.phase=p;
+  document.querySelectorAll('.nav-btn').forEach(function(b){
+    var n=parseInt(b.dataset.ph);b.classList.remove('active');
+    if(n===p)b.classList.add('active');
+    if(G.unlocked.indexOf(n)>=0){b.classList.remove('locked');var lk=b.querySelector('.lk');if(lk)lk.textContent='';}
+  });
+  if(p===1)G.currentPhaseObj=Phase1;else if(p===2)G.currentPhaseObj=Phase2;else if(p===3)G.currentPhaseObj=Phase3;
+  if(G.currentPhaseObj&&G.currentPhaseObj.init)G.currentPhaseObj.init();
+}
+function unlock(p){if(G.unlocked.indexOf(p)<0)G.unlocked.push(p);var b=document.querySelector('.nav-btn[data-ph="'+p+'"]');if(b){b.classList.remove('locked');var lk=b.querySelector('.lk');if(lk)lk.textContent='';}}
+
+/* ==================================================================
+   PHASE 1 — ACIDE-BASE
+   ================================================================== */
+var Phase1={
+  state:null,beakers:[],flasks:[],phMeter:null,pipette:null,stream:null,_update:null,
+
+  init:function(){
+    this.state={mixSel:0,poured:false,phDone:false,calcOk:false,att:0,cmp:null,sens:null};
+    G.camera.position.set(0,4,13);G.controls.target.set(0,0.3,0);
+    setSceneTag('PHASE 1 · LABORATOIRE ACIDE-BASE');
+
+    // Étagère
+    var shelf=new THREE.Mesh(
+      new THREE.BoxGeometry(12,0.12,1.4),
+      new THREE.MeshStandardMaterial({color:0x2a1b10,roughness:0.85,metalness:0.15})
+    );
+    shelf.position.set(0,1.8,-3);shelf.receiveShadow=true;shelf.castShadow=true;
+    G.scene.add(shelf);
+
+    // 4 Erlenmeyers avec liquide LÉGÈREMENT TEINTÉ (visible)
+    var fData=[
+      {l:'HCO₂H',x:-4.5,c:COLORS.clear},
+      {l:'HCO₂⁻Na⁺',x:-1.5,c:COLORS.clear},
+      {l:'CH₃CO₂H',x:1.5,c:COLORS.clear},
+      {l:'CH₃CO₂⁻Na⁺',x:4.5,c:COLORS.clear}
+    ];
+    this.flasks=[];
+    for(var i=0;i<fData.length;i++){
+      var f=mkErlenmeyer(0.5,2.2,fData[i].l,fData[i].c);
+      f.position.set(fData[i].x,3.0,-3);f.castShadow=true;
+      G.scene.add(f);this.flasks.push(f);
+    }
+
+    // 3 béchers vides
+    this.beakers=[];
+    for(var i=0;i<3;i++){
+      var bk=mkBeaker(0.78,2.2,'Mélange '+(i+1),COLORS.clear,0);
+      bk.position.set(-3.3+i*3.3,-1.0,1);bk.castShadow=true;
+      G.scene.add(bk);this.beakers.push(bk);
+    }
+
+    // pH-mètre
+    this.phMeter=mkPHMeter();
+    this.phMeter.position.set(6.5,1.5,0.8);
+    G.scene.add(this.phMeter);
+
+    // Pipette (cachée initialement, sortira quand on verse)
+    this.pipette=mkPipette();
+    this.pipette.position.set(-7,2.5,2);
+    this.pipette.visible=false;
+    G.scene.add(this.pipette);
+
+    this.buildPanel();
+  },
+
+  buildPanel:function(){
+    var m=MELANGES[this.state.mixSel];
+    document.getElementById('side').innerHTML=
+      '<div class="pt">⚗️ Phase 1 — Acide-Base</div>'+
+      '<div class="ms"><div class="ml">Réaction étudiée</div>'+
+      '<div class="mv">HCO₂H + CH₃CO₂⁻ ⇌ HCO₂⁻ + CH₃CO₂H</div>'+
+      '<div style="font-size:10px;color:var(--text2);margin-top:3px;">Couples : HCO₂H/HCO₂⁻ (pKa₁=3,8) • CH₃CO₂H/CH₃CO₂⁻ (pKa₂=4,8)</div></div>'+
+
+      '<div class="bx"><h3>Mélange sélectionné</h3>'+
+      '<div class="tg">'+
+      '<button class="to anim-btn'+(this.state.mixSel===0?' act':'')+'" onclick="Phase1.selectMix(0)">Mél. 1</button>'+
+      '<button class="to anim-btn'+(this.state.mixSel===1?' act':'')+'" onclick="Phase1.selectMix(1)">Mél. 2</button>'+
+      '<button class="to anim-btn'+(this.state.mixSel===2?' act':'')+'" onclick="Phase1.selectMix(2)">Mél. 3</button></div>'+
+      '<table class="dtbl" style="margin-top:7px;"><tr><th></th><th>V₁</th><th>V₂</th><th>V₃</th><th>V₄</th><th>V_tot</th></tr>'+
+      '<tr><td>mL</td><td>'+m.V1+'</td><td>'+m.V2+'</td><td>'+m.V3+'</td><td>'+m.V4+'</td><td><b>'+m.Vt+'</b></td></tr></table>'+
+      '<div class="bg" style="margin-top:9px;">'+
+      '<button class="btn bp anim-btn" id="bPour" onclick="Phase1.doPour()">🧪 Verser avec pipette</button>'+
+      '<button class="btn bo anim-btn" id="bPH" onclick="Phase1.doPH()" disabled>📊 Mesurer pH</button></div></div>'+
+
+      '<div class="bx" id="cB1" style="display:none;"><h3>Calcul de Qr,i et K</h3>'+
+      '<div style="font-size:11px;color:var(--text2);margin-bottom:6px;">C = 0,1 mol/L — Attention à la dilution !</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:11px;">'+
+      '<div>V_total = <input class="cinp" id="iVt" placeholder="?" style="width:50px;"> mL</div>'+
+      '<div>[HCO₂H]ᵢ = <input class="cinp" id="iC1" placeholder="?" style="width:55px;"></div>'+
+      '<div>[HCO₂⁻]ᵢ = <input class="cinp" id="iC2" placeholder="?" style="width:55px;"></div>'+
+      '<div>[CH₃CO₂H]ᵢ = <input class="cinp" id="iC3" placeholder="?" style="width:55px;"></div>'+
+      '<div>[CH₃CO₂⁻]ᵢ = <input class="cinp" id="iC4" placeholder="?" style="width:55px;"></div>'+
+      '<div>Qr,i = <input class="cinp" id="iQr" placeholder="?" style="width:55px;"></div></div>'+
+      '<div style="margin-top:6px;font-size:11px;">K = Ka₁/Ka₂ = <input class="cinp" id="iK1" placeholder="?" style="width:50px;"></div>'+
+      '<div style="margin-top:6px;font-size:11px;">Comparaison :</div>'+
+      '<div class="tg">'+
+      '<button class="to" onclick="Phase1.state.cmp=\'<\';togBtns(this)">Qr,i &lt; K</button>'+
+      '<button class="to" onclick="Phase1.state.cmp=\'=\';togBtns(this)">Qr,i = K</button>'+
+      '<button class="to" onclick="Phase1.state.cmp=\'>\';togBtns(this)">Qr,i &gt; K</button></div>'+
+      '<div style="margin-top:4px;font-size:11px;">Sens :</div>'+
+      '<div class="tg">'+
+      '<button class="to" onclick="Phase1.state.sens=\'direct\';togBtns(this)">→ Direct</button>'+
+      '<button class="to" onclick="Phase1.state.sens=\'equilibre\';togBtns(this)">● Équilibre</button>'+
+      '<button class="to" onclick="Phase1.state.sens=\'inverse\';togBtns(this)">← Inverse</button></div>'+
+      '<button class="btn bp" style="margin-top:8px;width:100%;" onclick="Phase1.checkCalc()">✓ Vérifier</button>'+
+      '<div class="fb" id="fb1"></div></div>'+
+
+      '<div class="bx" id="axB1" style="display:none;"><h3>Axe Qr — Visualisation</h3>'+
+      '<canvas id="axC1" width="340" height="90" style="width:100%;" class="ax-cv"></canvas>'+
+      '<div id="axM1" style="font-size:11px;color:var(--text2);text-align:center;margin-top:4px;"></div></div>'+
+
+      '<div class="bx"><h3>Questions</h3>'+
+      '<button class="mcq-opt" onclick="openQ(1)">Q1 · Équation de la réaction</button>'+
+      '<button class="mcq-opt" onclick="openQ(2)">Q2 · Calcul de K</button>'+
+      '<button class="mcq-opt" onclick="openQ(5)">Q5 · Critère (énoncé)</button></div>'+
+
+      '<div class="pb"><div class="pf" id="prog1" style="width:0%;"></div></div>';
+  },
+
+  selectMix:function(i){
+    if(G.animInProgress)return;
+    this.state.mixSel=i;
+    for(var k=0;k<this.beakers.length;k++)setBeakerLiquid(this.beakers[k],COLORS.clear,0);
+    if(this.phMeter&&this.phMeter.userData.updScr)this.phMeter.userData.updScr(null);
+    this.buildPanel();
+  },
+
+  doPour:function(){
+    if(G.animInProgress)return;
+    var self=this;
+    var m=MELANGES[this.state.mixSel];
+    var target=this.beakers[this.state.mixSel];
+    if(!target)return;
+    lockAnims();
+    var btn=document.getElementById('bPour');if(btn)btn.textContent='⏳ Versement...';
+    this.pipette.visible=true;
+
+    var totalLevel=0.6+(m.Vt/50)*0.3;
+    var stepIdx=0;
+    var levelPerStep=totalLevel/4;
+
+    function nextStep(){
+      if(stepIdx>=4){
+        self.state.poured=true;
+        self.pipette.visible=false;
+        if(self.pipette.userData.liq)self.pipette.userData.liq.scale.y=0.01;
+        if(self.stream){disposeObject(self.stream);self.stream=null;}
+        if(btn)btn.textContent='✓ Versé';
+        var bPH=document.getElementById('bPH');if(bPH)bPH.disabled=false;
+        setProg(1,35);unlockAnims();return;
+      }
+      self.pourStep(stepIdx,target,levelPerStep,nextStep);
+      stepIdx++;
+    }
+    nextStep();
+  },
+
+  // PIPETTE : séquence claire en 5 phases
+  pourStep:function(flaskIdx,target,levelDelta,callback){
+    var self=this;
+    var flask=this.flasks[flaskIdx];
+    if(!flask){callback();return;}
+    var pip=this.pipette;
+    var pipLiq=pip.userData.liq;
+
+    // Positions clés
+    var startPos=pip.position.clone();
+    var flaskAbove=new THREE.Vector3(flask.position.x,flask.position.y+1.8,flask.position.z);
+    var flaskIn=new THREE.Vector3(flask.position.x,flask.position.y+0.6,flask.position.z);
+    var beakerAbove=new THREE.Vector3(target.position.x,target.position.y+2.4,target.position.z);
+    var beakerIn=new THREE.Vector3(target.position.x,target.position.y+1.8,target.position.z);
+
+    var phaseT=0;
+    var phase3Start=null;
+
+    // Phase 1 : va au-dessus du flacon (0.4s)
+    function ph1(dt){
+      phaseT+=dt;var t=Math.min(phaseT/0.4,1);var e=t*t*(3-2*t);
+      pip.position.lerpVectors(startPos,flaskAbove,e);
+      if(t>=1){phaseT=0;self._update=ph2;}
+    }
+    // Phase 2 : descend DANS le flacon (0.3s)
+    function ph2(dt){
+      phaseT+=dt;var t=Math.min(phaseT/0.3,1);var e=t*t*(3-2*t);
+      pip.position.lerpVectors(flaskAbove,flaskIn,e);
+      if(t>=1){phaseT=0;self._update=ph3;}
+    }
+    // Phase 3 : aspire (le liquide monte dans la pipette) (0.4s)
+    function ph3(dt){
+      phaseT+=dt;var t=Math.min(phaseT/0.4,1);
+      pipLiq.scale.y=t;
+      if(t>=1){phaseT=0;self._update=ph4;}
+    }
+    // Phase 4 : remonte puis va au-dessus du bécher (0.5s)
+    var ph4Start=null,ph4Up=null;
+    function ph4(dt){
+      if(!ph4Start){ph4Start=pip.position.clone();ph4Up=new THREE.Vector3(ph4Start.x,ph4Start.y+1.2,ph4Start.z);}
+      phaseT+=dt;var t=Math.min(phaseT/0.5,1);var e=t*t*(3-2*t);
+      if(t<0.4){
+        var tt=t/0.4;pip.position.lerpVectors(ph4Start,ph4Up,tt);
+      }else{
+        var tt=(t-0.4)/0.6;var e2=tt*tt*(3-2*tt);
+        pip.position.lerpVectors(ph4Up,beakerAbove,e2);
+      }
+      if(t>=1){phaseT=0;self._update=ph5;}
+    }
+    // Phase 5 : descend DANS le bécher (0.3s)
+    function ph5(dt){
+      phaseT+=dt;var t=Math.min(phaseT/0.3,1);var e=t*t*(3-2*t);
+      pip.position.lerpVectors(beakerAbove,beakerIn,e);
+      if(t>=1){phaseT=0;
+        // Créer le filet
+        var tipWorld=new THREE.Vector3(pip.position.x,pip.position.y-1.2,pip.position.z);
+        self.createStream(tipWorld,target);
+        self._update=ph6;
+      }
+    }
+    // Phase 6 : vide le liquide (0.8s)
+    var curLevel=target.userData.liqLevel||0;
+    var tgtLevel=curLevel+levelDelta;
+    function ph6(dt){
+      phaseT+=dt;var t=Math.min(phaseT/0.8,1);
+      pipLiq.scale.y=1-t;
+      setBeakerLiquid(target,COLORS.clear,curLevel+(tgtLevel-curLevel)*t);
+      if(t>=1){
+        if(self.stream){disposeObject(self.stream);self.stream=null;}
+        self._update=null;callback();
+      }
+    }
+
+    self._update=ph1;
+  },
+
+  createStream:function(from,target){
+    var to=target.position.clone();
+    to.y=target.position.y+target.userData.height/2;
+    var dist=from.distanceTo(to);
+    var stream=new THREE.Mesh(
+      new THREE.CylinderGeometry(0.025,0.04,dist,12),
+      new THREE.MeshStandardMaterial({
+        color:COLORS.clear.hex,transparent:true,opacity:0.85,
+        emissive:COLORS.clear.hex,emissiveIntensity:0.4,roughness:0.1
+      })
+    );
+    stream.position.copy(from).lerp(to,0.5);
+    stream.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3().subVectors(to,from).normalize());
+    G.scene.add(stream);this.stream=stream;
+  },
+
+  doPH:function(){
+    if(G.animInProgress)return;
+    var self=this,m=MELANGES[this.state.mixSel],bk=this.beakers[this.state.mixSel];
+    if(!this.phMeter||!bk)return;
+    lockAnims();
+    var btn=document.getElementById('bPH');if(btn)btn.textContent='⏳ Mesure...';
+
+    var sondeBody=this.phMeter.userData.sondeBody;
+    var origY=this.phMeter.userData.sondeOrigY;
+    var phaseT=0;
+
+    function descend(dt){
+      phaseT+=dt;var t=Math.min(phaseT/0.6,1);
+      sondeBody.position.y=origY-t*0.9;
+      if(t>=1){phaseT=0;self._update=osc;}
+    }
+    function osc(dt){
+      phaseT+=dt;
+      if(phaseT<2.2){
+        var n=(Math.random()-0.5)*0.6*(1-phaseT/2.2);
+        self.phMeter.userData.updScr(m.pH+n);
+      }else{
+        self.phMeter.userData.updScr(m.pH);
+        phaseT=0;self._update=rise;
+      }
+    }
+    function rise(dt){
+      phaseT+=dt;var t=Math.min(phaseT/0.5,1);
+      sondeBody.position.y=origY-(1-t)*0.9;
+      if(t>=1){
+        self.state.phDone=true;self._update=null;
+        if(btn)btn.textContent='✓ pH = '+m.pH.toFixed(2);
+        var cb=document.getElementById('cB1');if(cb)cb.style.display='block';
+        setProg(1,60);unlockAnims();
+      }
+    }
+    self._update=descend;
+  },
+
+  checkCalc:function(){
+    var m=MELANGES[this.state.mixSel],s=this.state;s.att++;
+    var vt=pF('iVt'),c1=pF('iC1'),c2=pF('iC2'),c3=pF('iC3'),c4=pF('iC4'),qr=pF('iQr'),kv=pF('iK1');
+    var eVt=m.Vt,eC1=C_SOL*m.V1/m.Vt,eC2=C_SOL*m.V2/m.Vt,eC3=C_SOL*m.V3/m.Vt,eC4=C_SOL*m.V4/m.Vt;
+    var eQr=m.Qri,eK=K_AB;
+    var eCmp=eQr<eK?'<':eQr>eK?'>':'=';
+    var ok=cl(vt,eVt,0.5)&&cl(c1,eC1,0.003)&&cl(c2,eC2,0.003)&&cl(c3,eC3,0.003)&&cl(c4,eC4,0.003)&&
+           cl(qr,eQr,Math.max(eQr*0.15,0.3))&&cl(kv,eK,0.5)&&s.cmp===eCmp&&s.sens===m.sens;
+    if(ok){
+      sFB('fb1','ok','✅ Correct ! Qr,i = '+eQr+(eCmp==='<'?' < ':eCmp==='>'?' > ':' = ')+'K = '+eK+' → sens <b>'+m.sens+'</b>.');
+      s.calcOk=true;var ax=document.getElementById('axB1');if(ax)ax.style.display='block';
+      drawQrAxis('axC1','axM1',eQr,eK,m.sens);unlock(2);setProg(1,100);
+    }else{
+      if(s.att===1)sFB('fb1','err','❌ Réessayez. V_total = V₁+V₂+V₃+V₄. [X]ᵢ = C×Vₓ/V_total.');
+      else if(s.att===2)sFB('fb1','wrn','💡 V_total = '+eVt+' mL. [HCO₂H]ᵢ = 0,1×'+m.V1+'/'+eVt+' = '+eC1.toFixed(4)+'. Qr,i = (V₂×V₃)/(V₁×V₄).');
+      else if(s.att===3)sFB('fb1','inf','📖 Qr,i = ('+m.V2+'×'+m.V3+')/('+m.V1+'×'+m.V4+') = '+eQr+'. K = 10. '+eCmp+' → '+m.sens+'.');
+      else{sFB('fb1','ok','📗 Réponse : V_total='+eVt+', Qr,i='+eQr+', K='+eK+' → '+m.sens+'.');s.calcOk=true;var ax=document.getElementById('axB1');if(ax)ax.style.display='block';drawQrAxis('axC1','axM1',eQr,eK,m.sens);unlock(2);setProg(1,100);}
+    }
+  },
+
+  update:function(dt){if(this._update)this._update(dt);},
+  destroy:function(){this._update=null;this.beakers=[];this.flasks=[];this.phMeter=null;this.pipette=null;this.stream=null;}
+};
+
+/* ==================================================================
+   PHASE 2 — REDOX
+   ================================================================== */
+var Phase2={
+  state:null,beakers:{},copperSpiral:null,copperMat:null,copperPts:null,
+  dianeTree:null,dianeBranches:null,agBeaker:null,
+  dianeRunning:false,dianeT:0,_update:null,
+
+  init:function(){this.state={subP:1,mixed:false,att:0,cmp:null,sens:null,ok1:false,ok2:false};this.buildSub1();},
+
+  buildSub1:function(){
+    disposeScene();G.scene.add(mkLabTable());
+    G.camera.position.set(0,4,11);G.controls.target.set(0,0,0);
+    setSceneTag('PHASE 2A · REDOX Fe³⁺/I⁻');
+
+    this.beakers={};
+    var ba=mkBeaker(0.85,2.3,'Bécher (a)',COLORS.fe3,0.55);
+    ba.position.set(-3.8,-1,0);ba.castShadow=true;G.scene.add(ba);this.beakers.A=ba;
+    var bb=mkBeaker(0.85,2.3,'Bécher (b)',COLORS.iodine,0.55);
+    bb.position.set(0,-1,0);bb.castShadow=true;G.scene.add(bb);this.beakers.B=bb;
+    var bc=mkBeaker(0.95,2.6,'Bécher (c)',COLORS.clear,0);
+    bc.position.set(3.8,-1,0);bc.castShadow=true;G.scene.add(bc);this.beakers.C=bc;
+
+    var mb=document.getElementById('microBtn');if(mb)mb.style.display='block';
+    this.buildPanel1();
+  },
+
+  buildSub2:function(){
+    disposeScene();G.scene.add(mkLabTable());
+    G.camera.position.set(2.5,2.5,7.5);G.controls.target.set(0,-0.2,0);
+    setSceneTag('PHASE 2B · ARBRE DE DIANE');
+
+    this.agBeaker=mkBeaker(1.15,3.2,'AgNO₃ · 0,1 mol/L',COLORS.ag_sol,0.6);
+    this.agBeaker.position.set(0,-0.4,0);this.agBeaker.castShadow=true;
+    G.scene.add(this.agBeaker);
+
+    // Support
+    var rodMat=new THREE.MeshStandardMaterial({color:0xa8b0b8,metalness:0.75,roughness:0.2});
+    var rod=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,5.5,12),rodMat);
+    rod.position.set(0,1.3,0);G.scene.add(rod);
+    var arm=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,1.5,10),rodMat);
+    arm.rotation.z=Math.PI/2;arm.position.set(0,2.7,0);G.scene.add(arm);
+
+    // Fil cuivre spiralé
+    var cuPts=[];
+    for(var a=0;a<Math.PI*7;a+=0.1){
+      var rad=0.4+Math.sin(a*0.4)*0.04;
+      cuPts.push(new THREE.Vector3(Math.cos(a)*rad,-a*0.1+2.1,Math.sin(a)*rad));
+    }
+    var cuCurve=new THREE.CatmullRomCurve3(cuPts);
+    var cuGeo=new THREE.TubeGeometry(cuCurve,130,0.045,12,false);
+    this.copperMat=new THREE.MeshPhysicalMaterial({
+      color:COLORS.copper.hex,metalness:0.92,roughness:0.15,
+      clearcoat:0.5,clearcoatRoughness:0.3
+    });
+    this.copperSpiral=new THREE.Mesh(cuGeo,this.copperMat);
+    this.copperSpiral.castShadow=true;G.scene.add(this.copperSpiral);
+    this.copperPts=cuPts;
+
+    var cuLbl=mkLabel('Cu(s)',0.22,'#c46a29',true);
+    cuLbl.position.set(0.95,1.9,0);G.scene.add(cuLbl);
+
+    this.dianeTree=new THREE.Group();G.scene.add(this.dianeTree);
+    this.dianeBranches=[];this.dianeRunning=false;this.dianeT=0;
+
+    var mb=document.getElementById('microBtn');if(mb)mb.style.display='block';
+    this.buildPanel2();
+  },
+
+  buildPanel1:function(){
+    document.getElementById('side').innerHTML=
+      '<div class="pt">🧪 Phase 2A — Redox Fe³⁺/I⁻</div>'+
+      '<div class="tg"><button class="to act anim-btn" onclick="Phase2.goSub(1)">Exp. 1 : Fe³⁺/I⁻</button>'+
+      '<button class="to anim-btn" onclick="Phase2.goSub(2)">Exp. 2 : Ag⁺/Cu</button></div>'+
+      '<div class="ms"><div class="ml">Réaction</div><div class="mv">2Fe³⁺(aq) + 2I⁻(aq) ⇌ 2Fe²⁺(aq) + I₂(aq)</div>'+
+      '<div style="font-size:10px;color:var(--text2);">K = 6,0×10⁴</div></div>'+
+      '<div class="bx"><h3>Protocole</h3>'+
+      '<p>Bécher <b>(a)</b> : 10 mL FeSO₄ + 10 mL Fe₂(SO₄)₃ → <span style="color:#e8871c;">jaune-orangé</span></p>'+
+      '<p>Bécher <b>(b)</b> : 10 mL I₂ + 10 mL KI → <span style="color:#6b3410;">brun</span></p>'+
+      '<p>Mélanger (a) + (b) dans (c) et observer.</p>'+
+      '<button class="btn bp anim-btn" style="margin-top:6px;width:100%;" id="bMx2" onclick="Phase2.doMix()">🔀 Mélanger dans (c)</button></div>'+
+
+      '<div class="bx" id="cB2" style="display:none;"><h3>Calcul de Qr,i</h3>'+
+      '<div style="font-size:11px;color:var(--text2);margin-bottom:5px;">V_total = 40 mL</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;">'+
+      '<div>[Fe²⁺]ᵢ = <input class="cinp" id="iFe2" placeholder="?"></div>'+
+      '<div>[Fe³⁺]ᵢ = <input class="cinp" id="iFe3" placeholder="?"></div>'+
+      '<div>[I₂]ᵢ = <input class="cinp" id="iI2" placeholder="?" style="width:75px;"></div>'+
+      '<div>[I⁻]ᵢ = <input class="cinp" id="iIm" placeholder="?"></div></div>'+
+      '<div style="margin-top:5px;font-size:11px;">Qr,i = <input class="cinp" id="iQr2" placeholder="?" style="width:75px;"></div>'+
+      '<div style="margin-top:5px;font-size:11px;">Comparaison :</div>'+
+      '<div class="tg"><button class="to" onclick="Phase2.state.cmp=\'<\';togBtns(this)">Qr,i ≪ K</button>'+
+      '<button class="to" onclick="Phase2.state.cmp=\'=\';togBtns(this)">Qr,i ≈ K</button>'+
+      '<button class="to" onclick="Phase2.state.cmp=\'>\';togBtns(this)">Qr,i ≫ K</button></div>'+
+      '<button class="btn bp" style="margin-top:8px;width:100%;" onclick="Phase2.checkSub1()">✓ Vérifier</button>'+
+      '<div class="fb" id="fb2"></div></div>'+
+
+      '<div class="bx" id="obs2" style="display:none;"><h3>Observation</h3>'+
+      '<div id="obs2T" style="font-size:12px;color:var(--text2);line-height:1.5;"></div></div>'+
+
+      '<div class="bx"><h3>Questions</h3>'+
+      '<button class="mcq-opt" onclick="openQ(6)">Q6 · Équation redox</button>'+
+      '<button class="mcq-opt" onclick="openQ(7)">Q7 · Couleur et sens</button></div>'+
+
+      '<div class="pb"><div class="pf" id="prog2" style="width:'+(this.state.ok1?100:0)+'%;"></div></div>';
+  },
+
+  buildPanel2:function(){
+    document.getElementById('side').innerHTML=
+      '<div class="pt">🌳 Phase 2B — Arbre de Diane</div>'+
+      '<div class="tg"><button class="to anim-btn" onclick="Phase2.goSub(1)">Exp. 1 : Fe³⁺/I⁻</button>'+
+      '<button class="to act anim-btn" onclick="Phase2.goSub(2)">Exp. 2 : Ag⁺/Cu</button></div>'+
+      '<div class="ms"><div class="ml">Réaction</div><div class="mv">2Ag⁺(aq) + Cu(s) ⇌ 2Ag(s) + Cu²⁺(aq)</div>'+
+      '<div style="font-size:10px;color:var(--text2);">K = 3,9×10¹⁵</div></div>'+
+      '<div class="bx"><h3>Expérience</h3>'+
+      '<p>Fil de Cu immergé dans 20 mL d\'AgNO₃ (0,1 mol/L).</p>'+
+      '<p>Accéléré sur 15 minutes. <b>Solides exclus de Qr.</b></p>'+
+      '<button class="btn bp anim-btn" id="bDiane" style="width:100%;margin-top:6px;" onclick="Phase2.startDiane()">▶️ Lancer la réaction</button>'+
+      '<div style="margin-top:6px;font-size:11px;">Temps : <b id="dTime">0:00</b> / 15:00</div>'+
+      '<input type="range" id="dSlider" min="0" max="100" value="0" disabled></div>'+
+
+      '<div class="bx" id="dObs" style="display:none;"><h3>Observations</h3>'+
+      '<div id="dObsT" style="font-size:12px;color:var(--text2);line-height:1.5;"></div></div>'+
+
+      '<div class="bx" id="cB3" style="display:none;"><h3>Calcul de Qr,i</h3>'+
+      '<div style="font-size:11px;margin-top:5px;">Qr,i = [Cu²⁺]ᵢ / [Ag⁺]ᵢ² = <input class="cinp" id="iQr3" placeholder="?"></div>'+
+      '<div style="margin-top:5px;font-size:11px;">Sens :</div>'+
+      '<div class="tg"><button class="to" onclick="Phase2.state.sens=\'d\';togBtns(this)">→ Direct</button>'+
+      '<button class="to" onclick="Phase2.state.sens=\'i\';togBtns(this)">← Inverse</button></div>'+
+      '<button class="btn bp" style="margin-top:8px;width:100%;" onclick="Phase2.checkSub2()">✓ Vérifier</button>'+
+      '<div class="fb" id="fb3"></div></div>'+
+
+      '<div class="bx"><h3>Questions</h3>'+
+      '<button class="mcq-opt" onclick="openQ(8)">Q8 · Qr,i pour Ag⁺+Cu</button>'+
+      '<button class="mcq-opt" onclick="openQ(9)">Q9 · Observations visuelles</button></div>'+
+
+      '<div class="pb"><div class="pf" id="prog2" style="width:'+(this.state.ok2?100:(this.state.ok1?50:0))+'%;"></div></div>';
+  },
+
+  goSub:function(n){if(G.animInProgress)return;this.state.subP=n;if(n===1)this.buildSub1();else this.buildSub2();},
+
+  doMix:function(){
+    if(G.animInProgress)return;
+    var self=this;lockAnims();
+    var btn=document.getElementById('bMx2');if(btn)btn.textContent='⏳ Mélange...';
+    var bc=this.beakers.C;
+    setBeakerLiquid(bc,COLORS.iodine,0.01);
+    var phaseT=0;
+    function fill(dt){
+      phaseT+=dt;var t=Math.min(phaseT/1.2,1);
+      setBeakerLiquid(bc,COLORS.iodine,0.01+t*0.62);
+      if(t>=1){phaseT=0;self._update=colorFn;}
+    }
+    function colorFn(dt){
+      phaseT+=dt;var t=Math.min(phaseT/2.0,1);
+      var s=COLORS.iodine,e=COLORS.mix_fe_i;
+      lerpBeakerColor(bc,s.r*(1-t)+e.r*t,s.g*(1-t)+e.g*t,s.b*(1-t)+e.b*t,0.3);
+      if(t>=1){
+        self._update=null;self.state.mixed=true;
+        if(btn)btn.textContent='✓ Mélangé';
+        var cb=document.getElementById('cB2');if(cb)cb.style.display='block';
+        setProg(2,30);unlockAnims();
+      }
+    }
+    self._update=fill;
+  },
+
+  checkSub1:function(){
+    var s=this.state;s.att++;
+    var fe2=pF('iFe2'),fe3=pF('iFe3'),i2=pF('iI2'),im=pF('iIm'),qr=pF('iQr2');
+    var eFe2=0.025,eFe3=0.025,eI2=2.5e-4,eIm=0.125;
+    var eQr=(eFe2*eFe2*eI2)/(eFe3*eFe3*eIm*eIm);
+    var ok=cl(fe2,eFe2,0.003)&&cl(fe3,eFe3,0.003)&&cl(i2,eI2,5e-5)&&cl(im,eIm,0.015)&&cl(qr,eQr,eQr*0.5)&&s.cmp==='<';
+    if(ok){
+      sFB('fb2','ok','✅ Correct ! Qr,i ≈ 0,016 ≪ K = 6×10⁴ → Sens direct. [I₂] augmente → couleur brune intensifiée.');
+      s.ok1=true;
+      var ob=document.getElementById('obs2');
+      if(ob){ob.style.display='block';document.getElementById('obs2T').innerHTML='🔬 La couleur <b style="color:#3a1c08;">brune foncée</b> du mélange (c) confirme : [I₂] a augmenté → <span class="badge badge-g">sens direct</span>. Critère <b>Qr,i ≪ K</b> vérifié.';}
+      setProg(2,50);
+    }else{
+      if(s.att===1)sFB('fb2','err','❌ Réessayez. [Fe²⁺]ᵢ = 0,1×10/40 (dilution !).');
+      else if(s.att===2)sFB('fb2','wrn','💡 [I₂]ᵢ = 10⁻³×10/40 = 2,5×10⁻⁴. Qr = [Fe²⁺]²×[I₂] / ([Fe³⁺]²×[I⁻]²).');
+      else if(s.att===3)sFB('fb2','inf','📖 Qr,i ≈ 0,016 ≪ K = 6×10⁴ → direct.');
+      else{sFB('fb2','ok','📗 Qr,i ≈ 0,016 ≪ K → direct.');s.ok1=true;setProg(2,50);}
+    }
+  },
+
+  startDiane:function(){
+    if(G.animInProgress)return;
+    if(this.dianeRunning)return;
+    this.dianeRunning=true;this.dianeT=0;
+    var btn=document.getElementById('bDiane');
+    if(btn){btn.disabled=true;btn.dataset.permDisabled='1';btn.textContent='⏳ Réaction en cours...';}
+    var sl=document.getElementById('dSlider');if(sl)sl.disabled=false;
+  },
+
+  growDendriteFractal:function(origin,baseDir){
+    if(!this.dianeTree)return;
+    var self=this;
+    var agMat=new THREE.MeshPhysicalMaterial({
+      color:0xe8e8ec,metalness:1.0,roughness:0.1,
+      clearcoat:1.0,clearcoatRoughness:0.05,
+      emissive:0xb0b0b5,emissiveIntensity:0.08
+    });
+    function addSeg(from,to,thick,depth){
+      var mid=from.clone().add(to).multiplyScalar(0.5);
+      var pert=0.1/(depth+1);
+      mid.x+=(Math.random()-0.5)*pert;
+      mid.z+=(Math.random()-0.5)*pert;
+      mid.y+=(Math.random()-0.5)*pert*0.5;
+      var curve=new THREE.CatmullRomCurve3([from.clone(),mid,to.clone()]);
+      var geo=new THREE.TubeGeometry(curve,8,thick,6,false);
+      var m=new THREE.Mesh(geo,agMat);
+      m.scale.set(0.01,0.01,0.01);
+      m.userData={growing:true,endPoint:to};
+      self.dianeTree.add(m);self.dianeBranches.push(m);
+      return m;
+    }
+    function grow(from,dir,length,depth,maxD,thick){
+      if(depth>=maxD)return;
+      var to=from.clone().add(dir.clone().multiplyScalar(length));
+      addSeg(from,to,thick,depth);
+      if(depth<maxD-1){
+        var n=depth===0?3:2;
+        for(var i=0;i<n;i++){
+          var ang=(Math.PI/3)*(i-(n-1)/2);
+          var perp=new THREE.Vector3(-dir.z,dir.y*0.3,dir.x).normalize();
+          var tilt=new THREE.Vector3((Math.random()-0.5)*0.3,(Math.random()-0.5)*0.3,(Math.random()-0.5)*0.3);
+          var nd=dir.clone().applyAxisAngle(perp,ang*0.6).add(tilt).normalize();
+          var sL=length*(0.55+Math.random()*0.15);
+          grow(to,nd,sL,depth+1,maxD,thick*0.7);
+        }
+      }
+    }
+    grow(origin,baseDir.clone().normalize(),0.13,0,4,0.014);
+  },
+
+  update:function(dt){
+    if(this._update)this._update(dt);
+
+    if(this.dianeRunning){
+      this.dianeT+=dt*0.055;
+      var p=Math.min(this.dianeT,1);
+      var sl=document.getElementById('dSlider');if(sl)sl.value=p*100;
+      var mins=Math.floor(p*15),secs=Math.floor((p*15-mins)*60);
+      var dtEl=document.getElementById('dTime');
+      if(dtEl)dtEl.textContent=mins+':'+(secs<10?'0':'')+secs;
+
+      // Solution bleuit
+      if(this.agBeaker&&this.agBeaker.userData.liqMat){
+        var s=COLORS.ag_sol,e=COLORS.cu2;
+        lerpBeakerColor(this.agBeaker,s.r*(1-p)+e.r*p,s.g*(1-p)+e.g*p,s.b*(1-p)+e.b*p,0.3);
+      }
+      // Cuivre patine
+      if(this.copperMat){
+        this.copperMat.color.setRGB(0.77*(1-p*0.3),0.42*(1-p*0.35),0.16*(1-p*0.3));
+        this.copperMat.roughness=0.15+p*0.25;
+        this.copperMat.needsUpdate=true;
+      }
+      // Nouvelles fractales
+      if(this.copperPts&&this.dianeBranches&&this.dianeBranches.length<400){
+        var desired=Math.floor(p*50);
+        var cur=this.dianeTree.userData.fracCount||0;
+        if(desired>cur){
+          var idx=Math.floor(this.copperPts.length*(0.15+0.7*Math.random()));
+          var org=this.copperPts[Math.min(idx,this.copperPts.length-1)].clone();
+          var out=org.clone();out.y=0;out.normalize();
+          var bd=new THREE.Vector3(out.x+(Math.random()-0.5)*0.5,0.3+Math.random()*0.6,out.z+(Math.random()-0.5)*0.5).normalize();
+          this.growDendriteFractal(org,bd);
+          this.dianeTree.userData.fracCount=(cur||0)+1;
+        }
+      }
+      // Observations
+      var oD=document.getElementById('dObs'),oT=document.getElementById('dObsT');
+      if(oD){oD.style.display='block';
+        if(p<0.33)oT.innerHTML='🔍 <b>~5 min</b> : Premiers cristaux d\'<span style="color:#c0c0c0;">Ag(s)</span> sur le fil. Solution : bleu très pâle.';
+        else if(p<0.66)oT.innerHTML='🔍 <b>~10 min</b> : <b>Arbre de Diane</b> dendritique. Solution <span style="color:#1e88e5;">bleu clair</span>. Cu s\'amincit.';
+        else oT.innerHTML='🔍 <b>~15 min</b> : Arbre spectaculaire ! <span style="color:#c0c0c0;">Ag(s)</span> gris brillant + <span style="color:#1e88e5;">Cu²⁺(aq)</span> bleu. Critère Qr,i ≪ K vérifié.';
+      }
+      if(p>=1){
+        this.dianeRunning=false;
+        var btn=document.getElementById('bDiane');
+        if(btn){btn.textContent='✓ Terminé';delete btn.dataset.permDisabled;}
+        var cb=document.getElementById('cB3');if(cb)cb.style.display='block';
+        setProg(2,75);
+      }
+    }
+    if(this.dianeBranches){
+      for(var i=0;i<this.dianeBranches.length;i++){
+        var br=this.dianeBranches[i];
+        if(br.userData.growing&&br.scale.x<1){
+          var gs=Math.min(br.scale.x+dt*4,1);
+          br.scale.set(gs,gs,gs);
+          if(gs>=1)br.userData.growing=false;
+        }
+      }
+    }
+  },
+
+  checkSub2:function(){
+    var s=this.state;s.att++;
+    var qr=pF('iQr3');
+    var ok=(qr===0||(qr>=0&&qr<=0.001))&&s.sens==='d';
+    if(ok){
+      sFB('fb3','ok','✅ Qr,i = 0 ≪ K = 3,9×10¹⁵ → Sens direct. Le dépôt d\'Ag et la coloration bleue confirment.');
+      s.ok2=true;unlock(3);setProg(2,100);
+    }else{
+      if(s.att===1)sFB('fb3','err','❌ [Cu²⁺]ᵢ = 0 au départ → Qr,i = ?');
+      else if(s.att===2)sFB('fb3','wrn','💡 Qr,i = 0/[Ag⁺]² = 0. 0 ≪ K → quel sens ?');
+      else{sFB('fb3','ok','📗 Qr,i = 0 ≪ K → sens direct.');s.ok2=true;unlock(3);setProg(2,100);}
+    }
+  },
+
+  destroy:function(){this._update=null;this.dianeRunning=false;this.beakers={};this.copperSpiral=null;this.copperMat=null;this.copperPts=null;this.dianeTree=null;this.dianeBranches=null;this.agBeaker=null;}
+};
+
+/* ==================================================================
+   VUE MICROSCOPIQUE — OVERLAY 2D PLEIN ÉCRAN (canvas 2D, pas 3D)
+   ================================================================== */
+var MicroSim={
+  particles:[], // tableau de particules
+  t:0,
+  cv:null, cx:null,
+  W:0, H:0, cx0:0, cy0:0, radius:0,
+
+  start:function(){
+    this.cv=document.getElementById('microCanvas');
+    this.cx=this.cv.getContext('2d');
+    this.setupCanvas();
+    this.createParticles();
+    var self=this;
+    G.microRAF=requestAnimationFrame(function loop(){
+      if(!G.microOn)return;
+      self.update();
+      self.draw();
+      G.microRAF=requestAnimationFrame(loop);
+    });
+  },
+
+  setupCanvas:function(){
+    var wrap=document.getElementById('microOverlay');
+    var dpr=window.devicePixelRatio||1;
+    this.W=wrap.clientWidth;this.H=wrap.clientHeight;
+    this.cv.width=this.W*dpr;this.cv.height=this.H*dpr;
+    this.cv.style.width=this.W+'px';this.cv.style.height=this.H+'px';
+    this.cx.scale(dpr,dpr);
+    this.cx0=this.W/2;this.cy0=this.H/2;
+    this.radius=Math.min(this.W,this.H)*0.42;
+  },
+
+  createParticles:function(){
+    this.particles=[];
+    var subP=(Phase2&&Phase2.state&&Phase2.state.subP)||1;
+    if(subP===1){
+      // Fe3+, I-, Fe2+, I2
+      this.addIons('Fe³⁺',0xe8871c,6,26);
+      this.addIons('I⁻',0x9b59b6,8,22);
+      this.addIons('Fe²⁺',0x86c287,3,26);
+      // Molécules I2
+      for(var i=0;i<2;i++){
+        var ang=Math.random()*Math.PI*2;var rr=this.radius*0.5*Math.random();
+        this.particles.push({
+          type:'I2',x:this.cx0+Math.cos(ang)*rr,y:this.cy0+Math.sin(ang)*rr,
+          vx:(Math.random()-0.5)*0.5,vy:(Math.random()-0.5)*0.5,
+          angle:Math.random()*Math.PI*2,spin:(Math.random()-0.5)*0.03,
+          color:0x6b3410,r:24
+        });
+      }
+      // Électrons (quelques)
+      for(var i=0;i<4;i++){
+        var ang=Math.random()*Math.PI*2;
+        this.particles.push({
+          type:'e',x:this.cx0+Math.cos(ang)*this.radius*0.4,y:this.cy0+Math.sin(ang)*this.radius*0.4,
+          vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*2,
+          phase:Math.random()*Math.PI*2,r:12
+        });
+      }
+    } else {
+      // Ag+/Cu : surface Cu en bas
+      // Ag+ descendants
+      for(var i=0;i<6;i++){
+        this.particles.push({
+          type:'Ag+',x:this.cx0+(Math.random()-0.5)*this.radius*1.6,
+          y:this.cy0-this.radius*0.7+Math.random()*this.radius*0.4,
+          vx:(Math.random()-0.5)*0.3,vy:0.3+Math.random()*0.5,
+          color:0xd8d8dc,r:26,
+          startY:null
+        });
+      }
+      // Cu2+ montants
+      for(var i=0;i<4;i++){
+        this.particles.push({
+          type:'Cu2+',x:this.cx0+(Math.random()-0.5)*this.radius*1.6,
+          y:this.cy0+this.radius*0.5,
+          vx:(Math.random()-0.5)*0.2,vy:-0.4-Math.random()*0.3,
+          color:0x1e88e5,r:26
+        });
+      }
+      // Électrons jaillissant
+      for(var i=0;i<6;i++){
+        this.particles.push({
+          type:'e',x:this.cx0+(Math.random()-0.5)*this.radius*1.4,y:this.cy0+this.radius*0.55,
+          vx:(Math.random()-0.5)*1.5,vy:-0.6-Math.random()*0.6,
+          phase:Math.random()*Math.PI*2,r:12,life:0
+        });
+      }
+    }
+  },
+
+  addIons:function(label,color,count,radius){
+    for(var i=0;i<count;i++){
+      var ang=Math.random()*Math.PI*2;
+      var rr=Math.random()*this.radius*0.85;
+      this.particles.push({
+        type:label,x:this.cx0+Math.cos(ang)*rr,y:this.cy0+Math.sin(ang)*rr,
+        vx:(Math.random()-0.5)*0.6,vy:(Math.random()-0.5)*0.6,
+        color:color,r:radius
+      });
+    }
+  },
+
+  update:function(){
+    this.t+=1/60;
+    var subP=(Phase2&&Phase2.state&&Phase2.state.subP)||1;
+    var self=this;
+
+    this.particles.forEach(function(p){
+      if(subP===1){
+        p.x+=p.vx;p.y+=p.vy;
+        // Confinement circulaire
+        var dx=p.x-self.cx0,dy=p.y-self.cy0;
+        var d=Math.sqrt(dx*dx+dy*dy);
+        if(d>self.radius-p.r){
+          var nx=dx/d,ny=dy/d;
+          p.x=self.cx0+nx*(self.radius-p.r);
+          p.y=self.cy0+ny*(self.radius-p.r);
+          // Rebond
+          var dot=p.vx*nx+p.vy*ny;
+          p.vx-=2*dot*nx;p.vy-=2*dot*ny;
+          p.vx*=0.9;p.vy*=0.9;
+        }
+        if(p.type==='I2')p.angle+=p.spin;
+        if(p.type==='e'){
+          p.phase+=0.08;
+          // Mouvement chaotique rapide
+          p.vx+=(Math.random()-0.5)*0.3;
+          p.vy+=(Math.random()-0.5)*0.3;
+          p.vx*=0.92;p.vy*=0.92;
+        }
+      } else {
+        // Ag+/Cu
+        p.x+=p.vx;p.y+=p.vy;
+        if(p.type==='Ag+'){
+          if(p.y>self.cy0+self.radius*0.55){
+            p.x=self.cx0+(Math.random()-0.5)*self.radius*1.6;
+            p.y=self.cy0-self.radius*0.7+Math.random()*self.radius*0.2;
+            p.vx=(Math.random()-0.5)*0.3;p.vy=0.3+Math.random()*0.5;
+          }
+        }else if(p.type==='Cu2+'){
+          if(p.y<self.cy0-self.radius*0.6){
+            p.x=self.cx0+(Math.random()-0.5)*self.radius*1.6;
+            p.y=self.cy0+self.radius*0.5;
+            p.vx=(Math.random()-0.5)*0.2;p.vy=-0.4-Math.random()*0.3;
+          }
+        }else if(p.type==='e'){
+          p.life+=0.02;
+          if(p.life>1){
+            p.x=self.cx0+(Math.random()-0.5)*self.radius*1.4;
+            p.y=self.cy0+self.radius*0.55;
+            p.vx=(Math.random()-0.5)*1.5;p.vy=-0.6-Math.random()*0.6;
+            p.life=0;
+          }
+        }
+        // Limite latérale
+        if(Math.abs(p.x-self.cx0)>self.radius-p.r){
+          p.vx*=-0.8;
+          p.x=self.cx0+Math.sign(p.x-self.cx0)*(self.radius-p.r);
+        }
+      }
+    });
+  },
+
+  draw:function(){
+    var cx=this.cx;
+    var W=this.W,H=this.H;
+
+    // Fond semi-transparent qui floute la scène 3D derrière
+    cx.clearRect(0,0,W,H);
+
+    // Disque de fond bleu technique
+    cx.save();
+    cx.beginPath();cx.arc(this.cx0,this.cy0,this.radius,0,Math.PI*2);cx.clip();
+
+    var grd=cx.createRadialGradient(this.cx0,this.cy0,this.radius*0.1,this.cx0,this.cy0,this.radius);
+    grd.addColorStop(0,'#0e2a4a');
+    grd.addColorStop(0.7,'#051628');
+    grd.addColorStop(1,'#010814');
+    cx.fillStyle=grd;cx.fillRect(this.cx0-this.radius,this.cy0-this.radius,this.radius*2,this.radius*2);
+
+    // Grille technique
+    cx.strokeStyle='rgba(56,189,248,0.18)';cx.lineWidth=1;
+    var step=this.radius/10;
+    for(var i=-10;i<=10;i++){
+      cx.beginPath();cx.moveTo(this.cx0+i*step,this.cy0-this.radius);cx.lineTo(this.cx0+i*step,this.cy0+this.radius);cx.stroke();
+      cx.beginPath();cx.moveTo(this.cx0-this.radius,this.cy0+i*step);cx.lineTo(this.cx0+this.radius,this.cy0+i*step);cx.stroke();
+    }
+    // Cercles concentriques
+    cx.strokeStyle='rgba(56,189,248,0.3)';cx.lineWidth=1.5;
+    for(var r=this.radius*0.25;r<this.radius;r+=this.radius*0.25){
+      cx.beginPath();cx.arc(this.cx0,this.cy0,r,0,Math.PI*2);cx.stroke();
+    }
+    // Croix centrale
+    cx.strokeStyle='rgba(56,189,248,0.4)';
+    cx.beginPath();cx.moveTo(this.cx0,this.cy0-this.radius);cx.lineTo(this.cx0,this.cy0+this.radius);cx.stroke();
+    cx.beginPath();cx.moveTo(this.cx0-this.radius,this.cy0);cx.lineTo(this.cx0+this.radius,this.cy0);cx.stroke();
+
+    // Surface Cu si subP=2
+    var subP=(Phase2&&Phase2.state&&Phase2.state.subP)||1;
+    if(subP===2){
+      var cuY=this.cy0+this.radius*0.65;
+      var cuGrd=cx.createLinearGradient(0,cuY-20,0,cuY+40);
+      cuGrd.addColorStop(0,'#b87333');cuGrd.addColorStop(0.5,'#c46a29');cuGrd.addColorStop(1,'#8b5020');
+      cx.fillStyle=cuGrd;
+      cx.fillRect(this.cx0-this.radius,cuY,this.radius*2,this.radius*0.4);
+      cx.fillStyle='rgba(255,220,180,0.95)';
+      cx.font='bold 14px JetBrains Mono';cx.textAlign='center';
+      cx.fillText('SURFACE Cu(s)',this.cx0,cuY+18);
+    }
+
+    // Dessiner les particules
+    var self=this;
+    this.particles.forEach(function(p){self.drawParticle(p);});
+
+    cx.restore();
+
+    // Cadre extérieur (anneau métallique)
+    cx.strokeStyle='#88b0d4';cx.lineWidth=6;
+    cx.beginPath();cx.arc(this.cx0,this.cy0,this.radius+3,0,Math.PI*2);cx.stroke();
+    cx.strokeStyle='rgba(56,189,248,0.9)';cx.lineWidth=2;
+    cx.beginPath();cx.arc(this.cx0,this.cy0,this.radius-3,0,Math.PI*2);cx.stroke();
+
+    // Graduations sur le cadre (comme un microscope)
+    cx.strokeStyle='rgba(56,189,248,0.6)';cx.lineWidth=1.5;
+    cx.fillStyle='rgba(56,189,248,0.8)';cx.font='11px JetBrains Mono';cx.textAlign='center';
+    for(var deg=0;deg<360;deg+=30){
+      var rad=deg*Math.PI/180;
+      var x1=this.cx0+Math.cos(rad)*(this.radius+4);
+      var y1=this.cy0+Math.sin(rad)*(this.radius+4);
+      var x2=this.cx0+Math.cos(rad)*(this.radius+12);
+      var y2=this.cy0+Math.sin(rad)*(this.radius+12);
+      cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke();
+    }
+
+    // Labels en haut et bas
+    cx.save();
+    cx.fillStyle='rgba(56,189,248,0.95)';cx.font='bold 16px Outfit';cx.textAlign='center';
+    cx.fillText('VUE MICROSCOPIQUE ×10⁶',this.cx0,this.cy0-this.radius-30);
+    cx.font='11px "JetBrains Mono"';cx.fillStyle='rgba(140,180,220,0.75)';
+    cx.fillText('SIMULATION DYNAMIQUE · CONFINEMENT STRICT',this.cx0,this.cy0-this.radius-12);
+    cx.fillText(subP===1?'RÉACTION 2Fe³⁺ + 2I⁻ ⇌ 2Fe²⁺ + I₂':'RÉACTION 2Ag⁺ + Cu ⇌ 2Ag + Cu²⁺',this.cx0,this.cy0+this.radius+25);
+    cx.restore();
+
+    // Légende à gauche
+    this.drawLegend(subP);
+  },
+
+  drawLegend:function(subP){
+    var cx=this.cx;
+    var items=[];
+    if(subP===1){
+      items=[
+        {sym:'Fe³⁺',color:'#e8871c',desc:'Ion fer III'},
+        {sym:'I⁻',color:'#9b59b6',desc:'Ion iodure'},
+        {sym:'Fe²⁺',color:'#86c287',desc:'Ion fer II'},
+        {sym:'I₂',color:'#6b3410',desc:'Diiode'},
+        {sym:'e⁻',color:'#38bdf8',desc:'Électron'}
+      ];
+    }else{
+      items=[
+        {sym:'Ag⁺',color:'#d8d8dc',desc:'Ion argent'},
+        {sym:'Cu²⁺',color:'#1e88e5',desc:'Ion cuivre II'},
+        {sym:'e⁻',color:'#38bdf8',desc:'Électron libre'},
+        {sym:'Cu',color:'#c46a29',desc:'Cuivre métal'}
+      ];
+    }
+    var lx=30,ly=80;
+    cx.fillStyle='rgba(10,18,32,0.85)';cx.strokeStyle='rgba(56,189,248,0.4)';cx.lineWidth=1;
+    roundRect(cx,lx,ly,180,35+items.length*28,10);cx.fill();cx.stroke();
+    cx.fillStyle='rgba(56,189,248,0.95)';cx.font='bold 11px JetBrains Mono';cx.textAlign='left';
+    cx.fillText('LÉGENDE',lx+12,ly+20);
+    items.forEach(function(it,i){
+      var y=ly+42+i*28;
+      cx.beginPath();cx.arc(lx+22,y,10,0,Math.PI*2);cx.fillStyle=it.color;cx.fill();
+      cx.strokeStyle='rgba(255,255,255,0.3)';cx.lineWidth=1;cx.stroke();
+      cx.fillStyle='#e8eef7';cx.font='bold 12px Outfit';cx.fillText(it.sym,lx+42,y+4);
+      cx.fillStyle='rgba(140,160,195,0.75)';cx.font='10px Outfit';cx.fillText(it.desc,lx+82,y+3);
+    });
+  },
+
+  drawParticle:function(p){
+    var cx=this.cx;
+    if(p.type==='I2'){
+      // 2 sphères liées
+      var dx=Math.cos(p.angle)*p.r*0.6,dy=Math.sin(p.angle)*p.r*0.6;
+      // Liaison
+      cx.strokeStyle='#886644';cx.lineWidth=4;
+      cx.beginPath();cx.moveTo(p.x-dx,p.y-dy);cx.lineTo(p.x+dx,p.y+dy);cx.stroke();
+      // 2 sphères
+      this.drawSphere(p.x-dx,p.y-dy,p.r*0.75,0x6b3410,'I');
+      this.drawSphere(p.x+dx,p.y+dy,p.r*0.75,0x6b3410,'I');
+      // Label I2 au milieu
+      cx.fillStyle='#fff';cx.strokeStyle='#000';cx.lineWidth=3;cx.font='bold 12px Outfit';cx.textAlign='center';
+      cx.strokeText('I₂',p.x,p.y+p.r+14);
+      cx.fillText('I₂',p.x,p.y+p.r+14);
+    } else if(p.type==='e'){
+      // Électron avec halo et trail
+      var grd=cx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2);
+      grd.addColorStop(0,'rgba(56,189,248,0.8)');
+      grd.addColorStop(0.5,'rgba(56,189,248,0.35)');
+      grd.addColorStop(1,'rgba(56,189,248,0)');
+      cx.fillStyle=grd;
+      cx.beginPath();cx.arc(p.x,p.y,p.r*2,0,Math.PI*2);cx.fill();
+      // Noyau brillant
+      cx.fillStyle='#7dd3fc';
+      cx.beginPath();cx.arc(p.x,p.y,p.r*0.5,0,Math.PI*2);cx.fill();
+      // Label
+      cx.fillStyle='#fff';cx.strokeStyle='#0a1220';cx.lineWidth=2;cx.font='bold 10px Outfit';cx.textAlign='center';
+      cx.strokeText('e⁻',p.x,p.y+3);cx.fillText('e⁻',p.x,p.y+3);
+    } else {
+      // Ion classique avec halo
+      var label=p.type.replace('+','⁺').replace('-','⁻');
+      // Remplacement plus précis des charges
+      if(p.type==='Fe³⁺')label='Fe³⁺';
+      else if(p.type==='Fe²⁺')label='Fe²⁺';
+      else if(p.type==='I⁻')label='I⁻';
+      else if(p.type==='Ag+'||p.type==='Ag⁺')label='Ag⁺';
+      else if(p.type==='Cu2+'||p.type==='Cu²⁺')label='Cu²⁺';
+      this.drawSphere(p.x,p.y,p.r,p.color,label);
+    }
+  },
+
+  drawSphere:function(x,y,r,colorHex,label){
+    var cx=this.cx;
+    var cR=((colorHex>>16)&0xff),cG=((colorHex>>8)&0xff),cB=(colorHex&0xff);
+    var colStr='rgb('+cR+','+cG+','+cB+')';
+    // Halo
+    var hg=cx.createRadialGradient(x,y,r*0.5,x,y,r*1.8);
+    hg.addColorStop(0,'rgba('+cR+','+cG+','+cB+',0.4)');
+    hg.addColorStop(1,'rgba('+cR+','+cG+','+cB+',0)');
+    cx.fillStyle=hg;cx.beginPath();cx.arc(x,y,r*1.8,0,Math.PI*2);cx.fill();
+    // Sphère avec dégradé (effet 3D)
+    var sg=cx.createRadialGradient(x-r*0.3,y-r*0.3,r*0.1,x,y,r);
+    // Calcul d'une couleur claire (blanchie) pour le highlight
+    var hR=Math.min(255,cR+100),hG=Math.min(255,cG+100),hB=Math.min(255,cB+100);
+    sg.addColorStop(0,'rgb('+hR+','+hG+','+hB+')');
+    sg.addColorStop(0.5,colStr);
+    // Couleur assombrie
+    var dR=Math.floor(cR*0.4),dG=Math.floor(cG*0.4),dB=Math.floor(cB*0.4);
+    sg.addColorStop(1,'rgb('+dR+','+dG+','+dB+')');
+    cx.fillStyle=sg;
+    cx.beginPath();cx.arc(x,y,r,0,Math.PI*2);cx.fill();
+    // Contour
+    cx.strokeStyle='rgba(0,0,0,0.3)';cx.lineWidth=1.5;
+    cx.beginPath();cx.arc(x,y,r,0,Math.PI*2);cx.stroke();
+    // Label au centre
+    if(label){
+      cx.fillStyle='#fff';cx.strokeStyle='#000';cx.lineWidth=3;
+      cx.font='bold '+Math.floor(r*0.55)+'px Outfit';
+      cx.textAlign='center';cx.textBaseline='middle';
+      cx.strokeText(label,x,y);cx.fillText(label,x,y);
+    }
+  },
+
+  stop:function(){
+    if(G.microRAF){cancelAnimationFrame(G.microRAF);G.microRAF=null;}
+    if(this.cx){this.cx.clearRect(0,0,this.W,this.H);}
+    this.particles=[];
+  }
+};
+
+function toggleMicro(){
+  if(G.phase!==2)return;
+  G.microOn=!G.microOn;
+  var mb=document.getElementById('microBtn');
+  var ov=document.getElementById('microOverlay');
+  if(G.microOn){
+    mb.classList.add('on');ov.classList.add('show');
+    MicroSim.start();
+  }else{
+    mb.classList.remove('on');ov.classList.remove('show');
+    MicroSim.stop();
+  }
+}
+function resizeMicroCanvas(){if(G.microOn&&MicroSim.cv){MicroSim.setupCanvas();}}
+
+/* ==================================================================
+   PHASE 3 — CRITÈRE + EXERCICE
+   ================================================================== */
+var Phase3={
+  state:null,qrAxisCanvas:null,dragging:false,
+
+  init:function(){
+    this.state={qriVal:1,kVal:3.2,att5:0,sensEx:null,exerciseOk:false};
+    G.camera.position.set(0,3,8);G.controls.target.set(0,0,0);
+    setSceneTag('PHASE 3 · CRITÈRE & EXERCICE');
+
+    var bk=mkBeaker(1.1,2.8,'Ag(s) + Fe³⁺(aq)',COLORS.fe3,0.55);
+    bk.position.set(0,-0.6,0);bk.castShadow=true;
+    G.scene.add(bk);
+    var ag=new THREE.Mesh(
+      new THREE.BoxGeometry(0.45,0.9,0.15),
+      new THREE.MeshPhysicalMaterial({color:COLORS.silver.hex,metalness:1.0,roughness:0.1,clearcoat:0.8})
+    );
+    ag.position.set(0,-1.1,0);ag.castShadow=true;bk.add(ag);
+    var agL=mkLabel('Ag(s)',0.24,'#e8e8ec',true);
+    agL.position.set(0,0.6,0);ag.add(agL);
+
+    this.buildPanel();
+  },
+
+  buildPanel:function(){
+    document.getElementById('side').innerHTML=
+      '<div class="pt">📐 Phase 3 — Critère &amp; Exercice</div>'+
+      '<div class="ms"><div class="ml">Règle</div>'+
+      '<div style="font-size:12px;color:var(--text);line-height:1.6;">'+
+      '• <span style="color:var(--green);">Qr,i &lt; K → direct (→)</span><br>'+
+      '• <span style="color:var(--red);">Qr,i &gt; K → inverse (←)</span><br>'+
+      '• <span style="color:var(--blue);">Qr,i = K → équilibre</span></div></div>'+
+
+      '<div class="bx"><h3>Axe Qr · glissez le curseur</h3>'+
+      '<div style="font-size:11px;margin-bottom:3px;">K = <input class="cinp" id="iK3" value="3.2" style="width:55px;" oninput="Phase3.updAxis()"></div>'+
+      '<div style="font-size:11px;">Qr,i = <b id="qV3">1.00</b></div>'+
+      '<canvas id="ax3" width="340" height="95" style="width:100%;margin-top:5px;cursor:grab;" class="ax-cv"></canvas>'+
+      '<div id="ax3M" style="font-size:11px;color:var(--text2);text-align:center;margin-top:3px;"></div></div>'+
+
+      '<div class="bx"><h3>Graphique Qr = f(t)</h3>'+
+      '<div class="tg" id="chTabs" style="margin-bottom:5px;">'+
+      '<button class="to act" onclick="Phase3.drawChart(\'below\',this)">Qr,i &lt; K</button>'+
+      '<button class="to" onclick="Phase3.drawChart(\'above\',this)">Qr,i &gt; K</button>'+
+      '<button class="to" onclick="Phase3.drawChart(\'equal\',this)">Qr,i = K</button></div>'+
+      '<div class="chart-wrap"><canvas id="ch3"></canvas></div></div>'+
+
+      '<div class="bx"><h3>📝 Exercice · Ag + Fe³⁺</h3>'+
+      '<p style="font-size:11px;">Ag(s) + Fe³⁺(aq) ⇌ Ag⁺(aq) + Fe²⁺(aq) · K=3,2 · V=500 mL</p>'+
+      '<table class="dtbl"><tr><th>Espèce</th><th>n₀ (mol)</th></tr>'+
+      '<tr><td>Fe³⁺</td><td>1,0×10⁻²</td></tr>'+
+      '<tr><td>Ag⁺</td><td>5,0×10⁻²</td></tr>'+
+      '<tr><td>Fe²⁺</td><td>2,0×10⁻²</td></tr>'+
+      '<tr><td>Ag(s)</td><td>excès</td></tr></table></div>'+
+
+      '<div class="bx"><h3>Tableau d\'avancement (mol)</h3>'+
+      '<table class="dtbl">'+
+      '<tr><th></th><th>Ag</th><th>Fe³⁺</th><th>Ag⁺</th><th>Fe²⁺</th></tr>'+
+      '<tr><td>Init</td><td>excès</td><td>0,010</td><td>0,050</td><td>0,020</td></tr>'+
+      '<tr><td>Interméd.</td><td>excès</td><td>0,010−x</td><td>0,050+x</td><td>0,020+x</td></tr>'+
+      '<tr><td>Éq.</td><td>excès</td><td><input id="tFe3" placeholder="?"></td><td><input id="tAg" placeholder="?"></td><td><input id="tFe2" placeholder="?"></td></tr>'+
+      '</table>'+
+      '<div style="margin-top:6px;"><button class="btn bo" style="font-size:10px;padding:5px 8px;" onclick="Phase3.showEq()">🔍 Poser l\'équation</button></div>'+
+      '<div id="eqHint" style="display:none;margin-top:5px;font-size:11px;color:var(--text2);line-height:1.5;"></div></div>'+
+
+      '<div class="bx"><h3>Calculs</h3>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;">'+
+      '<div>[Fe³⁺]ᵢ = <input class="cinp" id="xFe3" placeholder="?"></div>'+
+      '<div>[Ag⁺]ᵢ = <input class="cinp" id="xAg" placeholder="?"></div>'+
+      '<div>[Fe²⁺]ᵢ = <input class="cinp" id="xFe2" placeholder="?"></div>'+
+      '<div>Qr,i = <input class="cinp" id="xQr" placeholder="?"></div></div>'+
+      '<div style="margin-top:4px;font-size:11px;">Sens :</div>'+
+      '<div class="tg"><button class="to" onclick="Phase3.state.sensEx=\'d\';togBtns(this)">→ Direct</button>'+
+      '<button class="to" onclick="Phase3.state.sensEx=\'i\';togBtns(this)">← Inverse</button></div>'+
+      '<div style="margin-top:4px;font-size:11px;">x_éq = <input class="cinp" id="xXeq" placeholder="?" style="width:75px;"> mol</div>'+
+      '<button class="btn bp" style="width:100%;margin-top:6px;" onclick="Phase3.checkEx()">✓ Vérifier</button>'+
+      '<div class="fb" id="fb5"></div>'+
+      '<div id="vB5" style="display:none;margin-top:6px;font-size:11px;color:var(--green);line-height:1.5;"></div></div>'+
+
+      '<div class="bx"><h3>Questions</h3>'+
+      '<button class="mcq-opt" onclick="openQ(10)">Q10 · Critère (3 cas)</button>'+
+      '<button class="mcq-opt" onclick="openQ(11)">Q11 · Qr,i pour l\'exercice</button>'+
+      '<button class="mcq-opt" onclick="openQ(12)">Q12 · x_éq</button>'+
+      '<button class="mcq-opt" onclick="openQ(13)">Q13 · Concentrations à l\'équilibre</button></div>'+
+
+      '<div class="pb"><div class="pf" id="prog3" style="width:0%;"></div></div>';
+    this.initDraggable();
+    regTimer(function(){Phase3.drawChart('below',null);Phase3.updAxis();},100);
+  },
+
+  initDraggable:function(){
+    var cv=document.getElementById('ax3');if(!cv)return;var self=this;
+    this.qrAxisCanvas=cv;
+    function onMove(e){
+      if(!self.dragging)return;
+      var rect=cv.getBoundingClientRect();
+      var cx=(e.clientX||(e.touches&&e.touches[0].clientX)||0)-rect.left;
+      var W=cv.width,mg=28;
+      var logMin=-2,logMax=2;
+      var x=Math.max(mg,Math.min(W-mg,cx*(W/rect.width)));
+      var lv=logMin+(x-mg)/(W-2*mg)*(logMax-logMin);
+      self.state.qriVal=Math.pow(10,lv);self.updAxis();
+    }
+    cv.addEventListener('mousedown',function(e){self.dragging=true;cv.classList.add('drag');onMove(e);});
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',function(){self.dragging=false;if(cv)cv.classList.remove('drag');});
+    cv.addEventListener('touchstart',function(e){self.dragging=true;onMove(e);e.preventDefault();},{passive:false});
+    cv.addEventListener('touchmove',function(e){onMove(e);e.preventDefault();},{passive:false});
+    cv.addEventListener('touchend',function(){self.dragging=false;});
+  },
+
+  updAxis:function(){
+    var k=parseFloat((document.getElementById('iK3')||{}).value)||10;
+    this.state.kVal=k;var qri=this.state.qriVal;
+    var dsp=document.getElementById('qV3');if(dsp)dsp.textContent=qri.toFixed(2);
+    var sens=qri<k*0.95?'direct':qri>k*1.05?'inverse':'equilibre';
+    drawQrAxis('ax3','ax3M',qri,k,sens);
+  },
+
+  drawChart:function(mode,btn){
+    if(btn){var tabs=document.getElementById('chTabs');if(tabs)tabs.querySelectorAll('.to').forEach(function(b){b.classList.remove('act');});btn.classList.add('act');}
+    var cv=document.getElementById('ch3');if(!cv)return;
+    if(G.chart){try{G.chart.destroy();}catch(e){}G.chart=null;}
+    var K=10,data=[],labels=[];
+    for(var t=0;t<=50;t++){labels.push(t);
+      if(mode==='below')data.push(K-(K-1)*Math.exp(-t/10));
+      else if(mode==='above')data.push(K+(50-K)*Math.exp(-t/10));
+      else data.push(K);}
+    G.chart=new Chart(cv,{type:'line',data:{labels:labels,datasets:[
+      {label:'Qr(t)',data:data,borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,0.08)',borderWidth:2,fill:false,pointRadius:0,tension:0.4},
+      {label:'K',data:Array(51).fill(K),borderColor:'#f87171',borderWidth:1.5,borderDash:[6,3],pointRadius:0,fill:false}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#8ca0c0',font:{size:10}}}},
+        scales:{x:{title:{display:true,text:'Temps',color:'#8ca0c0',font:{size:10}},ticks:{color:'#8ca0c0',maxTicksLimit:10},grid:{color:'#1e2d48'}},
+                y:{title:{display:true,text:'Qr',color:'#8ca0c0',font:{size:10}},ticks:{color:'#8ca0c0'},grid:{color:'#1e2d48'},min:0,max:55}}}});
+  },
+
+  showEq:function(){
+    var h=document.getElementById('eqHint');if(!h)return;
+    h.style.display='block';
+    h.innerHTML='📖 À l\'équilibre : Qr,éq = K = 3,2. Avec [X] = n/V et V = 0,5 L :<br>(0,05+x)(0,02+x) / (0,5×(0,01−x)) = 3,2<br>→ <b>x² + 1,67x − 0,015 = 0</b><br>→ Δ = 1,67² + 4×0,015 ≈ 2,85 · √Δ ≈ 1,69<br>→ x = (−1,67 + 1,69)/2 ≈ <b>8,9×10⁻³ mol</b>';
+  },
+
+  checkEx:function(){
+    var s=this.state;s.att5++;
+    var fe3=pF('xFe3'),ag=pF('xAg'),fe2=pF('xFe2'),qr=pF('xQr'),xeq=pF('xXeq');
+    var tFe3=pF('tFe3'),tAg=pF('tAg'),tFe2=pF('tFe2');
+    var eFe3=0.02,eAg=0.1,eFe2=0.04,eQr=0.2,eXeq=8.9e-3;
+    var eTFe3=1e-2-eXeq,eTAg=5e-2+eXeq,eTFe2=2e-2+eXeq;
+    var eAgE=eTAg/0.5,eFe2E=eTFe2/0.5,eFe3E=eTFe3/0.5;
+    var sc=0,tot=7;
+    if(cl(fe3,eFe3,0.003))sc++;if(cl(ag,eAg,0.01))sc++;if(cl(fe2,eFe2,0.005))sc++;
+    if(cl(qr,eQr,0.04))sc++;if(s.sensEx==='d')sc++;if(cl(xeq,eXeq,1.5e-3))sc++;
+    if(cl(tFe3,eTFe3,3e-3)&&cl(tAg,eTAg,1e-2)&&cl(tFe2,eTFe2,5e-3))sc++;
+    if(sc>=5){
+      sFB('fb5','ok','✅ Score : '+sc+'/'+tot+'. Excellent !');
+      s.exerciseOk=true;
+      var vb=document.getElementById('vB5');
+      if(vb){vb.style.display='block';
+        vb.innerHTML='✓ Qr,éq = '+eAgE.toFixed(3)+' × '+eFe2E.toFixed(3)+' / '+eFe3E.toFixed(4)+' ≈ <b>'+(eAgE*eFe2E/eFe3E).toFixed(1)+'</b> ≈ K = 3,2';}
+      setProg(3,100);
+    }else{
+      if(s.att5===1)sFB('fb5','err','❌ Score : '+sc+'/'+tot+'. V = 0,5 L. [X] = n/V.');
+      else if(s.att5===2)sFB('fb5','wrn','💡 [Fe³⁺]ᵢ = 10⁻²/0,5 = 0,02. Qr,i = 0,1×0,04/0,02 = 0,20 < K = 3,2 → direct.');
+      else if(s.att5===3)sFB('fb5','inf','📖 Cliquez « Poser l\'équation ». x_éq ≈ 8,9×10⁻³.');
+      else{sFB('fb5','ok','📗 [Fe³⁺]ᵢ=0,02, Qr,i=0,20→direct, x_éq=8,9×10⁻³ mol.');s.exerciseOk=true;setProg(3,100);}
+    }
+  },
+
+  update:function(dt){},
+  destroy:function(){this.state=null;this.qrAxisCanvas=null;this.dragging=false;}
+};
+
+/* ==================================================================
+   AXE Qr
+   ================================================================== */
+function drawQrAxis(canvasId,msgId,qri,K,sens){
+  var cv=document.getElementById(canvasId);if(!cv)return;
+  var ctx=cv.getContext('2d');
+  var W=cv.width,H=cv.height,y=H*0.5,mg=28;
+  ctx.clearRect(0,0,W,H);
+  var logMin=-2,logMax=2;
+  function toX(v){var lv=Math.log10(Math.max(0.005,v));return mg+(lv-logMin)/(logMax-logMin)*(W-2*mg);}
+  var kx=toX(K),qx=toX(Math.max(0.005,qri));
+  ctx.fillStyle='rgba(74,222,128,0.08)';ctx.fillRect(mg,y-26,Math.max(0,kx-mg),52);
+  ctx.fillStyle='rgba(248,113,113,0.08)';ctx.fillRect(kx,y-26,Math.max(0,W-mg-kx),52);
+  ctx.strokeStyle='#334155';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(mg,y);ctx.lineTo(W-mg,y);ctx.stroke();
+  for(var d=-2;d<=2;d++){
+    var gx=toX(Math.pow(10,d));
+    ctx.strokeStyle='#2a3547';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(gx,y-4);ctx.lineTo(gx,y+4);ctx.stroke();
+    ctx.fillStyle='#667788';ctx.font='9px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('10'+(d<0?'⁻':'')+Math.abs(d),gx,H-3);
+  }
+  ctx.strokeStyle='#f87171';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(kx,y-22);ctx.lineTo(kx,y+22);ctx.stroke();
+  ctx.fillStyle='#f87171';ctx.font='bold 11px JetBrains Mono';ctx.textAlign='center';
+  ctx.fillText('K='+(K>=100?K.toExponential(1):K),kx,y-26);
+  ctx.shadowColor='#38bdf8';ctx.shadowBlur=10;
+  ctx.fillStyle='#38bdf8';
+  ctx.beginPath();ctx.arc(qx,y,10,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='#050811';ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='#38bdf8';ctx.font='bold 10px JetBrains Mono';
+  ctx.fillText('Qr,i='+(qri<0.01?qri.toExponential(1):qri.toFixed(2)),qx,y+30);
+  if(sens==='direct'){
+    ctx.strokeStyle='#4ade80';ctx.lineWidth=3;
+    var ax2=Math.min(qx+(kx-qx)*0.7,kx-11);
+    if(ax2>qx+13){ctx.beginPath();ctx.moveTo(qx+13,y);ctx.lineTo(ax2,y);ctx.stroke();
+      ctx.fillStyle='#4ade80';ctx.beginPath();ctx.moveTo(ax2,y);ctx.lineTo(ax2-9,y-6);ctx.lineTo(ax2-9,y+6);ctx.fill();}
+  }else if(sens==='inverse'){
+    ctx.strokeStyle='#f87171';ctx.lineWidth=3;
+    var ax2=Math.max(qx-(qx-kx)*0.7,kx+11);
+    if(ax2<qx-13){ctx.beginPath();ctx.moveTo(qx-13,y);ctx.lineTo(ax2,y);ctx.stroke();
+      ctx.fillStyle='#f87171';ctx.beginPath();ctx.moveTo(ax2,y);ctx.lineTo(ax2+9,y-6);ctx.lineTo(ax2+9,y+6);ctx.fill();}
+  }
+  var msg=document.getElementById(msgId);
+  if(msg){
+    if(sens==='direct')msg.innerHTML='<span class="badge badge-g">Qr,i &lt; K · Sens direct · Qr → K</span>';
+    else if(sens==='inverse')msg.innerHTML='<span class="badge badge-r">Qr,i &gt; K · Sens inverse · Qr → K</span>';
+    else msg.innerHTML='<span class="badge badge-b">Qr,i ≈ K · Équilibre</span>';
+  }
+}
+
+/* ==================================================================
+   QUESTIONS
+   ================================================================== */
+var QUESTIONS={
+  1:{title:'Q1 · Équation de la réaction',prompt:'Équation entre acide méthanoïque et ion éthanoate ?',
+     options:[{t:'HCO₂H + CH₃CO₂⁻ ⇌ HCO₂⁻ + CH₃CO₂H',ok:true},{t:'HCO₂H + CH₃CO₂H ⇌ HCO₂⁻ + CH₃CO₂⁻',ok:false},{t:'HCO₂⁻ + CH₃CO₂⁻ ⇌ HCO₂H + CH₃CO₂H',ok:false},{t:'HCO₂H + H₂O ⇌ HCO₂⁻ + H₃O⁺',ok:false}]},
+  2:{title:'Q2 · Valeur de K',prompt:'Ka₁ = 1,6×10⁻⁴, Ka₂ = 1,6×10⁻⁵. Calculez K.',
+     options:[{t:'0,1',ok:false},{t:'1',ok:false},{t:'10',ok:true},{t:'100',ok:false}]},
+  5:{title:'Q5 · Critère (énoncé)',prompt:'Énoncez le critère en 3 cas.',
+     options:[{t:'Qr,i &lt; K → inverse ; Qr,i &gt; K → direct.',ok:false},{t:'Qr,i &lt; K → direct ; Qr,i &gt; K → inverse ; Qr,i = K → équilibre.',ok:true},{t:'Toujours vers épuisement du réactif limitant.',ok:false},{t:'Qr,i = K → sens direct.',ok:false}]},
+  6:{title:'Q6 · Équation redox Fe³⁺/I⁻',prompt:'Équation correcte équilibrée ?',
+     options:[{t:'Fe³⁺ + I⁻ ⇌ Fe²⁺ + I₂',ok:false},{t:'2Fe³⁺ + 2I⁻ ⇌ 2Fe²⁺ + I₂',ok:true},{t:'Fe²⁺ + I₂ ⇌ Fe³⁺ + I⁻',ok:false},{t:'Fe³⁺ + 2I⁻ ⇌ Fe + I₂',ok:false}]},
+  7:{title:'Q7 · Couleur et sens',prompt:'La couleur brune s\'intensifie. Conclusion ?',
+     options:[{t:'Sens inverse : I₂ disparaît.',ok:false},{t:'Sens direct : I₂ se forme.',ok:true},{t:'Système à l\'équilibre.',ok:false},{t:'Aucune évolution.',ok:false}]},
+  8:{title:'Q8 · Qr,i pour Ag⁺/Cu',prompt:'[Cu²⁺]ᵢ = 0. Que vaut Qr,i ?',
+     options:[{t:'1',ok:false},{t:'∞',ok:false},{t:'0',ok:true},{t:'K',ok:false}]},
+  9:{title:'Q9 · Observations visuelles',prompt:'Quelles observations confirment Qr,i &lt; K ?',
+     options:[{t:'Solution jaune et fil dissous.',ok:false},{t:'Dépôt Ag(s) gris brillant ET solution bleue.',ok:true},{t:'Aucun changement.',ok:false},{t:'Fil rouge, solution incolore.',ok:false}]},
+  10:{title:'Q10 · Critère (synthèse)',prompt:'Comment prédire le sens d\'évolution ?',
+      options:[{t:'Comparer Qr,i et K : Qr,i&lt;K→direct, Qr,i&gt;K→inverse, Qr,i=K→équilibre.',ok:true},{t:'Mesurer le pH initial.',ok:false},{t:'Observer la couleur.',ok:false},{t:'Toujours direct au départ.',ok:false}]},
+  11:{title:'Q11 · Exercice Qr,i',prompt:'Pour Ag + Fe³⁺, que vaut Qr,i ?',
+      options:[{t:'0,02',ok:false},{t:'0,20',ok:true},{t:'2,0',ok:false},{t:'3,2',ok:false}]},
+  12:{title:'Q12 · x_éq',prompt:'Valeur de x_éq (K = 3,2) ?',
+      options:[{t:'1,0×10⁻² mol',ok:false},{t:'8,9×10⁻³ mol',ok:true},{t:'5,0×10⁻² mol',ok:false},{t:'2,0×10⁻³ mol',ok:false}]},
+  13:{title:'Q13 · Concentrations à l\'équilibre',prompt:'Laquelle est correcte ?',
+      options:[{t:'[Ag⁺]_éq ≈ 0,118 mol/L',ok:true},{t:'[Ag⁺]_éq ≈ 0,050 mol/L',ok:false},{t:'[Fe³⁺]_éq ≈ 0,020 mol/L',ok:false},{t:'[Fe²⁺]_éq ≈ 0,010 mol/L',ok:false}]}
+};
+
+function openQ(id){
+  var q=QUESTIONS[id];if(!q)return;
+  var html='<h2>'+q.title+'</h2><p>'+q.prompt+'</p>';
+  q.options.forEach(function(o,i){html+='<button class="mcq-opt" onclick="answerQ('+id+','+i+',this)">'+o.t+'</button>';});
+  html+='<div class="fb" id="fbQ'+id+'"></div>';
+  html+='<button class="btn bo" style="margin-top:10px;" onclick="document.getElementById(\'qModal\').classList.remove(\'show\')">Fermer</button>';
+  document.getElementById('qMC').innerHTML=html;
+  document.getElementById('qModal').classList.add('show');
+}
+function answerQ(id,idx,btn){
+  var q=QUESTIONS[id];if(!q)return;
+  var opt=q.options[idx];
+  btn.parentNode.querySelectorAll('.mcq-opt').forEach(function(b){b.style.pointerEvents='none';});
+  if(opt.ok){btn.classList.add('correct');sFB('fbQ'+id,'ok','✅ Excellent ! Bonne réponse.');}
+  else{btn.classList.add('wrong');var ci=q.options.findIndex(function(o){return o.ok;});var sibs=btn.parentNode.querySelectorAll('.mcq-opt');if(sibs[ci])sibs[ci].classList.add('correct');sFB('fbQ'+id,'err','❌ La bonne réponse est en vert.');}
+}
+</script>
+<div class="pc3d-cf-ov" id="pc3d-cf-ov" aria-hidden="true"><div class="pc3d-cf" role="dialog" aria-modal="true" aria-label="Contact PC3D"><button class="pc3d-cf-x" id="pc3d-cf-x" aria-label="Fermer">&times;</button><div class="pc3d-cf-head"><span class="pc3d-cf-logo"><svg viewBox="0 0 120 120" width="42" height="42" xmlns="http://www.w3.org/2000/svg"><path d="M60 16 L100 92 L20 92 Z" fill="none" stroke="#4ECDC4" stroke-width="6" stroke-linejoin="round"/><circle cx="60" cy="72" r="11" fill="#00B8A9"/></svg></span><span><span class="pc3d-cf-t">Contact PC3D</span><span class="pc3d-cf-s">Partage tes idées, remarques et questions &middot; شاركنا أفكارك وملاحظاتك وكل ما تريد قوله لنا</span></span></div><input class="pc3d-cf-in" id="pc3d-cf-name" type="text" placeholder="Nom (optionnel) &middot; الاسم (اختياري)"><input class="pc3d-cf-in" id="pc3d-cf-email" type="email" placeholder="Ton email pour te répondre &middot; بريدك للرد عليك"><input type="text" id="pc3d-cf-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><textarea class="pc3d-cf-ta" id="pc3d-cf-msg" rows="5" placeholder="Écris ici tout ce que tu veux nous dire… &middot; اكتب هنا كل ما تريد قوله لنا…"></textarea><div class="pc3d-cf-note" id="pc3d-cf-note"></div><div class="pc3d-cf-fb" id="pc3d-cf-fb" style="display:none;font-size:12.5px;margin:-4px 2px 12px;line-height:1.55;color:#8fa0bd"></div><button class="pc3d-cf-send" id="pc3d-cf-send">Envoyer &middot; إرسال</button></div></div>
+<style>
+.pc3d-cf-ov{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,20,.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s;font-family:'Outfit',system-ui,-apple-system,sans-serif;}
+.pc3d-cf-ov.show{opacity:1;visibility:visible;}
+.pc3d-cf{width:100%;max-width:440px;box-sizing:border-box;background:linear-gradient(180deg,#0c1730,#070e1f);border:1px solid rgba(78,205,196,.32);border-radius:18px;padding:26px 24px 24px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative;transform:translateY(14px) scale(.98);transition:transform .28s cubic-bezier(.2,.9,.3,1.15);}
+.pc3d-cf-ov.show .pc3d-cf{transform:translateY(0) scale(1);}
+.pc3d-cf-x{position:absolute;top:12px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(255,255,255,.06);color:#aeb8cc;font-size:20px;line-height:1;cursor:pointer;transition:background .2s,color .2s;}
+.pc3d-cf-x:hover{background:rgba(255,255,255,.14);color:#fff;}
+.pc3d-cf-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.pc3d-cf-logo{flex:none;line-height:0;}
+.pc3d-cf-t{display:block;font-size:19px;font-weight:700;color:#eaf2ff;letter-spacing:.2px;}
+.pc3d-cf-s{display:block;font-size:11.5px;color:#8fa0bd;margin-top:4px;line-height:1.45;}
+.pc3d-cf-in,.pc3d-cf-ta{width:100%;box-sizing:border-box;margin-bottom:11px;padding:11px 13px;font-family:inherit;font-size:14px;color:#eaf2ff;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;outline:none;transition:border-color .2s,background .2s;}
+.pc3d-cf-in:focus,.pc3d-cf-ta:focus{border-color:#4ECDC4;background:rgba(78,205,196,.06);}
+.pc3d-cf-in::placeholder,.pc3d-cf-ta::placeholder{color:#6b7c99;}
+.pc3d-cf-ta{resize:vertical;min-height:112px;line-height:1.5;}
+.pc3d-cf-note{min-height:15px;font-size:12px;margin:1px 2px 12px;line-height:1.45;}
+.pc3d-cf-send{width:100%;padding:13px;border:none;border-radius:11px;font-family:inherit;font-size:15px;font-weight:700;color:#04121f;cursor:pointer;background:linear-gradient(180deg,#4ECDC4,#00B8A9);box-shadow:0 8px 22px rgba(0,184,169,.4);transition:transform .15s ease,box-shadow .2s,opacity .2s;}
+.pc3d-cf-send:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(0,184,169,.55);}
+.pc3d-cf-send:disabled{opacity:.6;cursor:default;transform:none;}
+</style>
+<script>(function(){
+var EMAIL='professeurkoudiaelmehdi@gmail.com';var W3KEY='';
+var ov=document.getElementById('pc3d-cf-ov');
+if(!ov)return;
+var msg=document.getElementById('pc3d-cf-msg'),nm=document.getElementById('pc3d-cf-name'),em=document.getElementById('pc3d-cf-email'),note=document.getElementById('pc3d-cf-note'),send=document.getElementById('pc3d-cf-send');
+function openM(e){if(e)e.preventDefault();ov.classList.add('show');ov.setAttribute('aria-hidden','false');setTimeout(function(){try{msg.focus();}catch(_){}}, 140);}
+function closeM(){ov.classList.remove('show');ov.setAttribute('aria-hidden','true');}
+var _trg=document.querySelectorAll('#pc3d-contact-btn,[data-pc3d-contact]');for(var _i=0;_i<_trg.length;_i++)_trg[_i].addEventListener('click',openM);
+document.getElementById('pc3d-cf-x').addEventListener('click',closeM);
+ov.addEventListener('click',function(e){if(e.target===ov)closeM();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ov.classList.contains('show'))closeM();});
+function setNote(t,ok){note.textContent=t;note.style.color=ok?'#4ECDC4':'#ff9a9a';}
+var fb=document.getElementById('pc3d-cf-fb'),hp=document.getElementById('pc3d-cf-hp');
+function showFB(){if(!fb)return;var nl=String.fromCharCode(10),p=[];if(nm.value)p.push('Nom: '+nm.value);if(em.value)p.push('Email: '+em.value);p.push('');p.push(msg.value);var href='mailto:'+EMAIL+'?subject='+encodeURIComponent('Message · PC3D')+'&body='+encodeURIComponent(p.join(nl));fb.innerHTML='Tu peux aussi écrire directement à <a href="'+href+'" style="color:#4ECDC4;font-weight:600">'+EMAIL+'</a>';fb.style.display='block';}
+send.addEventListener('click',function(){
+ if(hp&&hp.value){setNote('Merci ! · شكراً',true);setTimeout(closeM,1100);return;}
+ if(!msg.value.trim()){setNote("Merci d'écrire ton message · اكتب رسالتك من فضلك",false);try{msg.focus();}catch(_){}return;}
+ setNote('Envoi en cours… · جارٍ الإرسال…',true);send.disabled=true;if(fb)fb.style.display='none';
+ var url,payload;
+ if(W3KEY){url='https://api.web3forms.com/submit';payload={access_key:W3KEY,name:nm.value||'—',email:em.value||'—',message:msg.value,subject:'Nouveau message · PC3D',from_name:'PC3D — Contact'};}
+ else{url='https://formsubmit.co/ajax/'+EMAIL;payload={nom:nm.value||'—',email:em.value||'—',message:msg.value,_subject:'Nouveau message · PC3D',_template:'table',_captcha:'false'};}
+ fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)})
+ .then(function(r){return r.json();})
+ .then(function(d){
+   if(d&&(d.success===true||d.success==='true')){setNote('Merci ! Ton message a été envoyé ✓ · تم إرسال رسالتك، شكراً',true);msg.value='';nm.value='';em.value='';if(fb)fb.style.display='none';setTimeout(closeM,2000);}
+   else{setNote("Activation requise une seule fois — vérifie l'email · يلزم تفعيل لمرّة واحدة عبر الإيميل",false);showFB();}
+   send.disabled=false;
+ })
+ .catch(function(){setNote("Connexion impossible pour l'instant · تعذّر الإرسال الآن",false);showFB();send.disabled=false;});
+});
+})();</script>
+
+</body>
+</html>

@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Groupes Fonctionnels Oxygénés — Estérification et Hydrolyse</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2333;--bg4:#242d3d;
+  --text:#e6edf3;--text2:#8b949e;--accent:#58a6ff;
+  --green:#2dc653;--red:#e63946;--orange:#f77f00;
+  --cyan:#00b4d8;--violet:#9b5de5;--pink:#ff69b4;
+  --panel:#13171f;--border:#30363d;--radius:10px;
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);}
+#topNav{position:fixed;top:0;left:0;right:0;height:52px;background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;z-index:1000;gap:4px;overflow-x:auto;}
+.nav-btn{padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:4px;}
+.nav-btn:hover:not(.locked){background:var(--bg4);color:var(--text);}
+.nav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.nav-btn.locked{opacity:.4;cursor:not-allowed;}
+#mainContainer{position:fixed;top:52px;left:0;right:0;bottom:0;display:flex;}
+#canvasWrap{flex:1;position:relative;min-width:0;background:var(--bg);}
+#sidePanel{width:360px;min-width:340px;background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;}
+.pt{font-size:16px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;}
+.bx{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.bx h3{font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text);text-transform:uppercase;letter-spacing:1px;}
+.ms{background:linear-gradient(135deg,#1a2332,#1c2840);border:1px solid var(--accent);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden;}
+.ms::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--cyan));}
+.ms .ml{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:4px;}
+.abx{display:flex;gap:8px;flex-wrap:wrap;}
+.ai{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:all .2s;user-select:none;font-size:13px;}
+.ai:hover{border-color:var(--accent);}
+.ai.sel{border-color:var(--accent);box-shadow:0 0 10px rgba(88,166,255,.25);}
+.ad{width:18px;height:18px;border-radius:50%;display:inline-block;}
+.bs{display:flex;gap:6px;}
+.bb{flex:1;padding:9px;text-align:center;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text2);transition:all .2s;}
+.bb.act{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn{padding:10px 16px;border:none;border-radius:var(--radius);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.bp{background:var(--accent);color:#fff;}.bp:hover{background:#4090e0;}
+.bo{background:transparent;border:1px solid var(--border);color:var(--text2);}.bo:hover{border-color:var(--accent);color:var(--text);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.bg{display:flex;gap:6px;flex-wrap:wrap;}
+.fb{padding:12px;border-radius:var(--radius);font-size:13px;line-height:1.5;display:none;animation:fi .3s;}
+.fb.show{display:block;}
+.fb.ok{background:rgba(45,198,83,.12);border:1px solid var(--green);color:#6ee89a;}
+.fb.err{background:rgba(230,57,70,.12);border:1px solid var(--red);color:#ff6b7a;}
+.fb.inf{background:rgba(88,166,255,.12);border:1px solid var(--accent);color:#7dc4ff;}
+.fb.wrn{background:rgba(247,127,0,.12);border:1px solid var(--orange);color:#ffaa44;}
+.sb{padding:9px 14px;border:2px solid var(--border);border-radius:var(--radius);background:var(--bg);cursor:pointer;font-size:12px;color:var(--text2);transition:all .2s;width:100%;text-align:left;display:flex;align-items:center;gap:8px;}
+.sb:hover{border-color:var(--text2);}
+.sd{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.qc{padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);cursor:pointer;transition:all .2s;font-size:13px;}
+.qc:hover{border-color:var(--accent);background:var(--bg3);}
+.qc.ok{border-color:var(--green);background:rgba(45,198,83,.1);pointer-events:none;}
+.qc.no{border-color:var(--red);background:rgba(230,57,70,.1);pointer-events:none;}
+.sc{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;text-align:center;padding:10px;color:var(--accent);}
+.tg{display:flex;gap:3px;background:var(--bg);border-radius:var(--radius);padding:3px;}
+.to{flex:1;padding:7px 10px;border:none;border-radius:7px;background:transparent;color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;transition:all .2s;text-align:center;}
+.to.act{background:var(--accent);color:#fff;}
+.pb{width:100%;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;}
+.pf{height:100%;background:var(--accent);border-radius:3px;transition:width .5s;}
+.dt{display:flex;gap:4px;margin-top:6px;}
+.dd{width:7px;height:7px;border-radius:50%;background:var(--border);}
+.dd.a{background:var(--accent);}.dd.d{background:var(--green);}
+.lb{display:flex;flex-direction:column;gap:5px;padding:8px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);}
+.li{display:flex;align-items:center;gap:6px;font-size:12px;}
+.lc{width:14px;height:3px;border-radius:2px;}
+.cc{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px;}
+.ac{display:flex;align-items:center;gap:5px;padding:8px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);}
+.ab{width:34px;height:34px;border:1px solid var(--border);border-radius:7px;background:var(--bg3);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;}
+.ab:hover{background:var(--accent);border-color:var(--accent);}
+.mo{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.mo.show{display:flex;}
+.md{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:500px;width:90%;}
+.md h2{font-size:18px;margin-bottom:14px;color:var(--accent);}
+.md p{font-size:13px;line-height:1.6;color:var(--text2);margin-bottom:10px;}
+.md label{display:flex;align-items:center;gap:8px;margin:14px 0;font-size:13px;cursor:pointer;}
+.md input[type="checkbox"]{width:16px;height:16px;accent-color:var(--accent);}
+@keyframes fi{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.dtbl{width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace;}
+.dtbl th,.dtbl td{padding:5px 4px;border:1px solid var(--border);text-align:center;}
+.dtbl th{background:var(--bg3);color:var(--accent);font-weight:600;font-size:10px;}
+.dtbl td{background:var(--bg);}
+.dtbl input{width:50px;padding:3px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text);text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;}
+.dtbl input.vok{border-color:var(--green);background:rgba(45,198,83,.15);}
+.dtbl input.vno{border-color:var(--red);background:rgba(230,57,70,.15);}
+.pie-wrap{display:flex;gap:12px;justify-content:center;align-items:center;}
+.pie-box{text-align:center;flex:1;}
+.pie-box canvas{display:block;margin:0 auto;}
+.pie-label{font-size:11px;color:var(--text2);margin-top:4px;}
+@media(max-width:800px){#mainContainer{flex-direction:column;}#sidePanel{width:100%;min-width:0;max-height:45vh;border-left:none;border-top:1px solid var(--border);}#canvasWrap{min-height:40vh;}}
+#sidePanel::-webkit-scrollbar{width:5px;}#sidePanel::-webkit-scrollbar-track{background:var(--bg);}#sidePanel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+<a href="index.html" id="pc3d-home-btn" title="Retour à l'accueil · العودة للرئيسية" style="position:fixed;bottom:18px;left:18px;z-index:2147483647;display:inline-flex;align-items:center;gap:7px;padding:9px 15px 9px 12px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#e8f0ff;text-decoration:none;background:linear-gradient(180deg,rgba(10,21,48,.94),rgba(5,10,24,.9));border:1px solid rgba(0,184,169,.45);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 0 1px rgba(0,184,169,.08);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00b8a9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+<span>PC3D · Accueil</span>
+</a>
+<style>#pc3d-home-btn:hover{transform:translateY(-2px);border-color:rgba(0,184,169,.85);box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 18px rgba(0,184,169,.35);}</style>
+<a href="#" id="pc3d-contact-btn" title="Contact · تواصل معنا" style="position:fixed;right:18px;bottom:18px;z-index:9000;display:inline-flex;align-items:center;gap:8px;padding:11px 16px;font-family:'Outfit',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:.3px;color:#04121f;text-decoration:none;background:linear-gradient(180deg,#4ECDC4,#00B8A9);border:1px solid rgba(255,255,255,.28);border-radius:999px;box-shadow:0 8px 26px rgba(0,184,169,.45),0 2px 8px rgba(0,0,0,.4);transition:transform .18s ease,box-shadow .18s ease;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#04121f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>Contact</span></a><style>#pc3d-contact-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,184,169,.6),0 2px 8px rgba(0,0,0,.5);}@media(max-width:600px){#pc3d-contact-btn span{display:none;}#pc3d-contact-btn{padding:13px;}}</style>
+<div class="pc3d-uload" id="pc3d-uload"><div class="pc3d-uload-logo"><svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="uldc" cx="50%" cy="45%" r="55%"><stop offset="0%" stop-color="#F5F7FA"/><stop offset="45%" stop-color="#4ECDC4"/><stop offset="100%" stop-color="#00B8A9" stop-opacity="0"/></radialGradient><linearGradient id="uldp" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4ECDC4"/><stop offset="50%" stop-color="#00B8A9"/><stop offset="100%" stop-color="#9B59B6"/></linearGradient></defs><ellipse class="ulorbit" cx="60" cy="66" rx="54" ry="18" fill="none" stroke="#4ECDC4" stroke-opacity=".4" stroke-width="1.5"/><circle class="ulorbit" cx="6" cy="66" r="3" fill="#FF9A3C"/><path class="ulpyr" d="M60 14 L102 94 L18 94 Z" fill="url(#uldp)" fill-opacity=".14" stroke="url(#uldp)" stroke-width="3" stroke-linejoin="round"/><circle class="ulcore" cx="60" cy="70" r="13" fill="url(#uldc)"/></svg></div><div class="pc3d-uload-txt"><span>P</span><span>C</span><span>3</span><span>D</span></div></div><style>.pc3d-uload{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:#050a18;transition:opacity .6s ease,visibility .6s;font-family:'Outfit',system-ui,sans-serif;}.pc3d-uload.done{opacity:0;visibility:hidden;pointer-events:none;}.pc3d-uload-logo{width:120px;height:120px;}.pc3d-uload-logo svg{width:100%;height:100%;overflow:visible;}.pc3d-uload .ulorbit{transform-origin:60px 64px;animation:ulspin 1.4s linear infinite;}@keyframes ulspin{to{transform:rotate(360deg);}}.pc3d-uload .ulpyr{transform-origin:60px 60px;animation:ulpyr 1.6s ease-in-out infinite;}@keyframes ulpyr{0%,100%{transform:scale(.86) rotate(-4deg);}50%{transform:scale(1.06) rotate(4deg);}}.pc3d-uload .ulcore{transform-origin:60px 66px;animation:ulcore 1.1s ease-in-out infinite;}@keyframes ulcore{0%,100%{opacity:.5;transform:scale(.7);}50%{opacity:1;transform:scale(1.25);}}.pc3d-uload-txt{display:flex;gap:3px;font-size:12px;letter-spacing:.32em;color:#7fe9e0;text-transform:uppercase;}.pc3d-uload-txt span{animation:ultxt 1.4s ease-in-out infinite;}.pc3d-uload-txt span:nth-child(2){animation-delay:.1s;}.pc3d-uload-txt span:nth-child(3){animation-delay:.2s;}.pc3d-uload-txt span:nth-child(4){animation-delay:.3s;}@keyframes ultxt{0%,100%{opacity:.3;transform:translateY(0);}50%{opacity:1;transform:translateY(-3px);}}</style><script>(function(){function h(){var l=document.getElementById("pc3d-uload");if(l){l.classList.add("done");setTimeout(function(){l&&l.remove();},700);}}window.addEventListener("load",function(){setTimeout(h,1100);});setTimeout(h,3000);})();</script>
+<div id="topNav">
+  <div class="nav-btn active" data-lv="1" onclick="go(1)">1. Construction</div>
+  <div class="nav-btn locked" data-lv="2" onclick="go(2)"><span class="lk">🔒</span>2. Identification</div>
+  <div class="nav-btn locked" data-lv="3" onclick="go(3)"><span class="lk">🔒</span>3. Réaction</div>
+  <div class="nav-btn locked" data-lv="4" onclick="go(4)"><span class="lk">🔒</span>4. Nomenclature</div>
+  <div class="nav-btn locked" data-lv="5" onclick="go(5)"><span class="lk">🔒</span>5. Reflux</div>
+  <div class="nav-btn locked" data-lv="6" onclick="go(6)"><span class="lk">🔒</span>6. Cinétique</div>
+  <div class="nav-btn locked" data-lv="7" onclick="go(7)"><span class="lk">🔒</span>7. Équilibre</div>
+  <div class="nav-btn locked" data-lv="8" onclick="go(8)"><span class="lk">🔒</span>8. Rendement</div>
+  <div class="nav-btn locked" data-lv="9" onclick="go(9)"><span class="lk">🔒</span>9. Titrage</div>
+</div>
+<div class="mo" id="sfM"><div class="md">
+  <h2>⚠️ Sécurité au Laboratoire</h2>
+  <p>Cette simulation met en jeu des substances chimiques potentiellement dangereuses :</p>
+  <p>• <b>H₂SO₄ concentré</b> : corrosif • <b>Éthanol</b> : inflammable • <b>Acide éthanoïque</b> : irritant</p>
+  <p>En laboratoire réel : <b>blouse, lunettes et gants</b> obligatoires.</p>
+  <label><input type="checkbox" id="sfC" onchange="document.getElementById('sfB').disabled=!this.checked"> J'ai lu et compris les consignes</label>
+  <button class="btn bp" id="sfB" disabled onclick="document.getElementById('sfM').classList.remove('show')">Continuer</button>
+</div></div>
+<div id="mainContainer"><div id="canvasWrap"></div><div id="sidePanel"></div></div>
+
+<script>
+/* ============================================================
+   CONFIGURATION
+   ============================================================ */
+var AT={C:{color:0x333333,r:.42,l:'C',v:4},O:{color:0xdd2200,r:.38,l:'O',v:2,em:0x330000},H:{color:0xeeeeee,r:.22,l:'H',v:1}};
+var GR={OH:{c:0x00b4d8,n:'Hydroxyle (−OH)',f:'Alcool'},COOH:{c:0xf77f00,n:'Carboxyle (−COOH)',f:'Acide carboxylique'},COO:{c:0x2dc653,n:'Ester (−COO−)',f:'Ester'},COOCO:{c:0x9b5de5,n:'Anhydride',f:'Anhydride d\'acide'}};
+var BH={t:[4,5,9,15,32,60,83,150],p:[25.8,31,37.3,47.4,55.7,59,60.6,65],u:'heures'};
+var BA={t:[15,22,70,72,128,154,277,368],p:[10,14,37.3,38.3,46.8,48.1,53.7,55],u:'jours'};
+var RAT=[{a:1,b:1,t:67},{a:1,b:2,t:85},{a:1,b:5,t:95},{a:2,b:1,t:85},{a:5,b:1,t:95}];
+var MIS=[{n:'Méthanol',f:'CH₃OH',nd:{C:1,O:1,H:4},g:'OH'},{n:'Éthanol',f:'C₂H₅OH',nd:{C:2,O:1,H:6},g:'OH'},{n:'Acide éthanoïque',f:'CH₃COOH',nd:{C:2,O:2,H:4},g:'COOH'},{n:'Éthanoate de méthyle',f:'CH₃COOCH₃',nd:{C:3,O:2,H:6},g:'COO'}];
+var M2=[
+{n:'Éthanol',f:'C₂H₅OH',gr:[{t:'OH',ai:[1,5]}],at:[{e:'C',p:[0,0,0]},{e:'O',p:[1.4,0,0]},{e:'C',p:[-1.5,0,0]},{e:'H',p:[0,.9,.5]},{e:'H',p:[0,-.9,.5]},{e:'H',p:[2.1,.6,0]},{e:'H',p:[-1.5,.9,.5]},{e:'H',p:[-1.5,-.9,.5]},{e:'H',p:[-2.4,0,0]}],bd:[[0,1,'s'],[0,2,'s'],[0,3,'s'],[0,4,'s'],[1,5,'s'],[2,6,'s'],[2,7,'s'],[2,8,'s']]},
+{n:'Acide éthanoïque',f:'CH₃COOH',gr:[{t:'COOH',ai:[0,2,3,7]}],at:[{e:'C',p:[0,0,0]},{e:'C',p:[-1.5,0,0]},{e:'O',p:[.6,1.1,0]},{e:'O',p:[1,-.8,0]},{e:'H',p:[-1.5,.9,.5]},{e:'H',p:[-1.5,-.9,.5]},{e:'H',p:[-2.4,0,0]},{e:'H',p:[1.8,-.3,0]}],bd:[[0,1,'s'],[0,2,'d'],[0,3,'s'],[1,4,'s'],[1,5,'s'],[1,6,'s'],[3,7,'s']]},
+{n:'Éthanoate d\'éthyle',f:'CH₃COOC₂H₅',gr:[{t:'COO',ai:[0,2,3]}],at:[{e:'C',p:[0,0,0]},{e:'C',p:[-1.5,0,0]},{e:'O',p:[.5,1.1,0]},{e:'O',p:[1,-.5,0]},{e:'C',p:[2.2,-.5,0]},{e:'C',p:[3,-.5,1.2]},{e:'H',p:[-1.5,.9,.5]},{e:'H',p:[-1.5,-.9,.5]},{e:'H',p:[-2.4,0,0]},{e:'H',p:[2.2,.4,-.5]},{e:'H',p:[2.2,-1.4,-.3]},{e:'H',p:[3,.4,1.4]},{e:'H',p:[3,-1.4,1.4]},{e:'H',p:[3.9,-.5,.9]}],bd:[[0,1,'s'],[0,2,'d'],[0,3,'s'],[3,4,'s'],[4,5,'s'],[1,6,'s'],[1,7,'s'],[1,8,'s'],[4,9,'s'],[4,10,'s'],[5,11,'s'],[5,12,'s'],[5,13,'s']]},
+{n:'Acide 3-hydroxypropanoïque',f:'HOCH₂CH₂COOH',gr:[{t:'OH',ai:[5,10]},{t:'COOH',ai:[2,3,4,11]}],at:[{e:'C',p:[-1.5,0,0]},{e:'C',p:[0,0,0]},{e:'C',p:[1.5,0,0]},{e:'O',p:[2,1.1,0]},{e:'O',p:[2.3,-.8,0]},{e:'O',p:[-2.5,-.5,0]},{e:'H',p:[-1.5,.9,.5]},{e:'H',p:[-1.5,-.9,.5]},{e:'H',p:[0,.9,.5]},{e:'H',p:[0,-.9,.5]},{e:'H',p:[-3.2,0,0]},{e:'H',p:[3,-.3,0]}],bd:[[0,1,'s'],[1,2,'s'],[2,3,'d'],[2,4,'s'],[0,5,'s'],[0,6,'s'],[0,7,'s'],[1,8,'s'],[1,9,'s'],[5,10,'s'],[4,11,'s']]}
+];
+var RX=[
+{ac:'Acide éthanoïque',al:'Méthanol',es:'Éthanoate de méthyle',af:'CH₃COOH',bf:'CH₃OH',ef:'CH₃COOCH₃',eq:'CH₃COOH + CH₃OH ⇌ CH₃COOCH₃ + H₂O'},
+{ac:'Acide éthanoïque',al:'Éthanol',es:'Éthanoate d\'éthyle',af:'CH₃COOH',bf:'C₂H₅OH',ef:'CH₃COOC₂H₅',eq:'CH₃COOH + C₂H₅OH ⇌ CH₃COOC₂H₅ + H₂O'},
+{ac:'Acide propanoïque',al:'Méthanol',es:'Propanoate de méthyle',af:'CH₃CH₂COOH',bf:'CH₃OH',ef:'CH₃CH₂COOCH₃',eq:'CH₃CH₂COOH + CH₃OH ⇌ CH₃CH₂COOCH₃ + H₂O'},
+{ac:'Acide méthanoïque',al:'Éthanol',es:'Méthanoate d\'éthyle',af:'HCOOH',bf:'C₂H₅OH',ef:'HCOOC₂H₅',eq:'HCOOH + C₂H₅OH ⇌ HCOOC₂H₅ + H₂O'}];
+var NM=[
+{n:'Méthanol',f:'CH₃OH',fm:'Alcool',gr:'−OH',o:['Méthanol','Éthanol','Méthanal','Acide méthanoïque'],c:0},
+{n:'Éthanol',f:'C₂H₅OH',fm:'Alcool',gr:'−OH',o:['Propan-1-ol','Éthanol','Méthanol','Éthanal'],c:1},
+{n:'Acide éthanoïque',f:'CH₃COOH',fm:'Acide carboxylique',gr:'−COOH',o:['Éthanol','Éthanal','Acide éthanoïque','Acide propanoïque'],c:2},
+{n:'Éthanoate de méthyle',f:'CH₃COOCH₃',fm:'Ester',gr:'−COO−',o:['Méthanoate d\'éthyle','Éthanoate de méthyle','Éthanoate d\'éthyle','Propanoate de méthyle'],c:1},
+{n:'Éthanoate d\'éthyle',f:'CH₃COOC₂H₅',fm:'Ester',gr:'−COO−',o:['Éthanoate d\'éthyle','Propanoate d\'éthyle','Éthanoate de méthyle','Méthanoate d\'éthyle'],c:0},
+{n:'Acide propanoïque',f:'CH₃CH₂COOH',fm:'Acide carboxylique',gr:'−COOH',o:['Acide butanoïque','Acide éthanoïque','Propan-1-ol','Acide propanoïque'],c:3},
+{n:'Éthanoate de propyle',f:'CH₃COO(CH₂)₂CH₃',fm:'Ester',gr:'−COO−',o:['Propanoate d\'éthyle','Éthanoate de butyle','Éthanoate de propyle','Méthanoate de propyle'],c:2},
+{n:'Propan-2-ol',f:'CH₃CHOHCH₃',fm:'Alcool',gr:'−OH',o:['Propan-1-ol','Propan-2-ol','Propanone','Acide propanoïque'],c:1},
+{n:'Butan-1-ol',f:'CH₃CH₂CH₂CH₂OH',fm:'Alcool',gr:'−OH',o:['Butan-2-ol','Butan-1-ol','Butanal','Acide butanoïque'],c:1},
+{n:'Éthanoate de butyle',f:'CH₃COO(CH₂)₃CH₃',fm:'Ester',gr:'−COO−',o:['Butanoate d\'éthyle','Éthanoate de butyle','Propanoate de butyle','Éthanoate de propyle'],c:1}];
+
+/* ============================================================
+   ÉTAT GLOBAL
+   ============================================================ */
+var S={lv:1,ul:[1],sc:null,ca:null,re:null,ct:null,rc:null,ms:null,la:null,
+a1:[],b1:[],sa:null,st:'C',bm:'single',mi:0,att:0,ac:0,mg:null,
+m2i:0,sn:null,f2:[],s2:0,mg2:null,
+ri:0,rs:0,rp:false,rxDir:'ester',rg:null,rm:{},
+q4i:0,s4:0,ng:null,
+ro:false,rt:0,rfg:null,rfm:{},
+tm:'heated',sc2:false,sb2:false,ch:null,tabOk:false,
+eg:null,ep:[],pieT:0,pieOn:false,
+rai:0,
+tv:0,te:16.5,tg:null,tmm:{}};
+
+/* ============================================================
+   THREE INIT
+   ============================================================ */
+function initT(){
+  var w=document.getElementById('canvasWrap');
+  S.sc=new THREE.Scene();
+  S.sc.background=new THREE.Color(0x0d1117);
+  S.ca=new THREE.PerspectiveCamera(50,w.clientWidth/w.clientHeight,.1,100);
+  S.ca.position.set(0,2,8);
+  S.re=new THREE.WebGLRenderer({antialias:true});
+  S.re.setSize(w.clientWidth,w.clientHeight);
+  S.re.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  w.appendChild(S.re.domElement);
+  S.ct=new THREE.OrbitControls(S.ca,S.re.domElement);
+  S.ct.enableDamping=true;S.ct.dampingFactor=.08;S.ct.minDistance=2;S.ct.maxDistance=30;S.ct.enablePan=true;
+  S.sc.add(new THREE.HemisphereLight(0xfff5e6,0x080820,.9));
+  var d1=new THREE.DirectionalLight(0x00d4ff,.4);d1.position.set(-5,5,3);S.sc.add(d1);
+  var d2=new THREE.DirectionalLight(0xffaa00,.3);d2.position.set(5,3,-2);S.sc.add(d2);
+  S.sc.add(new THREE.AmbientLight(0x333344,.3));
+  S.rc=new THREE.Raycaster();S.ms=new THREE.Vector2();
+  window.addEventListener('resize',function(){S.ca.aspect=w.clientWidth/w.clientHeight;S.ca.updateProjectionMatrix();S.re.setSize(w.clientWidth,w.clientHeight);});
+  S.re.domElement.addEventListener('click',onCl);
+  S.re.domElement.addEventListener('contextmenu',onRC);
+  (function lp(){requestAnimationFrame(lp);S.ct.update();
+    S.sc.traverse(function(c){if(c.userData&&c.userData.bb)c.quaternion.copy(S.ca.quaternion);});
+    if(S.la)S.la();S.re.render(S.sc,S.ca);})();
+}
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+function clr(){
+  var rm=[];S.sc.traverse(function(c){if(!c.isLight&&c!==S.sc)rm.push(c);});
+  for(var i=rm.length-1;i>=0;i--){var o=rm[i];if(o.parent)o.parent.remove(o);if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();if(Array.isArray(o.material))o.material.forEach(function(m){if(m.map)m.map.dispose();m.dispose();});else o.material.dispose();}}
+  S.a1=[];S.b1=[];S.sa=null;S.la=null;S.mg=null;S.mg2=null;S.rg=null;S.ng=null;S.rfg=null;S.eg=null;S.tg=null;
+}
+function mA(el,pos,id){
+  var c=AT[el];var g=new THREE.SphereGeometry(c.r,24,24);
+  var m=new THREE.MeshStandardMaterial({color:c.color,metalness:.15,roughness:.35,emissive:c.em||0x000000,emissiveIntensity:c.em?.15:0});
+  var ms=new THREE.Mesh(g,m);ms.position.copy(pos);ms.userData={el:el,id:id,isAtom:true};
+  var lb=mL(c.l,el==='H'?.25:.35);lb.position.set(0,c.r+.25,0);ms.add(lb);return ms;
+}
+function mL(t,sz,cl){
+  cl=cl||'#fff';var cv=document.createElement('canvas');cv.width=256;cv.height=64;
+  var cx=cv.getContext('2d');cx.clearRect(0,0,256,64);
+  var fs=Math.min(44,Math.floor(220/(t.length||1)*1.8));
+  cx.font='bold '+fs+'px Outfit,Arial,sans-serif';
+  cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle=cl;cx.fillText(t,128,32);
+  var tx=new THREE.CanvasTexture(cv);tx.minFilter=THREE.LinearFilter;
+  var sm=new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false});
+  var sp=new THREE.Sprite(sm);sp.scale.set(sz*4,sz,1);sp.userData={bb:true};return sp;
+}
+function mB(a1,a2,tp){
+  var gr=new THREE.Group();var p1=a1.position.clone(),p2=a2.position.clone();
+  var dir=new THREE.Vector3().subVectors(p2,p1);var len=dir.length();
+  var mid=new THREE.Vector3().addVectors(p1,p2).multiplyScalar(.5);
+  var dn=dir.clone().normalize();var up=new THREE.Vector3(0,1,0);
+  function mk(off){
+    var cg=new THREE.CylinderGeometry(.06,.06,len,8);
+    var cm=new THREE.MeshStandardMaterial({color:0x888888,roughness:.6});
+    var cy=new THREE.Mesh(cg,cm);cy.position.copy(mid);
+    if(off){var pp=new THREE.Vector3(1,0,0);if(Math.abs(dn.dot(pp))>.9)pp.set(0,0,1);
+      var cr=new THREE.Vector3().crossVectors(dn,pp).normalize().multiplyScalar(off);cy.position.add(cr);}
+    cy.quaternion.setFromUnitVectors(up,dn);return cy;
+  }
+  if(tp==='double'){gr.add(mk(.09));gr.add(mk(-.09));}else gr.add(mk(0));
+  gr.userData={isBond:true,type:tp,a1:a1.userData.id,a2:a2.userData.id};return gr;
+}
+function bM(d,hl){
+  var gr=new THREE.Group(),ms=[];
+  d.at.forEach(function(a,i){var m=mA(a.e,new THREE.Vector3(a.p[0],a.p[1],a.p[2]),i);gr.add(m);ms.push(m);});
+  d.bd.forEach(function(b){gr.add(mB(ms[b[0]],ms[b[1]],b[2]==='d'?'double':'single'));});
+  if(hl&&d.gr)d.gr.forEach(function(g){if(g.t===hl)g.ai.forEach(function(i){if(ms[i]){ms[i].material.emissive.setHex(GR[g.t].c);ms[i].material.emissiveIntensity=.5;}});});
+  gr.userData.ms=ms;return gr;
+}
+function sFB(id,tp,mg){var f=document.getElementById(id);if(!f)return;f.className='fb show '+tp;f.innerHTML=mg;}
+function rE(m){if(!m||!m.userData)return;var e=m.userData.el;m.material.emissive.setHex(AT[e].em||0);m.material.emissiveIntensity=AT[e].em?.15:0;}
+function gH(e,ms){
+  var r=S.re.domElement.getBoundingClientRect();
+  S.ms.x=((e.clientX-r.left)/r.width)*2-1;S.ms.y=-((e.clientY-r.top)/r.height)*2+1;
+  S.rc.setFromCamera(S.ms,S.ca);var h=S.rc.intersectObjects(ms,true);
+  if(!h.length)return null;var t=h[0].object;while(t&&!t.userData.isAtom)t=t.parent;return t;
+}
+function h6(n){return n.toString(16).padStart(6,'0');}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function go(lv){
+  if(S.ul.indexOf(lv)<0)return;
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('.nav-btn[data-lv="'+lv+'"]').classList.add('active');
+  S.lv=lv;clr();if(S.ch){S.ch.destroy();S.ch=null;}
+  switch(lv){case 1:iL1();break;case 2:iL2();break;case 3:iL3();break;case 4:iL4();break;
+  case 5:iL5();break;case 6:iL6();break;case 7:iL7();break;case 8:iL8();break;case 9:iL9();break;}
+}
+function ul(n){if(S.ul.indexOf(n)<0){S.ul.push(n);var b=document.querySelector('.nav-btn[data-lv="'+n+'"]');if(b){b.classList.remove('locked');var l=b.querySelector('.lk');if(l)l.textContent='✓ ';}}}
+
+function onCl(e){if(S.lv===1)hL1C(e);else if(S.lv===2)hL2C(e);}
+function onRC(e){e.preventDefault();if(S.lv===1)hL1R(e);}
+
+/* ============================================================
+   NIVEAU 1 — Construction
+   ============================================================ */
+function iL1(){
+  S.mi=0;S.a1=[];S.b1=[];S.sa=null;S.st='C';S.bm='single';S.att=0;S.ac=0;
+  S.mg=new THREE.Group();S.sc.add(S.mg);
+  S.sc.add(new THREE.GridHelper(10,10,0x1a2332,0x111822));
+  S.ca.position.set(0,3,7);S.ct.target.set(0,0,0);rL1();
+}
+function rL1(){
+  var m=MIS[S.mi],p=document.getElementById('sidePanel');
+  p.innerHTML='<div class="pt">🔬 Niveau 1 — Construction</div>'+
+  '<div class="ms"><div class="ml">Mission '+(S.mi+1)+'/'+MIS.length+'</div><div style="font-size:14px">Construisez <b>'+m.n+'</b> ('+m.f+')</div></div>'+
+  '<div class="bx"><h3>Atomes</h3><div class="abx">'+
+  '<div class="ai'+(S.st==='C'?' sel':'')+'" onclick="S.st=\'C\';S.sa=null;rL1()"><span class="ad" style="background:#333"></span>C</div>'+
+  '<div class="ai'+(S.st==='O'?' sel':'')+'" onclick="S.st=\'O\';S.sa=null;rL1()"><span class="ad" style="background:#dd2200"></span>O</div>'+
+  '<div class="ai'+(S.st==='H'?' sel':'')+'" onclick="S.st=\'H\';S.sa=null;rL1()"><span class="ad" style="background:#eee"></span>H</div></div></div>'+
+  '<div class="bx"><h3>Liaison</h3><div class="bs">'+
+  '<div class="bb'+(S.bm==='single'?' act':'')+'" onclick="S.bm=\'single\';rL1()">─ Simple</div>'+
+  '<div class="bb'+(S.bm==='double'?' act':'')+'" onclick="S.bm=\'double\';rL1()">═ Double</div></div></div>'+
+  '<div class="bx"><h3>Instructions</h3><p style="font-size:12px;color:var(--text2);line-height:1.5">'+
+  '1. Sélectionnez un atome puis cliquez dans la scène.<br>'+
+  '2. Cliquez deux atomes existants pour les lier.<br>'+
+  '3. Clic droit = supprimer.</p></div>'+
+  '<div id="f1" class="fb"></div>'+
+  '<div class="bg"><button class="btn bp" onclick="vL1()">✓ Vérifier</button>'+
+  '<button class="btn bo" onclick="xL1()">↺ Reset</button>'+
+  '<button class="btn bo" onclick="hL1()">💡 Indice</button></div>'+
+  '<div class="bx"><h3>Progression</h3><div class="pb"><div class="pf" style="width:'+(S.mi/MIS.length*100)+'%"></div></div>'+
+  '<div class="dt">'+MIS.map(function(_,i){return '<div class="dd'+(i<S.mi?' d':i===S.mi?' a':'')+'"></div>';}).join('')+'</div></div>';
+}
+function hL1C(e){
+  var ms=S.a1.map(function(a){return a.m;});var hit=gH(e,ms);
+  if(hit){
+    if(S.sa&&S.sa!==hit){cB1(S.sa,hit);dS();return;}
+    dS();S.sa=hit;S.st=null;hit.material.emissive.setHex(0x58a6ff);hit.material.emissiveIntensity=.4;rL1();
+  }else if(S.st){
+    var r=S.re.domElement.getBoundingClientRect();
+    S.ms.x=((e.clientX-r.left)/r.width)*2-1;S.ms.y=-((e.clientY-r.top)/r.height)*2+1;
+    S.rc.setFromCamera(S.ms,S.ca);var pl=new THREE.Plane(new THREE.Vector3(0,0,1),0);
+    var pt=new THREE.Vector3();var hitPl=S.rc.ray.intersectPlane(pl,pt);
+    if(hitPl){var id=S.ac++;var mesh=mA(S.st,pt,id);S.mg.add(mesh);S.a1.push({id:id,el:S.st,m:mesh});}
+  }
+}
+function hL1R(e){var ms=S.a1.map(function(a){return a.m;});var hit=gH(e,ms);if(hit)rmA(hit.userData.id);}
+function dS(){if(S.sa){rE(S.sa);S.sa=null;}}
+function cB1(a1,a2){
+  var e1=a1.userData.el,e2=a2.userData.el,bv=S.bm==='double'?2:1;
+  var c1=cntB(a1.userData.id),c2=cntB(a2.userData.id);
+  if(c1+bv>AT[e1].v){sFB('f1','err','⚠️ '+e1+' : max '+AT[e1].v+' liaison(s), déjà '+c1);shk(a1);return;}
+  if(c2+bv>AT[e2].v){sFB('f1','err','⚠️ '+e2+' : max '+AT[e2].v+' liaison(s), déjà '+c2);shk(a2);return;}
+  if(S.b1.some(function(b){return(b.x===a1.userData.id&&b.y===a2.userData.id)||(b.x===a2.userData.id&&b.y===a1.userData.id);})){sFB('f1','wrn','Liaison déjà existante.');return;}
+  var bm=mB(a1,a2,S.bm);S.mg.add(bm);S.b1.push({x:a1.userData.id,y:a2.userData.id,t:S.bm,m:bm});
+  a1.material.emissive.setHex(0x2dc653);a1.material.emissiveIntensity=.5;
+  a2.material.emissive.setHex(0x2dc653);a2.material.emissiveIntensity=.5;
+  setTimeout(function(){rE(a1);rE(a2);},400);
+}
+function cntB(id){var c=0;S.b1.forEach(function(b){if(b.x===id||b.y===id)c+=b.t==='double'?2:1;});return c;}
+function disposeAtom(mesh){
+  mesh.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material){if(c.material.map)c.material.map.dispose();c.material.dispose();}});
+}
+function rmA(id){
+  var ad=S.a1.find(function(a){return a.id===id;});if(!ad)return;
+  S.mg.remove(ad.m);disposeAtom(ad.m);
+  S.a1=S.a1.filter(function(a){return a.id!==id;});
+  var tr=S.b1.filter(function(b){return b.x===id||b.y===id;});
+  for(var i=tr.length-1;i>=0;i--){S.mg.remove(tr[i].m);tr[i].m.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});}
+  S.b1=S.b1.filter(function(b){return b.x!==id&&b.y!==id;});
+  if(S.sa&&S.sa.userData.id===id)S.sa=null;
+}
+function shk(m){var ox=m.position.x,t=0;m.material.emissive.setHex(0xff0000);m.material.emissiveIntensity=.6;
+  (function s(){t+=.12;if(t>1){m.position.x=ox;rE(m);return;}m.position.x=ox+Math.sin(t*25)*.08*(1-t);requestAnimationFrame(s);})();}
+function vL1(){
+  if(S.mi>=MIS.length){sFB('f1','ok','🎉 Déjà terminé ! Passez au Niveau 2.');return;}
+  var m=MIS[S.mi];S.att++;var ct={};S.a1.forEach(function(a){ct[a.el]=(ct[a.el]||0)+1;});
+  for(var el in m.nd){if((ct[el]||0)!==m.nd[el])return fL1('Nombre de '+el+' : attendu '+m.nd[el]+', trouvé '+(ct[el]||0));}
+  for(var i=0;i<S.a1.length;i++){var a=S.a1[i],bc=cntB(a.id);if(bc!==AT[a.el].v)return fL1(a.el+' n°'+a.id+' a '+bc+' liaison(s) au lieu de '+AT[a.el].v);}
+  sFB('f1','ok','✅ Bravo ! '+m.n+' construit. Groupe : '+GR[m.g].n);
+  S.a1.forEach(function(a){if(a.el==='O'){a.m.material.emissive.setHex(GR[m.g].c);a.m.material.emissiveIntensity=.5;}});
+  S.mi++;if(S.mi>=MIS.length){setTimeout(function(){
+    document.getElementById('sidePanel').innerHTML='<div class="pt">🔬 Niveau 1 — Construction</div>'+
+    '<div style="padding:20px;text-align:center;color:var(--green);font-size:15px;font-weight:600">🎉 Toutes les missions terminées !</div>'+
+    '<button class="btn bp" onclick="go(2)" style="width:100%">→ Niveau 2 (Identification)</button>';
+    ul(2);},2000);}
+  else{if(S._mto)clearTimeout(S._mto);S._mto=setTimeout(function(){S._mto=null;xL1();rL1();},2500);}
+}
+function fL1(mg){
+  if(S.att===1)sFB('f1','err','❌ Réessayez. Vérifiez atomes et liaisons.');
+  else if(S.att===2)sFB('f1','wrn','💡 '+mg);
+  else if(S.att===3){var m=MIS[S.mi];sFB('f1','inf','📝 '+m.n+' = '+m.f+'. C→4, O→2, H→1.');}
+  else{var m2=MIS[S.mi];sFB('f1','inf','📖 '+m2.f+'. Groupe : '+GR[m2.g].n);S.att=0;}
+}
+function xL1(){
+  if(S._mto){clearTimeout(S._mto);S._mto=null;}
+  for(var i=S.a1.length-1;i>=0;i--){S.mg.remove(S.a1[i].m);disposeAtom(S.a1[i].m);}
+  for(var j=S.b1.length-1;j>=0;j--){S.mg.remove(S.b1[j].m);S.b1[j].m.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});}
+  S.a1=[];S.b1=[];S.sa=null;S.ac=0;S.att=0;rL1();
+}
+function hL1(){var m=MIS[S.mi];sFB('f1','inf','💡 '+m.n+' : '+Object.entries(m.nd).map(function(e){return e[1]+' '+e[0];}).join(', ')+'. Groupe : '+GR[m.g].n);}
+
+/* ============================================================
+   NIVEAU 2 — Identification
+   ============================================================ */
+function iL2(){S.m2i=0;S.sn=null;S.f2=[];S.s2=0;S.ca.position.set(0,1,8);S.ct.target.set(0,0,0);lM2(0);rL2();
+  S.la=function(){if(S.lv!==2||!S.mg2)return;S.mg2.rotation.y+=.003;};}
+function lM2(i){if(S.mg2)S.sc.remove(S.mg2);S.mg2=bM(M2[i]);S.sc.add(S.mg2);S.f2=[];}
+function rL2(){
+  var ml=M2[S.m2i];
+  document.getElementById('sidePanel').innerHTML=
+  '<div class="pt">🔍 Niveau 2 — Identification</div>'+
+  '<div class="bx"><h3>'+ml.n+' ('+ml.f+')</h3><p style="font-size:12px;color:var(--text2)">Trouvez '+ml.gr.length+' groupe(s)</p></div>'+
+  '<div class="bx"><h3>Scanner</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+  ['OH','COOH','COO','COOCO'].map(function(t){var g=GR[t],a=S.sn===t;
+    return '<div class="sb" style="'+(a?'border-color:#'+h6(g.c)+';color:#'+h6(g.c):'')+'" onclick="S.sn=\''+t+'\';rL2()"><span class="sd" style="background:#'+h6(g.c)+'"></span>'+g.n+'</div>';}).join('')+'</div></div>'+
+  '<div class="sc">Score : '+S.s2+'</div><div id="f2" class="fb"></div>'+
+  '<div class="bx"><p style="font-size:12px;color:var(--text2)">Molécule '+(S.m2i+1)+'/'+M2.length+' — Trouvés : '+S.f2.length+'/'+ml.gr.length+'</p>'+
+  '<div class="pb"><div class="pf" style="width:'+(S.m2i/M2.length*100)+'%"></div></div></div>'+
+  '<button class="btn bo" onclick="hL2()" style="width:100%">💡 Indice</button>';
+}
+function hL2C(e){
+  if(!S.sn||!S.mg2||S.m2i>=M2.length)return;var ms=S.mg2.userData.ms||[];var hit=gH(e,ms);if(!hit)return;
+  var ml=M2[S.m2i],ci=hit.userData.id,fd=false;
+  ml.gr.forEach(function(g){if(g.t===S.sn&&g.ai.indexOf(ci)>=0){var k=g.t+'_'+g.ai.join(',');
+    if(S.f2.indexOf(k)<0){S.f2.push(k);S.s2++;
+      g.ai.forEach(function(i){var m=ms[i];if(m){m.material.emissive.setHex(GR[g.t].c);m.material.emissiveIntensity=.6;}});
+      sFB('f2','ok','✅ '+GR[g.t].n+' identifié !');fd=true;
+      if(S.f2.length>=ml.gr.length)setTimeout(function(){S.m2i++;
+        if(S.m2i>=M2.length){ul(3);
+          document.getElementById('sidePanel').innerHTML='<div class="pt">🔍 Niveau 2 — Identification</div><div class="sc">Score : '+S.s2+'</div>'+
+          '<div style="padding:20px;text-align:center;color:var(--green);font-size:15px;font-weight:600">🎉 Tous les groupes identifiés !</div>'+
+          '<button class="btn bp" onclick="go(3)" style="width:100%">→ Niveau 3 (Réaction)</button>';}
+        else{lM2(S.m2i);rL2();}},1500);
+      rL2();}}});
+  if(!fd){sFB('f2','err','❌ Ce n\'est pas '+GR[S.sn].n);hit.material.emissive.setHex(0xff0000);hit.material.emissiveIntensity=.5;setTimeout(function(){rE(hit);},700);}
+}
+function hL2(){var ml=M2[S.m2i];var rm=ml.gr.filter(function(g){return S.f2.indexOf(g.t+'_'+g.ai.join(','))<0;});
+  if(rm.length)sFB('f2','inf','💡 Cherchez '+GR[rm[0].t].n+'. Bon scanner ?');}
+
+/* ============================================================
+   NIVEAU 3 — Réaction
+   ============================================================ */
+function iL3(){S.ri=0;S.rs=0;S.rp=false;S.rxDir='ester';S.ca.position.set(0,1,10);S.ct.target.set(0,0,0);bRx();rL3();}
+function bRx(){
+  if(S.rg)S.sc.remove(S.rg);S.rg=new THREE.Group();var rx=RX[S.ri];
+  var ag=new THREE.Group();
+  var cA=mA('C',new THREE.Vector3(0,0,0),100);var oD=mA('O',new THREE.Vector3(.7,.9,0),101);
+  var oS=mA('O',new THREE.Vector3(.8,-.6,0),102);var hC=mA('H',new THREE.Vector3(1.5,-.9,0),103);
+  var ch=mA('C',new THREE.Vector3(-1,0,.5),104);
+  ag.add(cA);ag.add(oD);ag.add(oS);ag.add(hC);ag.add(ch);
+  var bCOd=mB(cA,oD,'double');ag.add(bCOd);var bCOs=mB(cA,oS,'single');ag.add(bCOs);
+  var bOH=mB(oS,hC,'single');ag.add(bOH);var bCC=mB(cA,ch,'single');ag.add(bCC);
+  var al1=mL(rx.af,.3,'#fff');al1.position.set(0,1.6,0);ag.add(al1);
+  ag.position.set(-3.5,0,0);S.rg.add(ag);
+
+  var bg=new THREE.Group();var oA=mA('O',new THREE.Vector3(0,0,0),200);
+  var hA=mA('H',new THREE.Vector3(.6,.5,0),201);var cAl=mA('C',new THREE.Vector3(-.8,-.3,0),202);
+  bg.add(oA);bg.add(hA);bg.add(cAl);
+  var bOHa=mB(oA,hA,'single');bg.add(bOHa);var bCOa=mB(cAl,oA,'single');bg.add(bCOa);
+  var al2=mL(rx.bf,.3,'#fff');al2.position.set(0,1.2,0);bg.add(al2);
+  bg.position.set(3.5,0,0);S.rg.add(bg);
+
+  S.rg.add(mL('+',.5,'#888888'));
+  S.rm={ag:ag,bg:bg,bOH:bOH,bOHa:bOHa};S.sc.add(S.rg);
+}
+function rL3(){
+  var rx=RX[S.ri],st=['Approche','Rupture / formation','Produits'];
+  document.getElementById('sidePanel').innerHTML=
+  '<div class="pt">⚗️ Niveau 3 — Réaction</div>'+
+  '<div class="bx"><h3>Réaction</h3><select style="width:100%;padding:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:12px" onchange="S.ri=+this.value;S.rs=0;S.rp=false;bRx();rL3()">'+
+  RX.map(function(r,i){return '<option value="'+i+'"'+(i===S.ri?' selected':'')+'>'+r.ac+' + '+r.al+'</option>';}).join('')+'</select>'+
+  '<p style="font-size:11px;color:var(--accent);margin-top:6px;font-family:\'JetBrains Mono\',monospace">'+rx.eq+'</p></div>'+
+  '<div class="bx"><h3>Étape '+(S.rs+1)+'/3 — '+st[S.rs]+'</h3>'+
+  '<div class="dt">'+ [0,1,2].map(function(i){return '<div class="dd'+(i<S.rs?' d':i===S.rs?' a':'')+'"></div>';}).join('')+'</div>'+
+  '<p style="font-size:12px;color:var(--text2);margin-top:8px">'+(S.rs===0?'Réactifs se rapprochent. Rouge = rupture.':S.rs===1?'Liaisons O−H se rompent. Nouvelles se forment.':'Ester + H₂O formés.')+'</p></div>'+
+  '<div class="ac"><button class="ab" onclick="rpv()">⏮</button><button class="ab" onclick="rpp()">'+(!S.rp?'▶':'⏸')+'</button><button class="ab" onclick="rnx()">⏭</button></div>'+
+  '<div class="lb"><div class="li"><div class="lc" style="background:#e63946"></div>Rupture</div><div class="li"><div class="lc" style="background:#2dc653"></div>Formation</div></div>'+
+  '<div id="f3" class="fb"></div>'+
+  '<div class="bg"><button class="btn bo" onclick="trd()">🔄 '+(S.rxDir==='ester'?'Hydrolyse':'Estérification')+'</button>'+
+  '<button class="btn bp" onclick="ul(4);go(4)">→ Niv. 4</button></div>';
+}
+function rpp(){S.rp=!S.rp;rL3();if(S.rp)aRx();}
+function aRx(){
+  if(!S.rp||S.lv!==3)return;var m=S.rm;
+  if(S.rs===0){
+    cBc(m.bOH,0xe63946);cBc(m.bOHa,0xe63946);
+    var t=0,sa=m.ag.position.clone(),sb=m.bg.position.clone(),ta=new THREE.Vector3(-1.5,0,0),tb=new THREE.Vector3(1.5,0,0);
+    (function mv(){if(!S.rp||S.lv!==3)return;t+=.012;if(t>=1){m.ag.position.copy(ta);m.bg.position.copy(tb);S.rs=1;rL3();setTimeout(function(){if(S.rp)aRx();},500);return;}
+      m.ag.position.lerpVectors(sa,ta,t);m.bg.position.lerpVectors(sb,tb,t);requestAnimationFrame(mv);})();
+  }else if(S.rs===1){
+    sFB('f3','inf','Liaisons O−H se rompent...');
+    setTimeout(function(){if(!S.rp)return;m.bOH.visible=false;m.bOHa.visible=false;
+      setTimeout(function(){if(!S.rp)return;
+        var wg=new THREE.Group();wg.add(new THREE.Mesh(new THREE.SphereGeometry(.3,16,16),new THREE.MeshStandardMaterial({color:0x00b4d8,emissive:0x003366,emissiveIntensity:.3})));
+        var wl=mL('H₂O',.3,'#00b4d8');wl.position.y=.6;wg.add(wl);wg.position.set(0,-2,0);S.rg.add(wg);
+        var el=mL('Liaison C−O → ester',.25,'#2dc653');el.position.set(0,2,0);S.rg.add(el);
+        sFB('f3','ok','🟢 Ester formé. H₂O libérée.');
+        setTimeout(function(){S.rs=2;rL3();if(S.rp)aRx();},2000);},1200);},600);
+  }else if(S.rs===2){
+    var t2=0;(function mv2(){if(!S.rp||S.lv!==3)return;t2+=.015;if(t2>=1){S.rp=false;sFB('f3','ok','✅ '+RX[S.ri].eq);rL3();return;}
+      m.ag.position.x=-1.5-t2*2;m.bg.position.x=1.5+t2*2;requestAnimationFrame(mv2);})();
+  }
+}
+function cBc(b,c){if(!b)return;b.traverse(function(ch){if(ch.material){ch.material.color.setHex(c);ch.material.emissive=new THREE.Color(c);ch.material.emissiveIntensity=.3;}});}
+function rpv(){if(S.rs>0){S.rs--;S.rp=false;bRx();rL3();}}
+function rnx(){if(S.rs<2){S.rs++;rL3();}}
+function trd(){S.rxDir=S.rxDir==='ester'?'hydrolysis':'ester';S.rs=0;S.rp=false;bRx();rL3();}
+
+/* ============================================================
+   NIVEAU 4 — Nomenclature
+   ============================================================ */
+function iL4(){S.q4i=0;S.s4=0;S.ca.position.set(0,1,7);S.ct.target.set(0,0,0);lN(0);rL4();}
+function lN(i){
+  if(S.ng)S.sc.remove(S.ng);var q=NM[i];
+  var mi=M2.findIndex(function(m){return m.n===q.n;});
+  if(mi>=0)S.ng=bM(M2[mi]);
+  else{S.ng=new THREE.Group();S.ng.add(new THREE.Mesh(new THREE.SphereGeometry(.8,32,32),new THREE.MeshStandardMaterial({color:0x2dc653,transparent:true,opacity:.5})));
+    var lb=mL(q.f,.4,'#fff');lb.position.y=1.3;S.ng.add(lb);}
+  S.sc.add(S.ng);S.la=function(){if(S.lv===4&&S.ng)S.ng.rotation.y+=.005;};
+}
+function rL4(){
+  var q=NM[S.q4i];
+  document.getElementById('sidePanel').innerHTML=
+  '<div class="pt">📝 Niveau 4 — Nomenclature</div><div class="sc">★ '+S.s4+'/'+NM.length+'</div>'+
+  '<div class="ms"><div class="ml">Question '+(S.q4i+1)+'/'+NM.length+'</div><div style="font-size:14px">Nom IUPAC ?</div>'+
+  '<p style="font-size:12px;color:var(--text2);margin-top:6px">Formule : '+q.f+'</p></div>'+
+  '<div class="bx"><h3>Choisissez</h3><div style="display:flex;flex-direction:column;gap:6px">'+
+  q.o.map(function(o,i){return '<div class="qc" onclick="cN('+i+')" id="n'+i+'">'+o+'</div>';}).join('')+'</div></div>'+
+  '<div id="f4" class="fb"></div><div class="bx"><div class="pb"><div class="pf" style="width:'+(S.q4i/NM.length*100)+'%"></div></div></div>';
+}
+function cN(i){
+  if(S.q4i>=NM.length)return;
+  var q=NM[S.q4i];document.querySelectorAll('.qc').forEach(function(c){c.style.pointerEvents='none';});
+  if(i===q.c){document.getElementById('n'+i).classList.add('ok');S.s4++;sFB('f4','ok','✅ '+q.n+' — '+q.fm+' ('+q.gr+')');}
+  else{document.getElementById('n'+i).classList.add('no');document.getElementById('n'+q.c).classList.add('ok');sFB('f4','err','❌ C\'est '+q.n+' — '+q.fm);}
+  setTimeout(function(){S.q4i++;if(S.q4i>=NM.length){ul(5);
+    document.getElementById('sidePanel').innerHTML='<div class="pt">📝 Niveau 4 — Nomenclature</div><div class="sc">★ '+S.s4+'/'+NM.length+'</div>'+
+    '<div style="padding:20px;text-align:center;color:var(--green);font-size:15px;font-weight:600">🎉 Nomenclature maîtrisée !<br>Score : '+S.s4+'/'+NM.length+'</div>'+
+    '<button class="btn bp" onclick="go(5)" style="width:100%">→ Niveau 5 (Reflux)</button>';
+  }else{lN(S.q4i);rL4();}},2200);
+}
+
+/* ============================================================
+   NIVEAU 5 — Reflux
+   ============================================================ */
+function iL5(){S.ro=false;S.rt=0;S.rfm={};S.ca.position.set(0,4,12);S.ct.target.set(0,2,0);bRf();rL5();}
+function bRf(){
+  S.rfg=new THREE.Group();
+  var hM=new THREE.MeshStandardMaterial({color:0x666666,metalness:.5,roughness:.4,side:THREE.DoubleSide});
+  var h=new THREE.Mesh(new THREE.SphereGeometry(1.2,32,16,0,Math.PI*2,0,Math.PI/2),hM);
+  h.rotation.x=Math.PI;h.position.set(0,.3,0);S.rfg.add(h);S.rfm.hM=hM;
+  // Ballon
+  var bal=new THREE.Mesh(new THREE.SphereGeometry(1,32,32),new THREE.MeshStandardMaterial({color:0xaaddff,transparent:true,opacity:.25,side:THREE.DoubleSide,depthWrite:false}));
+  bal.position.set(0,1.2,0);bal.renderOrder=2;S.rfg.add(bal);
+  // Liquide
+  var lM=new THREE.MeshStandardMaterial({color:0xf0f0f0,transparent:true,opacity:.8});
+  var lq=new THREE.Mesh(new THREE.SphereGeometry(.85,32,32),lM);lq.position.set(0,1,0);lq.scale.y=.6;lq.renderOrder=1;S.rfg.add(lq);
+  // Col
+  var col=new THREE.Mesh(new THREE.CylinderGeometry(.15,.25,1.5,16),new THREE.MeshStandardMaterial({color:0xaaddff,transparent:true,opacity:.3,side:THREE.DoubleSide,depthWrite:false}));
+  col.position.set(0,2.8,0);S.rfg.add(col);
+  // Réfrigérant
+  var rft=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,3,16,1,true),new THREE.MeshStandardMaterial({color:0xccddee,transparent:true,opacity:.3,side:THREE.DoubleSide,depthWrite:false}));
+  rft.position.set(0,5,0);S.rfg.add(rft);
+  var env=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,2.5,16,1,true),new THREE.MeshStandardMaterial({color:0x88bbdd,transparent:true,opacity:.15,side:THREE.DoubleSide,depthWrite:false}));
+  env.position.set(0,5,0);S.rfg.add(env);
+  // Pierre ponce
+  for(var i=0;i<3;i++){var s=new THREE.Mesh(new THREE.SphereGeometry(.06,8,8),new THREE.MeshStandardMaterial({color:0xf5f5dc,roughness:.8}));s.position.set(Math.random()*.3-.15,.6,Math.random()*.3-.15);S.rfg.add(s);}
+  // Support
+  var sup=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,8,8),new THREE.MeshStandardMaterial({color:0x444444,metalness:.7}));
+  sup.position.set(-1.8,3,0);S.rfg.add(sup);
+  // Labels
+  var l1=mL('Ballon',.25,'#88aacc');l1.position.set(1.8,1.2,0);S.rfg.add(l1);
+  var l2=mL('Réfrigérant',.25,'#88aacc');l2.position.set(1.5,5,0);S.rfg.add(l2);
+  var l3=mL('Chauffe-ballon',.25,'#88aacc');l3.position.set(1.8,.3,0);S.rfg.add(l3);
+  // Vapeurs & bulles
+  S.rfm.vp=[];S.rfm.bu=[];
+  for(var j=0;j<12;j++){var v=new THREE.Mesh(new THREE.SphereGeometry(.04,8,8),new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0}));v.position.set(Math.random()*.08-.04,3.5+Math.random()*3,Math.random()*.08-.04);v.userData.sp=.005+Math.random()*.01;v.userData.ph=Math.random()*Math.PI*2;S.rfg.add(v);S.rfm.vp.push(v);}
+  for(var k=0;k<6;k++){var b=new THREE.Mesh(new THREE.SphereGeometry(.03,8,8),new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0}));b.position.set(Math.random()*.3-.15,.6,Math.random()*.3-.15);b.userData.sp=.01+Math.random()*.02;b.userData.sy=.6;S.rfg.add(b);S.rfm.bu.push(b);}
+  S.sc.add(S.rfg);
+}
+function rL5(){
+  document.getElementById('sidePanel').innerHTML=
+  '<div class="pt">🔥 Niveau 5 — Reflux</div>'+
+  '<div class="bx"><h3>Données physiques</h3>'+
+  '<table class="dtbl"><tr><th></th><th>CH₃COOH</th><th>C₂H₅OH</th><th>CH₃COOC₂H₅</th><th>H₂O</th></tr>'+
+  '<tr><td>μ (g/mL)</td><td>1,05</td><td>0,79</td><td>0,90</td><td>1,00</td></tr>'+
+  '<tr><td>M (g/mol)</td><td>60,0</td><td>46,0</td><td>88,0</td><td>18,0</td></tr>'+
+  '<tr><td>V (0,10 mol)</td><td>5,7 mL</td><td>5,8 mL</td><td>9,8 mL</td><td>1,8 mL</td></tr></table></div>'+
+  '<div class="bx"><h3>Montage — Estérification</h3><p style="font-size:12px;color:var(--text2);line-height:1.5">'+
+  '• 0,10 mol acide éthanoïque (5,7 mL)<br>'+
+  '• 0,10 mol éthanol (5,8 mL)<br>'+
+  '• 0,3 mL H₂SO₄ concentré (catalyseur)<br>'+
+  '• Pierre ponce → Reflux ~1h</p></div>'+
+  '<div class="bx"><h3>Chrono</h3><div class="sc" id="rT">'+(S.ro?fT(S.rt):'00:00')+'</div><div class="pb"><div class="pf" id="rP" style="width:'+(S.rt/60*100)+'%"></div></div></div>'+
+  '<button class="btn '+(S.ro?'bo':'bp')+'" onclick="tRf()" style="width:100%">'+(S.ro?'⏹ Stop':'🔥 Chauffer')+'</button>'+
+  '<div id="f5" class="fb"></div>'+
+  '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+  '<div class="qc" onclick="a5(1)">Q1 : Pierre ponce ?</div><div class="qc" onclick="a5(2)">Q2 : Pourquoi reflux ?</div><div class="qc" onclick="a5(3)">Q3 : Rôle H₂SO₄ ?</div></div></div>'+
+  '<button class="btn bp" id="rfxNext" onclick="ul(6);go(6)" style="width:100%"'+(S.rt<3?' disabled':'')+'>→ Niveau 6</button>';
+}
+function tRf(){
+  S.ro=!S.ro;
+  if(S.ro){S.rfm.hM.emissive=new THREE.Color(0xff6600);S.rfm.hM.emissiveIntensity=.6;
+    S.la=function(){if(S.lv!==5||!S.ro)return;S.rt+=.05;
+      S.rfm.bu.forEach(function(b){b.material.opacity=.6;b.position.y+=b.userData.sp;if(b.position.y>1.8)b.position.y=b.userData.sy;});
+      S.rfm.vp.forEach(function(v){v.material.opacity=.3;v.position.y+=v.userData.sp;if(v.position.y>6.2)v.position.y=3.5;var t=Date.now()*.001+v.userData.ph;v.position.x=Math.sin(t)*.04;v.position.z=Math.cos(t*.7)*.04;});
+      var tm=document.getElementById('rT');if(tm)tm.textContent=fT(S.rt);
+      var pr=document.getElementById('rP');if(pr)pr.style.width=Math.min(S.rt/60*100,100)+'%';
+      var nb=document.getElementById('rfxNext');if(nb&&S.rt>=3)nb.disabled=false;};
+    sFB('f5','inf','Chauffage lancé. Vapeurs montent et condensent.');
+  }else{S.rfm.hM.emissive=new THREE.Color(0);S.rfm.hM.emissiveIntensity=0;
+    S.rfm.bu.forEach(function(b){b.material.opacity=0;});S.rfm.vp.forEach(function(v){v.material.opacity=0;});S.la=null;}
+  rL5();
+}
+function fT(t){var m=Math.floor(t/60),s=Math.floor(t%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
+function a5(q){var a={1:'Pierre ponce : régule l\'ébullition, évite les soubresauts.',2:'Reflux : chauffer sans perte de matière (vapeurs condensent et retombent).',3:'H₂SO₄ = catalyseur. Accélère sans être consommé. Absent de l\'équation.'};sFB('f5','inf',a[q]);}
+
+/* ============================================================
+   NIVEAU 6 — Cinétique
+   ============================================================ */
+function iL6(){S.tm='heated';S.sc2=false;S.sb2=false;S.tabOk=false;S.ca.position.set(0,2,8);S.sc.add(mL('📊 Berthelot',.5,'#58a6ff'));rL6();}
+function rL6(){
+  if(S.ch){try{S.ch.destroy();}catch(e){}S.ch=null;}
+  var ambMsg=S.tm==='ambient'?'<div style="background:var(--bg);padding:8px;border-radius:var(--radius);border:1px solid var(--orange);margin-top:6px;font-size:11px;color:var(--orange)">⚠️ Après 368 jours, seulement 55% a réagi. Le plateau (67%) n\'est PAS encore atteint à T° ambiante. La réaction est extrêmement lente.</div>':'<div style="background:var(--bg);padding:8px;border-radius:var(--radius);border:1px solid var(--green);margin-top:6px;font-size:11px;color:#6ee89a">À 100°C le plateau (~67%) est atteint après ~150 h. τ = 0,067/0,10 = 67%.</div>';
+  document.getElementById('sidePanel').innerHTML=
+  '<div class="pt">📊 Niveau 6 — Cinétique</div>'+
+  '<div class="bx"><h3>Température</h3><div class="tg"><div class="to'+(S.tm==='ambient'?' act':'')+'" onclick="S.tm=\'ambient\';rL6()">Ambiante</div><div class="to'+(S.tm==='heated'?' act':'')+'" onclick="S.tm=\'heated\';rL6()">100 °C</div></div>'+ambMsg+'</div>'+
+  '<div class="bx"><h3>Options</h3>'+
+  '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox"'+(S.sc2?' checked':'')+' onchange="S.sc2=this.checked;dCh()" style="accent-color:var(--accent)">Catalyseur H₂SO₄</label>'+
+  '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;margin-top:6px"><input type="checkbox"'+(S.sb2?' checked':'')+' onchange="S.sb2=this.checked;dCh()" style="accent-color:var(--accent)">Superposer Hydrolyse</label></div>'+
+  '<div class="cc"><canvas id="ch6" height="220"></canvas></div>'+
+  '<div class="lb"><div class="li"><div class="lc" style="background:#e63946"></div>n(ester) formé</div><div class="li"><div class="lc" style="background:#2d6a4f"></div>n(acide) restant</div></div>'+
+  '<div class="bx"><h3>Tableau d\'avancement — Estérification</h3>'+
+  '<p style="font-size:11px;color:var(--text2);margin-bottom:6px">CH₃COOH + C₂H₅OH ⇌ CH₃COOC₂H₅ + H₂O</p>'+
+  '<table class="dtbl"><tr><th>État</th><th>Acide</th><th>Alcool</th><th>Ester</th><th>Eau</th><th>x</th></tr>'+
+  '<tr><td>Initial</td><td><input id="ta0" value="" placeholder="?"></td><td><input id="ta1" value="" placeholder="?"></td><td><input id="ta2" value="" placeholder="?"></td><td><input id="ta3" value="" placeholder="?"></td><td><input id="ta4" value="" placeholder="?"></td></tr>'+
+  '<tr><td>Interm.</td><td>0,10−x</td><td>0,10−x</td><td>x</td><td>x</td><td>x</td></tr>'+
+  '<tr><td>Final réel</td><td><input id="ta5" value="" placeholder="?"></td><td><input id="ta6" value="" placeholder="?"></td><td><input id="ta7" value="" placeholder="?"></td><td><input id="ta8" value="" placeholder="?"></td><td><input id="ta9" value="" placeholder="?"></td></tr>'+
+  '<tr><td>Final théor.</td><td>0</td><td>0</td><td>0,10</td><td>0,10</td><td>0,10</td></tr></table>'+
+  '<button class="btn bp" onclick="chkTab()" style="width:100%;margin-top:6px">✓ Vérifier le tableau</button>'+
+  '<div id="fbTab" class="fb"></div></div>'+
+  '<div id="f6" class="fb"></div>'+
+  '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+  '<div class="qc" onclick="a6(4)">Q4 : Totale ou limitée ?</div><div class="qc" onclick="a6(5)">Q5 : Calculez τ</div>'+
+  '<div class="qc" onclick="a6(6)">Q6 : T° et τ ?</div><div class="qc" onclick="a6(7)">Q7 : Catalyseur et τ ?</div></div></div>'+
+  '<button class="btn bp" onclick="ul(7);go(7)" style="width:100%">→ Niveau 7</button>';
+  setTimeout(dCh,100);
+}
+function chkTab(){
+  var ans=[['0,10','0.10','0,1','0.1'],['0,10','0.10','0,1','0.1'],['0','0,0','0.0'],['0','0,0','0.0'],['0','0,0','0.0'],
+           ['0,033','0.033'],['0,033','0.033'],['0,067','0.067'],['0,067','0.067'],['0,067','0.067']];
+  var allOk=true;
+  for(var i=0;i<10;i++){
+    var inp=document.getElementById('ta'+i);if(!inp)continue;
+    var v=inp.value.trim();
+    var ok=ans[i].some(function(a){return v===a;});
+    inp.className=ok?'vok':'vno';
+    if(!ok)allOk=false;
+  }
+  if(allOk){S.tabOk=true;sFB('fbTab','ok','✅ Tableau correct ! τ = x_f/x_max = 0,067/0,10 = 67%. La transformation est LIMITÉE.');}
+  else sFB('fbTab','wrn','💡 Vérifiez les cases en rouge. État initial : n₀ = 0,10 mol pour les réactifs, 0 pour les produits. État final réel : x_f = 0,067 mol.');
+}
+function dCh(){
+  var cv=document.getElementById('ch6');if(!cv)return;if(S.ch){S.ch.destroy();S.ch=null;}
+  var d=S.tm==='heated'?BH:BA,n0=.1;
+  var ds=[
+    {label:'n(ester)',data:d.p.map(function(p,i){return{x:d.t[i],y:n0*p/100};}),borderColor:'#e63946',backgroundColor:'rgba(230,57,70,.1)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#e63946',showLine:true},
+    {label:'n(acide)',data:d.p.map(function(p,i){return{x:d.t[i],y:n0*(1-p/100)};}),borderColor:'#2d6a4f',backgroundColor:'rgba(45,106,79,.1)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#2d6a4f',showLine:true}
+  ];
+  if(S.sc2)ds.push({label:'+ catalyseur',data:d.p.map(function(p,i){return{x:d.t[i]*.35,y:n0*Math.min(p*1.1,S.tm==='heated'?65:55)/100};}),borderColor:'#ff69b4',borderDash:[5,5],tension:.4,pointRadius:3,fill:false,showLine:true});
+  if(S.sb2)ds.push({label:'Hydrolyse',data:d.p.map(function(p,i){return{x:d.t[i],y:n0-n0*Math.min(p*.5,33)/100};}),borderColor:'#9b5de5',tension:.4,pointRadius:3,borderDash:[8,4],fill:false,showLine:true});
+  S.ch=new Chart(cv,{type:'scatter',data:{datasets:ds},options:{responsive:true,plugins:{legend:{labels:{color:'#e6edf3',font:{size:10}}}},scales:{x:{title:{display:true,text:'Temps ('+d.u+')',color:'#8b949e'},ticks:{color:'#8b949e'},grid:{color:'rgba(48,54,61,.5)'}},y:{title:{display:true,text:'n (mol)',color:'#8b949e'},min:0,max:.11,ticks:{color:'#8b949e'},grid:{color:'rgba(48,54,61,.5)'}}}}});
+}
+function a6(q){var a={
+4:'LIMITÉE. Le graphique montre un plateau : l\'ester ne se forme pas totalement. τ = 67% < 100%. Les 4 espèces coexistent à l\'équilibre.',
+5:'τ = x_f / x_max = 0,067 / 0,10 = 0,67 = 67%. Remplissez le tableau d\'avancement pour le vérifier.',
+6:'Non. Observez : à T° ambiante (jours) la réaction est très lente (55% après 368 j, plateau non atteint). À 100°C (heures) le plateau (67%) est atteint plus vite. Mais τ final est le MÊME.',
+7:'Non. Le catalyseur H₂SO₄ accélère la réaction (courbe rose, pente initiale plus forte) mais le plateau reste à 67%. Le catalyseur ne modifie pas la composition à l\'équilibre.'
+};sFB('f6','inf',a[q]);}
+
+/* ============================================================
+   NIVEAU 7 — Équilibre
+   ============================================================ */
+function iL7(){S.ca.position.set(0,2,10);S.ct.target.set(0,0,0);S.eg=new THREE.Group();S.ep=[];S.pieT=0;S.pieOn=false;
+  S.eg.add(new THREE.Mesh(new THREE.BoxGeometry(6,4,4),new THREE.MeshStandardMaterial({color:0x224466,transparent:true,opacity:.08,side:THREE.DoubleSide,depthWrite:false})));
+  // Flèches v(directe) = v(inverse)
+  var mkAr=function(x,y,col,rot){var c=new THREE.Mesh(new THREE.ConeGeometry(.12,.4,8),new THREE.MeshStandardMaterial({color:col}));c.position.set(x,y,0);c.rotation.z=rot;return c;};
+  var mkLn=function(x,y,col){var l=new THREE.Mesh(new THREE.BoxGeometry(1.6,.06,.06),new THREE.MeshStandardMaterial({color:col}));l.position.set(x,y,0);return l;};
+  S.eg.add(mkAr(2.2,1.8,0xe63946,-Math.PI/2));S.eg.add(mkLn(1.3,1.8,0xe63946));
+  S.eg.add(mkAr(-2.2,-1.8,0x2dc653,Math.PI/2));S.eg.add(mkLn(-1.3,-1.8,0x2dc653));
+  var lbD=mL('v(directe)',.2,'#ff6b7a');lbD.position.set(1.3,2.2,0);S.eg.add(lbD);
+  var lbI=mL('v(inverse)',.2,'#6ee89a');lbI.position.set(-1.3,-2.2,0);S.eg.add(lbI);
+  var lbEq=mL('v(dir) = v(inv)',.22,'#ffffff');lbEq.position.set(0,0,2);S.eg.add(lbEq);
+  [{n:'Ac',c:0xf77f00,ct:3},{n:'Al',c:0x00b4d8,ct:3},{n:'Es',c:0x2dc653,ct:7},{n:'Ea',c:0xaaddff,ct:7}].forEach(function(tp){
+    for(var i=0;i<tp.ct;i++){var m=new THREE.Mesh(new THREE.SphereGeometry(.18,12,12),new THREE.MeshStandardMaterial({color:tp.c,metalness:.1,roughness:.3}));
+      m.position.set((Math.random()-.5)*5,(Math.random()-.5)*3,(Math.random()-.5)*3);
+      m.userData.vel=new THREE.Vector3((Math.random()-.5)*.02,(Math.random()-.5)*.02,(Math.random()-.5)*.02);
+      S.eg.add(m);S.ep.push(m);}});
+  S.sc.add(S.eg);
+  S.la=function(){if(S.lv!==7)return;
+    S.ep.forEach(function(p){p.position.add(p.userData.vel);if(Math.abs(p.position.x)>2.8)p.userData.vel.x*=-1;if(Math.abs(p.position.y)>1.8)p.userData.vel.y*=-1;if(Math.abs(p.position.z)>1.8)p.userData.vel.z*=-1;});
+    if(S.pieOn&&S.pieT<1){S.pieT=Math.min(S.pieT+.006,1);drawPies(S.pieT);}};
+  rL7();
+}
+function rL7(){
+  document.getElementById('sidePanel').innerHTML=
+  '<div class="pt">⚖️ Niveau 7 — Équilibre</div>'+
+  '<div class="bx"><h3>Diagrammes circulaires animés</h3>'+
+  '<p style="font-size:11px;color:var(--text2);margin-bottom:8px">Même état final quel que soit le point de départ :</p>'+
+  '<div class="pie-wrap"><div class="pie-box"><canvas id="pie1" width="130" height="130"></canvas><div class="pie-label">Estérification<br><small>Départ: acide+alcool</small></div></div>'+
+  '<div style="font-size:18px;color:var(--accent);font-weight:700">=</div>'+
+  '<div class="pie-box"><canvas id="pie2" width="130" height="130"></canvas><div class="pie-label">Hydrolyse<br><small>Départ: ester+eau</small></div></div></div>'+
+  '<button class="btn '+(S.pieOn?'bo':'bp')+'" onclick="S.pieOn=true;S.pieT=0;" style="width:100%;margin-top:6px">▶ Animer les camemberts</button></div>'+
+  '<div class="bx"><h3>Vue microscopique</h3><p style="font-size:12px;color:var(--text2);line-height:1.5">Réactions dans les DEUX sens simultanément. À l\'équilibre : v(directe) = v(inverse).</p>'+
+  '<div class="lb" style="margin-top:6px"><div class="li"><div class="lc" style="background:#f77f00"></div>Acide (33%)</div><div class="li"><div class="lc" style="background:#00b4d8"></div>Alcool (33%)</div><div class="li"><div class="lc" style="background:#2dc653"></div>Ester (67%)</div><div class="li"><div class="lc" style="background:#aaddff"></div>Eau (67%)</div></div></div>'+
+  '<div class="bx"><h3>Constante K</h3><div style="font-family:\'JetBrains Mono\',monospace;font-size:12px;line-height:1.7;padding:8px;background:var(--bg);border-radius:var(--radius)">K = n(ester)×n(eau) / n(acide)×n(alcool)<br>K = 0,067×0,067 / 0,033×0,033<br>= <span style="color:var(--accent);font-size:16px;font-weight:700">4,0</span><br><br>K(hydrol.) = 1/K = <span style="color:var(--violet);font-weight:700">0,25</span></div></div>'+
+  '<div id="f7" class="fb"></div>'+
+  '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px"><div class="qc" onclick="a7(8)">Q8 : Réactions stoppées à l\'équilibre ?</div><div class="qc" onclick="a7(9)">Q9 : Calculez K et K(hydrol.)</div><div class="qc" onclick="a7(10)">Q10 : Même état final des deux côtés ?</div></div></div>'+
+  '<button class="btn bp" onclick="ul(8);go(8)" style="width:100%">→ Niveau 8</button>';
+  drawPies(S.pieT||0);
+}
+function drawPies(t){
+  // Pie 1: Estérification (ester grows from 0 to 67%)
+  var c1=document.getElementById('pie1');if(!c1)return;
+  var x1=c1.getContext('2d');var w=130,cx=65,cy=65,r=55;
+  x1.clearRect(0,0,w,w);
+  var estPct=.67*t;
+  // Ester part (green)
+  x1.beginPath();x1.moveTo(cx,cy);
+  x1.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+estPct*Math.PI*2);
+  x1.fillStyle='#2dc653';x1.fill();
+  // Acid+alcohol part (orange)
+  x1.beginPath();x1.moveTo(cx,cy);
+  x1.arc(cx,cy,r,-Math.PI/2+estPct*Math.PI*2,-Math.PI/2+Math.PI*2);
+  x1.fillStyle='#f77f00';x1.fill();
+  // Center label
+  x1.fillStyle='#fff';x1.font='bold 14px Outfit';x1.textAlign='center';x1.textBaseline='middle';
+  x1.fillText(Math.round(estPct*100)+'%',cx,cy-6);
+  x1.font='10px Outfit';x1.fillText('ester',cx,cy+10);
+  // Pie 2: Hydrolyse (ester shrinks from 100% to 67%)
+  var c2=document.getElementById('pie2');if(!c2)return;
+  var x2=c2.getContext('2d');
+  x2.clearRect(0,0,w,w);
+  var estPct2=1-.33*t; // 100% → 67%
+  x2.beginPath();x2.moveTo(cx,cy);
+  x2.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+estPct2*Math.PI*2);
+  x2.fillStyle='#2dc653';x2.fill();
+  x2.beginPath();x2.moveTo(cx,cy);
+  x2.arc(cx,cy,r,-Math.PI/2+estPct2*Math.PI*2,-Math.PI/2+Math.PI*2);
+  x2.fillStyle='#f77f00';x2.fill();
+  x2.fillStyle='#fff';x2.font='bold 14px Outfit';x2.textAlign='center';x2.textBaseline='middle';
+  x2.fillText(Math.round(estPct2*100)+'%',cx,cy-6);
+  x2.font='10px Outfit';x2.fillText('ester',cx,cy+10);
+}
+function a7(q){var a={8:'Non ! L\'équilibre est DYNAMIQUE (voir les flèches dans la scène 3D). Les deux réactions continuent à la même vitesse : v(directe) = v(inverse). La composition ne change plus mais les transformations ne s\'arrêtent jamais.',9:'K(estérification) = (0,067×0,067)/(0,033×0,033) = 0,004489/0,001089 ≈ 4,0. K(hydrolyse) = 1/K = 1/4 = 0,25. On vérifie : K(hydrol.) = 1/K(estér.).',10:'Observez les camemberts : que l\'on parte d\'acide+alcool (estérification) OU d\'ester+eau (hydrolyse), on arrive au MÊME état final : 67% ester, 33% acide. C\'est parce que K est une constante — Qr évolue toujours vers K.'};sFB('f7','inf',a[q]);}
+
+/* ============================================================
+   NIVEAU 8 — Rendement
+   ============================================================ */
+function iL8(){S.rai=0;S.ca.position.set(0,2,8);S.sc.add(mL('📈 Rendement',.5,'#58a6ff'));rL8();}
+function rL8(){
+  if(S.ch){try{S.ch.destroy();}catch(e){}S.ch=null;}
+  document.getElementById('sidePanel').innerHTML=
+  '<div class="pt">📈 Niveau 8 — Rendement</div>'+
+  '<div class="bx"><h3>Effet de l\'excès d\'un réactif</h3>'+
+  '<p style="font-size:11px;color:var(--text2);margin-bottom:6px">Sélectionnez un ratio pour le mettre en évidence :</p>'+
+  '<div class="tg">'+RAT.map(function(r,i){
+    return '<div class="to'+(S.rai===i?' act':'')+'" onclick="S.rai='+i+';rL8()">'+r.a+':'+r.b+'</div>';
+  }).join('')+'</div>'+
+  '<div class="sc" style="margin-top:6px">τ = '+RAT[S.rai].t+' %</div>'+
+  '<table class="dtbl" style="margin-top:6px"><tr><th>Mélange</th><th>Acide (mol)</th><th>Alcool (mol)</th><th>τ (%)</th></tr>'+
+  RAT.map(function(r,i){return '<tr style="'+(i===S.rai?'background:rgba(88,166,255,.1)':'')+'">'+'<td>'+(i+1)+'</td><td>'+r.a+'</td><td>'+r.b+'</td><td style="color:var(--accent);font-weight:700">'+r.t+'</td></tr>';}).join('')+
+  '</table></div>'+
+  '<div class="cc"><canvas id="ch8" height="200"></canvas></div>'+
+  '<div class="bx"><h3>Élimination d\'un produit</h3><p style="font-size:12px;color:var(--text2);line-height:1.5">'+
+  '<b>Dean-Stark</b> (Fig. 17 du manuel) : élimine l\'eau par décantation → Qr diminue → Qr &lt; K → sens direct → τ ↑<br><br>'+
+  '<b>Distillation</b> (Fig. 18) : élimine l\'ester volatil au fur et à mesure → même effet.</p>'+
+  '<div style="background:var(--bg);padding:8px;border-radius:var(--radius);border:1px solid var(--green);margin-top:6px;font-size:12px;color:#6ee89a">Combinaison excès + élimination → τ ≈ 95–100%</div></div>'+
+  '<div id="f8" class="fb"></div>'+
+  '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+  '<div class="qc" onclick="a8(11)">Q11 : Comparez τ pour 1:1, 1:2 et 1:5</div>'+
+  '<div class="qc" onclick="a8(12)">Q12 : Pourquoi Dean-Stark augmente τ ?</div>'+
+  '<div class="qc" onclick="a8(13)">Q13 : Quelle combinaison pour τ maximal ?</div></div></div>'+
+  '<button class="btn bp" onclick="ul(9);go(9)" style="width:100%">→ Niveau 9</button>';
+  setTimeout(dC8,100);
+}
+function dC8(){
+  var cv=document.getElementById('ch8');if(!cv)return;if(S.ch){S.ch.destroy();S.ch=null;}
+  var cls=['#e63946','#f77f00','#2dc653','#00b4d8','#9b5de5'];
+  // Exact plateau values from textbook p.150: 67%, 85%, 95%, 85%, 95%
+  var rates=[.025,.035,.04,.035,.04]; // Different speeds to show faster approach with excess
+  var ds=RAT.map(function(r,i){var tau=r.t/100,pts=[];
+    for(var t=0;t<=200;t+=2){
+      var y=.1*tau*(1-Math.exp(-t*rates[i]));
+      pts.push({x:t,y:Math.min(y,.1*tau)});
+    }
+    return{label:r.a+':'+r.b+' (τ='+r.t+'%)',data:pts,borderColor:cls[i],tension:.4,pointRadius:0,borderWidth:i===S.rai?3:1.5,borderDash:i===S.rai?[]:[4,4],fill:false,showLine:true};});
+  S.ch=new Chart(cv,{type:'scatter',data:{datasets:ds},options:{responsive:true,
+    plugins:{legend:{labels:{color:'#e6edf3',font:{size:9}}},
+      annotation:{annotations:{
+        p67:{type:'line',yMin:.067,yMax:.067,borderColor:'rgba(230,57,70,.3)',borderDash:[4,4],borderWidth:1},
+        p85:{type:'line',yMin:.085,yMax:.085,borderColor:'rgba(247,127,0,.3)',borderDash:[4,4],borderWidth:1},
+        p95:{type:'line',yMin:.095,yMax:.095,borderColor:'rgba(45,198,83,.3)',borderDash:[4,4],borderWidth:1}
+      }}},
+    scales:{x:{title:{display:true,text:'Temps (h)',color:'#8b949e'},ticks:{color:'#8b949e'},grid:{color:'rgba(48,54,61,.5)'}},
+      y:{title:{display:true,text:'n(ester) (mol)',color:'#8b949e'},min:0,max:.11,ticks:{color:'#8b949e'},grid:{color:'rgba(48,54,61,.5)'}}}}});
+}
+function a8(q){var a={
+11:'Le tableau montre : τ = 67% (1:1) → 85% (1:2 ou 2:1) → 95% (1:5 ou 5:1). En augmentant l\'excès d\'un réactif, Qr diminue (Qr < K), le système évolue dans le sens direct, et plus d\'ester se forme.',
+12:'Le Dean-Stark élimine l\'eau au fur et à mesure de sa formation. Comme n(eau) diminue, le quotient Qr = n(ester)×n(eau) / [n(acide)×n(alcool)] diminue aussi. Puisque Qr < K, le système se déplace vers le sens direct pour reformer de l\'ester.',
+13:'Combiner les deux méthodes : excès d\'un réactif (ex: ratio 1:5) + élimination d\'un produit (Dean-Stark ou distillation). On peut ainsi atteindre τ ≈ 95–100%.'
+};sFB('f8','inf',a[q]);}
+
+/* ============================================================
+   NIVEAU 9 — Titrage
+   ============================================================ */
+function iL9(){S.tv=0;S.te=16.5;S.tmm={};S.ca.position.set(0,4,10);S.ct.target.set(0,2,0);bTi();rL9();}
+function bTi(){
+  S.tg=new THREE.Group();
+  // Burette
+  var buTube=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,5,16,1,true),new THREE.MeshStandardMaterial({color:0xaaddee,transparent:true,opacity:.3,side:THREE.DoubleSide,depthWrite:false}));
+  buTube.position.set(0,5.5,0);S.tg.add(buTube);
+  var bl=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,5,16),new THREE.MeshStandardMaterial({color:0xf0f0f0,transparent:true,opacity:.6}));
+  bl.position.set(0,5.5,0);bl.renderOrder=1;S.tg.add(bl);S.tmm.bl=bl;
+  var rob=new THREE.Mesh(new THREE.BoxGeometry(.2,.06,.06),new THREE.MeshStandardMaterial({color:0x2288aa,metalness:.3}));
+  rob.position.set(0,2.9,0);S.tg.add(rob);
+  var lb=mL('Burette NaOH 2,0 mol/L',.22,'#88aacc');lb.position.set(1.5,5.5,0);S.tg.add(lb);
+  // Bécher
+  var bech=new THREE.Mesh(new THREE.CylinderGeometry(1,.9,1.8,32,1,true),new THREE.MeshStandardMaterial({color:0xaaddee,transparent:true,opacity:.2,side:THREE.DoubleSide,depthWrite:false}));
+  bech.position.set(0,.9,0);S.tg.add(bech);
+  var fd=new THREE.Mesh(new THREE.CircleGeometry(.9,32),new THREE.MeshStandardMaterial({color:0xaaddee,transparent:true,opacity:.15,side:THREE.DoubleSide}));
+  fd.rotation.x=-Math.PI/2;fd.position.y=.01;S.tg.add(fd);
+  // Échantillon
+  var sM=new THREE.MeshStandardMaterial({color:0xf0f0f0,transparent:true,opacity:.8});
+  var sm=new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,1,32),sM);sm.position.set(0,.6,0);sm.renderOrder=1;
+  S.tg.add(sm);S.tmm.sM=sM;
+  // Agitateur
+  var agit=new THREE.Mesh(new THREE.BoxGeometry(2.2,.2,2.2),new THREE.MeshStandardMaterial({color:0x555555,metalness:.4,roughness:.5}));
+  agit.position.set(0,-.1,0);S.tg.add(agit);
+  var bar=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.8,8),new THREE.MeshStandardMaterial({color:0xffffff,roughness:.5}));
+  bar.rotation.z=Math.PI/2;bar.position.set(0,.15,0);S.tg.add(bar);S.tmm.bar=bar;
+  S.sc.add(S.tg);
+  S.la=function(){if(S.lv===9&&S.tmm.bar)S.tmm.bar.rotation.y+=.05;};
+}
+function rL9(){
+  var eq=Math.abs(S.tv-S.te)<.5,pa=S.tv>S.te+.5;
+  var ob=pa?'🔴 Excès ! Rose foncé permanent.':eq?'🩷 Rose PERSISTE → ÉQUIVALENCE ! V_eq ≈ '+S.te.toFixed(1)+' mL':S.tv>10?'💧 Rose persiste plus longtemps...':S.tv>0?'💧 Flash rose fugace.':'Ajoutez NaOH.';
+  var cl='';
+  if(eq){var nA=2*S.te/1000,nE=.1-nA,tau=nE/.1*100;
+    cl='<div class="bx"><h3>Calculs</h3><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;line-height:1.7;padding:8px;background:var(--bg);border-radius:var(--radius)">'+
+    'n(acide)=2,0×'+(S.te/1000).toFixed(4)+'=<span style="color:var(--accent)">'+nA.toFixed(4)+'</span> mol<br>'+
+    'n(ester)=0,10−'+nA.toFixed(4)+'=<span style="color:var(--green)">'+nE.toFixed(4)+'</span> mol<br>'+
+    'τ=<span style="color:var(--accent);font-size:15px;font-weight:700">'+tau.toFixed(0)+'%</span></div></div>';}
+  document.getElementById('sidePanel').innerHTML=
+  '<div class="pt">🧪 Niveau 9 — Titrage</div>'+
+  '<div class="bx"><h3>Volume NaOH</h3><div class="sc">'+S.tv.toFixed(1)+' mL</div>'+
+  '<input type="range" min="0" max="30" step="0.5" value="'+S.tv+'" style="width:100%;accent-color:var(--accent)" oninput="uTi(+this.value)">'+
+  '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2)"><span>0</span><span>30 mL</span></div></div>'+
+  '<div class="bx"><h3>Observation</h3><p style="font-size:12px;color:'+(pa||eq?'var(--pink)':'var(--text2)')+';line-height:1.5">'+ob+'</p></div>'+cl+
+  '<div id="f9" class="fb"></div>'+
+  '<div class="bx"><h3>Questions</h3><div style="display:flex;flex-direction:column;gap:5px">'+
+  '<div class="qc" onclick="a9(14)">Q14 : Eau glacée ?</div><div class="qc" onclick="a9(15)">Q15 : H₂SO₄ ?</div>'+
+  '<div class="qc" onclick="a9(16)">Q16 : Calculez τ</div><div class="qc" onclick="a9(17)">Q17 : Même état ?</div></div></div>'+
+  '<button class="btn bo" onclick="S.tv=0;uTi(0)" style="width:100%">↺ Reset</button>'+
+  (eq?'<div style="margin-top:10px;padding:14px;background:rgba(45,198,83,.12);border:1px solid var(--green);border-radius:var(--radius);text-align:center;font-weight:600;color:var(--green)">🎉 Simulation complète !</div>':'');
+}
+function uTi(v){
+  S.tv=v;var r=v/S.te;
+  if(S.tmm.sM){
+    if(v>S.te+.5){S.tmm.sM.color.setHex(0xcc3366);S.tmm.sM.opacity=.9;}
+    else if(Math.abs(v-S.te)<.5){S.tmm.sM.color.setHex(0xff69b4);S.tmm.sM.opacity=.7;}
+    else if(r>.6){var c1=new THREE.Color(0xf0f0f0),c2=new THREE.Color(0xff69b4);c1.lerp(c2,(r-.6)/.4*.3);S.tmm.sM.color.copy(c1);S.tmm.sM.opacity=.8;}
+    else{S.tmm.sM.color.setHex(0xf0f0f0);S.tmm.sM.opacity=.8;}
+  }
+  if(S.tmm.bl){var f=Math.max(1-v/30,.05);S.tmm.bl.scale.y=f;S.tmm.bl.position.y=5.5+(1-f)*2.5;}
+  rL9();
+}
+function a9(q){var a={14:'Eau glacée fige la composition (réaction très lente à froid).',15:'H₂SO₄ aussi titré. Chimiste titre H₂SO₄ seul (V\'_B) et soustrait.',16:'n(acide)=2,0×0,0165=0,033 mol. n(ester)=0,067 mol. τ=67%.',17:'Même état final → estérification et hydrolyse = réactions inverses → même équilibre.'};sFB('f9','inf',a[q]);}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('sfM').classList.add('show');
+  try{initT();iL1();}catch(e){console.error(e);alert('Erreur: '+e.message);}
+});
+</script>
+<div class="pc3d-cf-ov" id="pc3d-cf-ov" aria-hidden="true"><div class="pc3d-cf" role="dialog" aria-modal="true" aria-label="Contact PC3D"><button class="pc3d-cf-x" id="pc3d-cf-x" aria-label="Fermer">&times;</button><div class="pc3d-cf-head"><span class="pc3d-cf-logo"><svg viewBox="0 0 120 120" width="42" height="42" xmlns="http://www.w3.org/2000/svg"><path d="M60 16 L100 92 L20 92 Z" fill="none" stroke="#4ECDC4" stroke-width="6" stroke-linejoin="round"/><circle cx="60" cy="72" r="11" fill="#00B8A9"/></svg></span><span><span class="pc3d-cf-t">Contact PC3D</span><span class="pc3d-cf-s">Partage tes idées, remarques et questions &middot; شاركنا أفكارك وملاحظاتك وكل ما تريد قوله لنا</span></span></div><input class="pc3d-cf-in" id="pc3d-cf-name" type="text" placeholder="Nom (optionnel) &middot; الاسم (اختياري)"><input class="pc3d-cf-in" id="pc3d-cf-email" type="email" placeholder="Ton email pour te répondre &middot; بريدك للرد عليك"><input type="text" id="pc3d-cf-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><textarea class="pc3d-cf-ta" id="pc3d-cf-msg" rows="5" placeholder="Écris ici tout ce que tu veux nous dire… &middot; اكتب هنا كل ما تريد قوله لنا…"></textarea><div class="pc3d-cf-note" id="pc3d-cf-note"></div><div class="pc3d-cf-fb" id="pc3d-cf-fb" style="display:none;font-size:12.5px;margin:-4px 2px 12px;line-height:1.55;color:#8fa0bd"></div><button class="pc3d-cf-send" id="pc3d-cf-send">Envoyer &middot; إرسال</button></div></div>
+<style>
+.pc3d-cf-ov{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,20,.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s;font-family:'Outfit',system-ui,-apple-system,sans-serif;}
+.pc3d-cf-ov.show{opacity:1;visibility:visible;}
+.pc3d-cf{width:100%;max-width:440px;box-sizing:border-box;background:linear-gradient(180deg,#0c1730,#070e1f);border:1px solid rgba(78,205,196,.32);border-radius:18px;padding:26px 24px 24px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative;transform:translateY(14px) scale(.98);transition:transform .28s cubic-bezier(.2,.9,.3,1.15);}
+.pc3d-cf-ov.show .pc3d-cf{transform:translateY(0) scale(1);}
+.pc3d-cf-x{position:absolute;top:12px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(255,255,255,.06);color:#aeb8cc;font-size:20px;line-height:1;cursor:pointer;transition:background .2s,color .2s;}
+.pc3d-cf-x:hover{background:rgba(255,255,255,.14);color:#fff;}
+.pc3d-cf-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.pc3d-cf-logo{flex:none;line-height:0;}
+.pc3d-cf-t{display:block;font-size:19px;font-weight:700;color:#eaf2ff;letter-spacing:.2px;}
+.pc3d-cf-s{display:block;font-size:11.5px;color:#8fa0bd;margin-top:4px;line-height:1.45;}
+.pc3d-cf-in,.pc3d-cf-ta{width:100%;box-sizing:border-box;margin-bottom:11px;padding:11px 13px;font-family:inherit;font-size:14px;color:#eaf2ff;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;outline:none;transition:border-color .2s,background .2s;}
+.pc3d-cf-in:focus,.pc3d-cf-ta:focus{border-color:#4ECDC4;background:rgba(78,205,196,.06);}
+.pc3d-cf-in::placeholder,.pc3d-cf-ta::placeholder{color:#6b7c99;}
+.pc3d-cf-ta{resize:vertical;min-height:112px;line-height:1.5;}
+.pc3d-cf-note{min-height:15px;font-size:12px;margin:1px 2px 12px;line-height:1.45;}
+.pc3d-cf-send{width:100%;padding:13px;border:none;border-radius:11px;font-family:inherit;font-size:15px;font-weight:700;color:#04121f;cursor:pointer;background:linear-gradient(180deg,#4ECDC4,#00B8A9);box-shadow:0 8px 22px rgba(0,184,169,.4);transition:transform .15s ease,box-shadow .2s,opacity .2s;}
+.pc3d-cf-send:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(0,184,169,.55);}
+.pc3d-cf-send:disabled{opacity:.6;cursor:default;transform:none;}
+</style>
+<script>(function(){
+var EMAIL='professeurkoudiaelmehdi@gmail.com';var W3KEY='';
+var ov=document.getElementById('pc3d-cf-ov');
+if(!ov)return;
+var msg=document.getElementById('pc3d-cf-msg'),nm=document.getElementById('pc3d-cf-name'),em=document.getElementById('pc3d-cf-email'),note=document.getElementById('pc3d-cf-note'),send=document.getElementById('pc3d-cf-send');
+function openM(e){if(e)e.preventDefault();ov.classList.add('show');ov.setAttribute('aria-hidden','false');setTimeout(function(){try{msg.focus();}catch(_){}}, 140);}
+function closeM(){ov.classList.remove('show');ov.setAttribute('aria-hidden','true');}
+var _trg=document.querySelectorAll('#pc3d-contact-btn,[data-pc3d-contact]');for(var _i=0;_i<_trg.length;_i++)_trg[_i].addEventListener('click',openM);
+document.getElementById('pc3d-cf-x').addEventListener('click',closeM);
+ov.addEventListener('click',function(e){if(e.target===ov)closeM();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ov.classList.contains('show'))closeM();});
+function setNote(t,ok){note.textContent=t;note.style.color=ok?'#4ECDC4':'#ff9a9a';}
+var fb=document.getElementById('pc3d-cf-fb'),hp=document.getElementById('pc3d-cf-hp');
+function showFB(){if(!fb)return;var nl=String.fromCharCode(10),p=[];if(nm.value)p.push('Nom: '+nm.value);if(em.value)p.push('Email: '+em.value);p.push('');p.push(msg.value);var href='mailto:'+EMAIL+'?subject='+encodeURIComponent('Message · PC3D')+'&body='+encodeURIComponent(p.join(nl));fb.innerHTML='Tu peux aussi écrire directement à <a href="'+href+'" style="color:#4ECDC4;font-weight:600">'+EMAIL+'</a>';fb.style.display='block';}
+send.addEventListener('click',function(){
+ if(hp&&hp.value){setNote('Merci ! · شكراً',true);setTimeout(closeM,1100);return;}
+ if(!msg.value.trim()){setNote("Merci d'écrire ton message · اكتب رسالتك من فضلك",false);try{msg.focus();}catch(_){}return;}
+ setNote('Envoi en cours… · جارٍ الإرسال…',true);send.disabled=true;if(fb)fb.style.display='none';
+ var url,payload;
+ if(W3KEY){url='https://api.web3forms.com/submit';payload={access_key:W3KEY,name:nm.value||'—',email:em.value||'—',message:msg.value,subject:'Nouveau message · PC3D',from_name:'PC3D — Contact'};}
+ else{url='https://formsubmit.co/ajax/'+EMAIL;payload={nom:nm.value||'—',email:em.value||'—',message:msg.value,_subject:'Nouveau message · PC3D',_template:'table',_captcha:'false'};}
+ fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)})
+ .then(function(r){return r.json();})
+ .then(function(d){
+   if(d&&(d.success===true||d.success==='true')){setNote('Merci ! Ton message a été envoyé ✓ · تم إرسال رسالتك، شكراً',true);msg.value='';nm.value='';em.value='';if(fb)fb.style.display='none';setTimeout(closeM,2000);}
+   else{setNote("Activation requise une seule fois — vérifie l'email · يلزم تفعيل لمرّة واحدة عبر الإيميل",false);showFB();}
+   send.disabled=false;
+ })
+ .catch(function(){setNote("Connexion impossible pour l'instant · تعذّر الإرسال الآن",false);showFB();send.disabled=false;});
+});
+})();</script>
+
+</body>
+</html>
